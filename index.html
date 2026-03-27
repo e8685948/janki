@@ -384,31 +384,70 @@ async function loadFromGas() {
         .withSuccessHandler(data => {
           try {
             const loaded = JSON.parse(data);
+
             if (Array.isArray(loaded) && loaded.length > 0) {
-              groups = loaded;
-              try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
+
+              // ★履歴形式対応（ここが重要）
+              let latest = loaded[loaded.length - 1];
+
+              if (latest.data) {
+                groups = JSON.parse(latest.data);
+              } else {
+                groups = loaded;
+              }
+
+              try {
+                localStorage.setItem('janki_v2', JSON.stringify(groups));
+              } catch(e) {}
+
               resolve(true);
-            } else resolve(false);
-          } catch(e) { resolve(false); }
+
+            } else {
+              resolve(false);
+            }
+
+          } catch(e) {
+            resolve(false);
+          }
         })
         .withFailureHandler(() => resolve(false))
         .loadData();
     });
   }
+
   const gasUrl = localStorage.getItem('janki_gas') || '';
   if (!gasUrl) return false;
+
   try {
     const res = await fetch(gasUrl + '?action=getData', {mode:'cors'});
     const json = await res.json();
+
     if (json.ok && json.data) {
+
       const loaded = JSON.parse(json.data);
+
       if (Array.isArray(loaded) && loaded.length > 0) {
-        groups = loaded;
-        try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
+
+        let latest = loaded[loaded.length - 1];
+
+        if (latest.data) {
+          groups = JSON.parse(latest.data);
+        } else {
+          groups = loaded;
+        }
+
+        try {
+          localStorage.setItem('janki_v2', JSON.stringify(groups));
+        } catch(e) {}
+
         return true;
       }
     }
-  } catch(e) { console.warn('GAS fetch失敗:', e); }
+
+  } catch(e) {
+    console.warn('GAS fetch失敗:', e);
+  }
+
   return false;
 }
 
