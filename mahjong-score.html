@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>雀記</title>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@700;800&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0d0d0f;--bg2:#141418;--bg3:#1c1c22;--bd:#2a2a35;--gold:#d4a843;--gold2:#f0c96a;--red:#e05252;--green:#4caf82;--tx:#e8e8f0;--tx2:#8888a0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* ヘッダー */
+#hdr{background:linear-gradient(90deg,#0d0d0f,#1a1a24,#0d0d0f);border-bottom:1px solid var(--bd);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100}
+.logo{font-family:'Shippori Mincho',serif;font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-sub{font-size:.6rem;color:var(--tx2);letter-spacing:.2em}
+.back-btn{background:none;border:none;color:var(--gold);font-size:.85rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;padding:6px 0}
+
+/* タブ */
+#tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--bd)}
+.tab{flex:1;padding:10px 2px;background:none;border:none;color:var(--tx2);font-family:'Noto Sans JP',sans-serif;font-size:.7rem;cursor:pointer;border-bottom:2px solid transparent}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold);background:rgba(212,168,67,.06)}
+
+/* 画面 */
+.screen{display:none}.screen.on{display:block}
+.page{display:none}.page.on{display:block}
+.wrap{padding:12px;max-width:500px;margin:0 auto}
+
+/* カード */
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+.ctitle{font-size:.68rem;color:var(--gold);letter-spacing:.15em;margin-bottom:10px}
+
+/* リーグタブ */
+.ltabs{display:flex;gap:6px;margin-bottom:12px}
+.ltab{flex:1;padding:9px;border-radius:8px;text-align:center;font-size:.8rem;font-weight:700;cursor:pointer;border:1px solid var(--bd);color:var(--tx2);background:var(--bg3)}
+.ltab.on{border-color:var(--gold);color:var(--gold);background:rgba(212,168,67,.1)}
+
+/* テーブル */
+.rtbl{width:100%;border-collapse:collapse}
+.rtbl th{font-size:.6rem;color:var(--tx2);padding:4px 5px;text-align:right;font-weight:400}
+.rtbl th:first-child{text-align:left}
+.rtbl td{padding:7px 5px;border-top:1px solid var(--bd);font-size:.82rem}
+.rtbl td:not(:first-child){text-align:right}
+.b1{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.68rem;font-weight:700;margin-right:5px;background:linear-gradient(135deg,#d4a843,#f0c96a);color:#1a1200}
+.b2{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.68rem;font-weight:700;margin-right:5px;background:linear-gradient(135deg,#8a9ab0,#b0bec5);color:#0d0d0f}
+.b3{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.68rem;font-weight:700;margin-right:5px;background:linear-gradient(135deg,#a0622a,#c47d3a);color:#fff}
+.bx{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.68rem;font-weight:700;margin-right:5px;background:var(--bg3);color:var(--tx2)}
+.pp{color:var(--green);font-weight:700}.pm{color:var(--red)}.pz{color:var(--tx2)}
+.nm{font-weight:700}
+.bar-w{height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:3px}
+.bar{height:100%;border-radius:2px}
+
+/* 半荘リスト */
+.hi-wrap{position:relative;margin-bottom:8px;border-radius:10px}
+.hi-del{position:absolute;right:0;top:0;bottom:0;width:80px;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;letter-spacing:.05em;border-radius:0 10px 10px 0;color:#fff;opacity:0;pointer-events:none}
+.hi{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;cursor:pointer;position:relative;z-index:1;touch-action:pan-y;will-change:transform;transition:transform .2s ease,border-color .2s}
+.hi.open{border-color:var(--gold)}
+.hi-head{display:flex;align-items:center;gap:8px}
+.hi-num{font-size:.62rem;color:var(--tx2);min-width:28px}
+.hi-top{font-size:.83rem;font-weight:700;flex:1}
+.hi-det{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)}
+.hi.open .hi-det{display:block}
+.hi-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:.8rem}
+
+/* フォーム */
+.fl{font-size:.7rem;color:var(--gold);letter-spacing:.1em;margin-bottom:5px;display:block}
+.fi,.fs{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:9px 11px;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:.85rem}
+.fi:focus,.fs:focus{outline:none;border-color:var(--gold)}
+.fs option{background:var(--bg2)}
+.fg{margin-bottom:11px}
+
+/* 素点入力 */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.sc{background:rgba(0,0,0,.35);border:1px solid var(--bd);border-radius:9px;padding:9px 10px}
+.sc-wind{font-size:.62rem;color:var(--gold);margin-bottom:3px}
+.sc-name{font-size:.75rem;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc-inp{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:7px 8px;border-radius:6px;font-size:.95rem;font-weight:700;text-align:right}
+.sc-inp:focus{outline:none;border-color:var(--gold)}
+
+/* ky棒 */
+.ky-row{display:flex;align-items:center;justify-content:space-between;background:rgba(212,168,67,.06);border:1px solid rgba(212,168,67,.2);border-radius:8px;padding:8px 12px;margin-bottom:10px}
+.ky-inp{width:55px;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:5px 6px;border-radius:6px;text-align:center;font-size:.9rem}
+.ky-inp:focus{outline:none;border-color:var(--gold)}
+
+/* エラー */
+.serr{display:none;background:rgba(224,82,82,.15);border:1px solid rgba(224,82,82,.5);border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:.78rem;color:#ff8080;line-height:1.6}
+
+/* プレビュー */
+.prev{background:rgba(0,0,0,.35);border:1px solid rgba(212,168,67,.3);border-radius:9px;padding:11px;margin-bottom:11px}
+.prev-title{font-size:.65rem;color:var(--gold);letter-spacing:.12em;margin-bottom:7px}
+.prev-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.prev-item{background:rgba(0,0,0,.2);border-radius:7px;padding:7px 9px}
+.prev-name{font-size:.7rem;color:#9ba3b2;margin-bottom:2px}
+.prev-pt{font-size:1.05rem;font-weight:700}
+
+/* グラフ */
+.chart-wrap{position:relative;height:220px;margin-top:4px}
+
+/* ボタン */
+.btn{width:100%;padding:12px;border-radius:9px;font-family:'Noto Sans JP',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;border:none;letter-spacing:.04em;margin-bottom:8px}
+.btn-g{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1200}
+.btn-gh{background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2)}
+
+/* オーバーレイ */
+.ovl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:flex-end;justify-content:center}
+.ovl.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--bd);border-top:2px solid var(--gold);border-radius:16px 16px 0 0;padding:18px 15px 36px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto}
+.mtitle{font-family:'Shippori Mincho',serif;font-size:1rem;color:var(--gold);text-align:center;margin-bottom:14px}
+.mbtns{display:flex;gap:8px;margin-top:13px}
+.mbtn{flex:1;padding:11px;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:.82rem;cursor:pointer}
+.mok{background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;color:#1a1200;font-weight:700}
+.mng{background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2)}
+
+/* 個人 */
+.stat-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.stat-n{background:rgba(0,0,0,.35);border-radius:9px;padding:9px 6px;text-align:center}
+.stat-v{font-size:1.05rem;font-weight:700;margin-bottom:2px}
+.stat-l{font-size:.58rem;color:var(--tx2)}
+.rank-bar{display:flex;gap:3px;margin-top:8px}
+.rb-item{flex:1;border-radius:4px;padding:6px 4px;text-align:center;font-size:.75rem;font-weight:700}
+.pm-hrow{display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;font-size:.8rem;margin-bottom:5px}
+
+/* 同卓 */
+.dok-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* 設定 */
+.rule-info{background:rgba(212,168,67,.06);border:1px solid rgba(212,168,67,.2);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:.78rem}
+.rule-row{display:flex;justify-content:space-between;padding:3px 0}
+.rule-key{color:var(--tx2)}.rule-val{color:var(--gold);font-weight:700}
+.uma-row{display:flex;gap:6px}
+.uma-inp{flex:1;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:8px 6px;border-radius:7px;font-size:.85rem;text-align:center}
+.uma-inp:focus{outline:none;border-color:var(--gold)}
+
+/* トップ */
+.top-hero{text-align:center;padding:28px 16px 20px;background:linear-gradient(180deg,rgba(212,168,67,.06),transparent)}
+.top-title{font-family:'Shippori Mincho',serif;font-size:2rem;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+.top-sub{font-size:.72rem;color:var(--tx2);letter-spacing:.2em}
+.gc{background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;position:relative;overflow:hidden}
+.gc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold);border-radius:3px 0 0 3px}
+.gc-name{font-size:1.05rem;font-weight:700;margin-bottom:5px}
+.gc-meta{font-size:.7rem;color:var(--tx2);display:flex;gap:10px;flex-wrap:wrap}
+.gc-badge{font-size:.62rem;background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:2px 6px;border-radius:4px}
+.gc-acts{display:flex;gap:6px;margin-top:10px}
+.gc-btn{padding:5px 12px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;border:1px solid var(--bd);background:rgba(255,255,255,.05);color:var(--tx2)}
+.add-gc-btn{width:100%;padding:14px;border-radius:12px;background:rgba(212,168,67,.08);border:1px dashed rgba(212,168,67,.4);color:var(--gold);font-family:'Noto Sans JP',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;margin-bottom:8px}
+
+/* misc */
+.snums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.sn{background:rgba(0,0,0,.3);border-radius:8px;padding:8px;text-align:center}
+.snv{font-size:1.05rem;font-weight:700;margin-bottom:2px}
+.snl{font-size:.6rem;color:var(--tx2)}
+.rb-badge{display:inline-block;font-size:.65rem;background:rgba(212,168,67,.15);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:2px 7px;border-radius:4px;margin-left:6px}
+.empty{text-align:center;padding:36px 16px;color:var(--tx2);font-size:.85rem;line-height:2}
+.eico{font-size:2.5rem;margin-bottom:8px;display:block}
+#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;font-size:.82rem;font-weight:700;padding:8px 20px;border-radius:20px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;font-family:'Noto Sans JP',sans-serif}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div>
+  <div style="font-size:1.4rem">🀄</div>
+</div>
+
+<div id="tabs" style="display:none">
+  <button class="tab on" id="tab-ranking" onclick="showTab('ranking')">成績</button>
+  <button class="tab" id="tab-players" onclick="showTab('players')">個人</button>
+  <button class="tab" id="tab-hanzos" onclick="showTab('hanzos')">半荘</button>
+  <button class="tab" id="tab-graph" onclick="showTab('graph')">グラフ</button>
+  <button class="tab" id="tab-settings" onclick="showTab('settings')">設定</button>
+</div>
+
+<!-- トップ -->
+<div id="screen-top" class="screen on">
+  <div class="top-hero"><div class="top-title">雀記</div><div class="top-sub">MAHJONG SCORE MANAGER</div></div>
+  <div class="wrap">
+    <div id="group-list"></div>
+    <button class="add-gc-btn" onclick="openGroupModal()">＋ 新しい大会・グループを作成</button>
+  </div>
+</div>
+
+<!-- メイン -->
+<div id="screen-main" class="screen">
+  <div class="wrap">
+    <div id="page-ranking" class="page on"></div>
+    <div id="page-players" class="page"></div>
+    <div id="page-hanzos" class="page">
+      <button class="btn btn-g" onclick="openHanzoModal()">＋ 半荘を入力</button>
+      <div id="hanzo-list"></div>
+    </div>
+    <div id="page-graph" class="page">
+      <div class="ltabs" id="graph-ltabs"></div>
+      <div class="card"><div class="ctitle">ポイント推移</div><div class="chart-wrap" id="gwrap-line"><canvas id="gc-line"></canvas></div></div>
+      <div class="card"><div class="ctitle">順位分布</div><div class="chart-wrap" style="height:180px" id="gwrap-rank"><canvas id="gc-rank"></canvas></div></div>
+    </div>
+    <div id="page-settings" class="page"></div>
+  </div>
+</div>
+
+<div id="toast">✓ 記録しました</div>
+
+<!-- パスワードモーダル -->
+<div class="ovl" id="modal-pw">
+  <div class="modal" style="padding-bottom:28px">
+    <div class="mtitle">🔒 編集パスワード</div>
+    <div class="fg">
+      <input class="fi" type="password" id="pw-input" placeholder="パスワードを入力"
+        onkeydown="if(event.key==='Enter')submitPw()">
+    </div>
+    <div id="pw-err" style="display:none;color:var(--red);font-size:.8rem;margin-bottom:10px;text-align:center">パスワードが違います</div>
+    <div class="mbtns">
+      <button class="mbtn mng" onclick="cancelPw()">キャンセル</button>
+      <button class="mbtn mok" onclick="submitPw()">確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- グループモーダル -->
+<div class="ovl" id="modal-group">
+  <div class="modal">
+    <div class="mtitle" id="mg-title">大会・グループを作成</div>
+    <div class="fg"><label class="fl">名前</label><input class="fi" id="mg-name" placeholder="例：龍聖戦"></div>
+    <div class="fg"><label class="fl">メモ（任意）</label><input class="fi" id="mg-memo" placeholder="例：月1回の定期戦"></div>
+    <div class="fg"><label class="fl">ルール</label>
+      <select class="fs" id="mg-rule" onchange="onMgRuleChange()">
+        <option value="mleague">Mリーグ</option>
+        <option value="saikouisen">最高位戦</option>
+        <option value="renmei">連盟A</option>
+        <option value="tenho">天鳳</option>
+        <option value="custom">カスタム</option>
+      </select>
+    </div>
+    <div id="mg-custom" style="display:none">
+      <div class="fg"><label class="fl">ウマ（1位/2位/3位/4位）</label>
+        <div class="uma-row">
+          <input class="uma-inp" type="number" id="mg-u0" value="20">
+          <input class="uma-inp" type="number" id="mg-u1" value="10">
+          <input class="uma-inp" type="number" id="mg-u2" value="-10">
+          <input class="uma-inp" type="number" id="mg-u3" value="-20">
+        </div>
+      </div>
+      <div class="fg"><label class="fl">オカ</label><input class="fi" type="number" id="mg-oka" value="0" style="text-align:center"></div>
+      <div class="fg"><label class="fl">返し点</label><input class="fi" type="number" id="mg-kaeshi" value="30000" style="text-align:center"></div>
+    </div>
+    <div class="mbtns">
+      <button class="mbtn mng" onclick="closeOvl('modal-group')">キャンセル</button>
+      <button class="mbtn mok" id="mg-save" onclick="saveGroup()">作成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 半荘入力モーダル -->
+<div class="ovl" id="modal-hanzo">
+  <div class="modal">
+    <div class="mtitle">半荘を入力</div>
+    <div class="fg"><label class="fl">試合日</label><input class="fi" type="date" id="mh-date"></div>
+    <div class="fg" id="mh-league-wrap">
+      <label class="fl">リーグ</label>
+      <div style="display:flex;gap:6px" id="mh-league-btns"></div>
+    </div>
+    <div class="fg"><label class="fl">東家</label><select class="fs" id="mh-s0"></select></div>
+    <div class="fg"><label class="fl">南家</label><select class="fs" id="mh-s1"></select></div>
+    <div class="fg"><label class="fl">西家</label><select class="fs" id="mh-s2"></select></div>
+    <div class="fg"><label class="fl">北家</label><select class="fs" id="mh-s3"></select></div>
+    <div style="height:1px;background:linear-gradient(90deg,transparent,var(--bd),transparent);margin:10px 0"></div>
+    <div class="sgrid" id="mh-scores"></div>
+    <div class="ky-row">
+      <span style="color:var(--gold);font-size:.8rem">供託棒</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input class="ky-inp" type="number" id="mh-ky" value="0" min="0">
+        <span style="font-size:.75rem;color:var(--tx2)">本</span>
+      </div>
+    </div>
+    <div class="serr" id="mh-err"></div>
+    <div class="prev">
+      <div class="prev-title">── ポイントプレビュー ──</div>
+      <div class="prev-grid" id="mh-prev"><div style="color:var(--tx2);font-size:.78rem;grid-column:span 2;text-align:center;padding:8px">3人分の素点を入力すると自動計算されます</div></div>
+    </div>
+    <div class="mbtns">
+      <button class="mbtn mng" onclick="closeOvl('modal-hanzo')">キャンセル</button>
+      <button class="mbtn mok" id="mh-save" onclick="saveHanzo(false)">記録する</button>
+    </div>
+    <button class="mbtn mok" id="mh-cont" onclick="saveHanzo(true)"
+      style="width:100%;margin-top:8px;padding:11px;border-radius:8px;font-size:.82rem;cursor:pointer;background:rgba(212,168,67,.15);border:1px solid var(--gold);color:var(--gold);font-weight:700;font-family:'Noto Sans JP',sans-serif">
+      ＋ 記録して次の半荘へ
+    </button>
+  </div>
+</div>
+
+<script>
+// ===== データ定義 =====
+const RULES = {
+  mleague:   {label:'Mリーグ',  uma:[20,10,-10,-20], oka:20, kaeshi:30000},
+  saikouisen:{label:'最高位戦', uma:[10,5,-5,-10],   oka:10, kaeshi:30000},
+  renmei:    {label:'連盟A',    uma:[10,5,-5,-10],   oka:0,  kaeshi:30000},
+  tenho:     {label:'天鳳',     uma:[20,10,-10,-20], oka:30, kaeshi:25000},
+  custom:    {label:'カスタム', uma:[20,10,-10,-20], oka:0,  kaeshi:30000},
+};
+
+const MP = {
+  A1:['あずさ(あ)','東南(み)','いまいたくま','上地健吾','うすい','志和友也(大畠)','渋谷太一(加藤太一)','蟹池(蟹池さゆみ)','川島直己','カワバタ(かわばたゆうや)','倉岡研一','Lily(高橋流星)','廣松翔人','西尾龍(まつお)','KAZU','kazuki','北川翔太','千葉楓磨(chiba)'],
+  A2:['いわた','ぐーこう','こうへー(しもだこうへい)','さおり','shota(torii shota)','白咲翔(島崎畔琉)','しもっく(Haruki shimojo)','白藤','スダ','たにかわ','Tomoaki','ちくわぶ(あらき)','としちゃん(永田敏洋)','中里良平','南滌美緖(みっちゃん)','にったん','猫(kikuchi)','ねむ(おねむ)','麻衣子','やまぐちさとる','山下遼馬','よしあき','りこ','津村悠介','ちいもも(PLANETT)','いとう']
+};
+
+// ===== 状態 =====
+let groups = [];
+let curGroup = null;
+let editGroupId = null;
+let curLeague = 'A1';
+let pgLeague = 'A1';
+let gLeague = 'A1';
+let mhLeague = 'A1';
+let lChart = null, rChart = null;
+
+// ===== 認証 =====
+const PW = 'EMA1001';
+let _authed = false;
+let _authCallback = null;
+
+function isAuthed() { return _authed; }
+
+function requireAuth(callback) {
+  if (_authed) { callback(); return; }
+  _authCallback = callback;
+  document.getElementById('pw-input').value = '';
+  document.getElementById('pw-err').style.display = 'none';
+  document.getElementById('modal-pw').classList.add('open');
+  setTimeout(() => document.getElementById('pw-input').focus(), 100);
+}
+
+function submitPw() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw === PW) {
+    _authed = true;
+    document.getElementById('modal-pw').classList.remove('open');
+    if (_authCallback) { _authCallback(); _authCallback = null; }
+  } else {
+    document.getElementById('pw-err').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+function cancelPw() {
+  document.getElementById('modal-pw').classList.remove('open');
+  _authCallback = null;
+}
+
+// ===== 保存/読み込み =====
+// ===== 保存/読み込み =====
+const IS_GAS = (typeof google !== 'undefined' && typeof google.script !== 'undefined');
+
+function save() {
+  try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
+  if (IS_GAS) {
+    google.script.run.saveData(JSON.stringify(groups));
+  } else {
+    const gasUrl = localStorage.getItem('janki_gas') || '';
+    if (gasUrl) {
+      fetch(gasUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {'Content-Type': 'text/plain'},
+        body: JSON.stringify({data: JSON.stringify(groups)})
+      }).catch(() => {});
+    }
+  }
+}
+
+function load() {
+  try {
+    const d = localStorage.getItem('janki_v2');
+    if (d) { const a = JSON.parse(d); if (Array.isArray(a)) groups = a; }
+  } catch(e) {}
+}
+
+async function loadFromGas() {
+  if (IS_GAS) {
+    return new Promise(resolve => {
+      google.script.run
+        .withSuccessHandler(data => {
+          try {
+            const loaded = JSON.parse(data);
+            if (Array.isArray(loaded) && loaded.length > 0) {
+              groups = loaded;
+              try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
+              resolve(true);
+            } else resolve(false);
+          } catch(e) { resolve(false); }
+        })
+        .withFailureHandler(() => resolve(false))
+        .loadData();
+    });
+  }
+  const gasUrl = localStorage.getItem('janki_gas') || '';
+  if (!gasUrl) return false;
+  try {
+    const res = await fetch(gasUrl + '?action=getData', {mode:'cors'});
+    const json = await res.json();
+    if (json.ok && json.data) {
+      const loaded = JSON.parse(json.data);
+      if (Array.isArray(loaded) && loaded.length > 0) {
+        groups = loaded;
+        try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
+        return true;
+      }
+    }
+  } catch(e) { console.warn('GAS fetch失敗:', e); }
+  return false;
+}
+
+// ===== 点数計算 =====
+function calcPts(scores, ky, uma, oka, kaeshi) {
+  const s4 = scores.map((s,i) => ({s,i})).sort((a,b) => b.s-a.s);
+  const ranks = new Array(4);
+  const uv = new Array(4);
+  let pos = 0;
+  while (pos < 4) {
+    const v = s4[pos].s;
+    const g = [];
+    let j = pos;
+    while (j < 4 && s4[j].s === v) { g.push(j); j++; }
+    const avg = Math.round(g.reduce((s,gi) => s+uma[gi], 0) / g.length * 10) / 10;
+    g.forEach(gi => { ranks[s4[gi].i] = pos+1; uv[s4[gi].i] = avg; });
+    pos = j;
+  }
+  const pts = scores.map((s,i) => {
+    let pt = (s - kaeshi) / 1000 + uv[i];
+    if (ranks[i] === 1) { const fc = ranks.filter(r=>r===1).length; pt += (oka + ky) / fc; }
+    return Math.round(pt * 10) / 10;
+  });
+  return {pts, ranks};
+}
+
+// ===== 統計 =====
+function getStats(league) {
+  const g = curGroup;
+  const players = (g.players[league] || []);
+  const stats = {};
+  players.forEach(p => { stats[p] = {pt:0, games:0, rsum:0, ranks:[0,0,0,0], hist:[]}; });
+  g.hanzos.filter(h => h.league === league).forEach(h => {
+    const {pts, ranks} = calcPts(h.scores, h.ky, g.uma, g.oka, g.kaeshi);
+    h.players.forEach((p, i) => {
+      if (!stats[p]) return;
+      stats[p].pt = Math.round((stats[p].pt + pts[i]) * 10) / 10;
+      stats[p].games++;
+      stats[p].rsum += ranks[i];
+      stats[p].ranks[ranks[i]-1]++;
+      const prev = stats[p].hist.length ? stats[p].hist[stats[p].hist.length-1] : 0;
+      stats[p].hist.push(Math.round((prev + pts[i]) * 10) / 10);
+    });
+  });
+  return stats;
+}
+
+function getDok(league) {
+  const g = curGroup;
+  const players = (g.players[league] || []);
+  const mx = {};
+  players.forEach(p => { mx[p] = {}; players.forEach(q => mx[p][q] = 0); });
+  const byDate = {};
+  g.hanzos.filter(h => h.league === league).forEach(h => {
+    if (!byDate[h.date]) byDate[h.date] = [];
+    byDate[h.date].push(h.players);
+  });
+  Object.values(byDate).forEach(day => {
+    const seen = new Set();
+    day.forEach(ps => {
+      for (let i=0; i<ps.length; i++) for (let j=0; j<ps.length; j++) {
+        if (i===j) continue;
+        const k = ps[i]+'|'+ps[j];
+        if (!seen.has(k)) { seen.add(k); if (mx[ps[i]] && mx[ps[i]][ps[j]] !== undefined) mx[ps[i]][ps[j]]++; }
+      }
+    });
+  });
+  return mx;
+}
+
+// ===== ユーティリティ =====
+function closeOvl(id) { document.getElementById(id).classList.remove('open'); }
+function showToast() { const t=document.getElementById('toast'); t.style.opacity='1'; setTimeout(()=>t.style.opacity='0',1800); }
+function badge(i) { return ['b1','b2','b3','bx'][Math.min(i,3)]; }
+
+// ===== トップ画面 =====
+function renderTop() {
+  const el = document.getElementById('group-list');
+  if (!groups.length) { el.innerHTML = '<div class="empty"><span class="eico">🀄</span>大会・グループを作成してください</div>'; return; }
+  el.innerHTML = groups.map(g => `
+    <div class="gc" onclick="openGroup(${g.id})">
+      <div class="gc-name">${g.name}</div>
+      <div class="gc-meta">
+        ${g.memo ? `<span>${g.memo}</span>` : ''}
+        <span class="gc-badge">${RULES[g.rule]?.label||'カスタム'}</span>
+        <span>${g.hanzos.length}半荘</span>
+      </div>
+      <div class="gc-acts" onclick="event.stopPropagation()">
+        <button class="gc-btn" onclick="editGroup(${g.id})">✏ 編集</button>
+        <button class="gc-btn" onclick="askDelGroup(${g.id},this)">削除</button>
+      </div>
+    </div>`).join('');
+}
+
+function askDelGroup(id, btn) { requireAuth(() => _askDelGroup(id, btn)); }
+function _askDelGroup(id, btn) {
+  const row = btn.closest('.gc-acts');
+  row.innerHTML = `<span style="font-size:.75rem;color:var(--red);flex:1">本当に削除しますか？</span>
+    <button class="gc-btn" style="color:var(--red)" onclick="doDelGroup(${id})">はい</button>
+    <button class="gc-btn" onclick="renderTop()">取消</button>`;
+}
+function doDelGroup(id) { groups = groups.filter(g => g.id !== id); save(); renderTop(); }
+
+function openGroup(id) {
+  curGroup = groups.find(g => g.id === id);
+  if (!curGroup) return;
+  document.getElementById('hdr').innerHTML = `
+    <button class="back-btn" onclick="goTop()">◀ 戻る</button>
+    <div style="text-align:center"><div style="font-size:.95rem;font-weight:700;color:var(--gold)">${curGroup.name}</div><div style="font-size:.6rem;color:var(--tx2)">${RULES[curGroup.rule]?.label||'カスタム'}</div></div>
+    <div style="width:60px"></div>`;
+  document.getElementById('tabs').style.display = 'flex';
+  document.getElementById('screen-top').classList.remove('on');
+  document.getElementById('screen-main').classList.add('on');
+  const leagues = Object.keys(curGroup.players).filter(k => curGroup.players[k].length > 0);
+  curLeague = leagues[0] || 'A1';
+  pgLeague = curLeague;
+  gLeague = curLeague;
+  showTab('ranking');
+}
+
+function goTop() {
+  curGroup = null;
+  document.getElementById('hdr').innerHTML = `<div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div><div style="font-size:1.4rem">🀄</div>`;
+  document.getElementById('tabs').style.display = 'none';
+  document.getElementById('screen-main').classList.remove('on');
+  document.getElementById('screen-top').classList.add('on');
+  renderTop();
+}
+
+// ===== グループ モーダル =====
+function openGroupModal() { requireAuth(_openGroupModal); }
+function _openGroupModal() {
+  editGroupId = null;
+  document.getElementById('mg-title').textContent = '大会・グループを作成';
+  document.getElementById('mg-save').textContent = '作成';
+  document.getElementById('mg-name').value = '';
+  document.getElementById('mg-memo').value = '';
+  document.getElementById('mg-rule').value = 'mleague';
+  document.getElementById('mg-custom').style.display = 'none';
+  document.getElementById('modal-group').classList.add('open');
+}
+function editGroup(id) { requireAuth(() => _editGroup(id)); }
+function _editGroup(id) {
+  const g = groups.find(x => x.id === id);
+  if (!g) return;
+  editGroupId = id;
+  document.getElementById('mg-title').textContent = 'グループを編集';
+  document.getElementById('mg-save').textContent = '保存';
+  document.getElementById('mg-name').value = g.name;
+  document.getElementById('mg-memo').value = g.memo || '';
+  document.getElementById('mg-rule').value = g.rule;
+  document.getElementById('mg-custom').style.display = g.rule === 'custom' ? 'block' : 'none';
+  if (g.rule === 'custom') {
+    [0,1,2,3].forEach(i => document.getElementById('mg-u'+i).value = g.uma[i]);
+    document.getElementById('mg-oka').value = g.oka;
+    document.getElementById('mg-kaeshi').value = g.kaeshi;
+  }
+  document.getElementById('modal-group').classList.add('open');
+}
+function onMgRuleChange() {
+  const r = document.getElementById('mg-rule').value;
+  document.getElementById('mg-custom').style.display = r === 'custom' ? 'block' : 'none';
+}
+function saveGroup() {
+  const name = document.getElementById('mg-name').value.trim();
+  if (!name) return;
+  const rule = document.getElementById('mg-rule').value;
+  const preset = RULES[rule];
+  const uma = rule === 'custom' ? [0,1,2,3].map(i => parseFloat(document.getElementById('mg-u'+i).value)||0) : [...preset.uma];
+  const oka = rule === 'custom' ? parseFloat(document.getElementById('mg-oka').value)||0 : preset.oka;
+  const kaeshi = rule === 'custom' ? parseInt(document.getElementById('mg-kaeshi').value)||30000 : preset.kaeshi;
+  const memo = document.getElementById('mg-memo').value.trim();
+  if (editGroupId) {
+    const g = groups.find(x => x.id === editGroupId);
+    if (g) { g.name=name; g.memo=memo; g.rule=rule; g.uma=uma; g.oka=oka; g.kaeshi=kaeshi; }
+  } else {
+    groups.push({id:Date.now(), name, memo, rule, uma, oka, kaeshi,
+      players:{A1:[...MP.A1], A2:[...MP.A2]}, hanzos:[], deleted:[]});
+  }
+  save();
+  closeOvl('modal-group');
+  renderTop();
+}
+
+// ===== タブ =====
+function showTab(t) {
+  ['ranking','players','hanzos','graph','settings'].forEach(n => {
+    document.getElementById('tab-'+n).classList.toggle('on', n===t);
+    document.getElementById('page-'+n).classList.toggle('on', n===t);
+  });
+  if (t==='ranking') renderRanking();
+  if (t==='players') renderPlayers();
+  if (t==='hanzos')  renderHanzos();
+  if (t==='graph')   renderGraph();
+  if (t==='settings') requireAuth(renderSettings);
+}
+
+// ===== 成績 =====
+function renderRanking() {
+  const el = document.getElementById('page-ranking');
+  if (!curGroup) { el.innerHTML=''; return; }
+  const g = curGroup;
+  const leagues = Object.keys(g.players).filter(k => g.players[k].length > 0);
+  const stats = getStats(curLeague);
+  const sorted = Object.entries(stats).sort((a,b) => b[1].pt - a[1].pt);
+  const maxAbs = Math.max(...sorted.map(([,s]) => Math.abs(s.pt)), 1);
+  const total = g.hanzos.filter(h => h.league === curLeague).length;
+
+  el.innerHTML = `
+    ${leagues.length > 1 ? `<div class="ltabs">${leagues.map(l=>`<div class="ltab ${curLeague===l?'on':''}" onclick="curLeague='${l}';renderRanking()">${l}リーグ</div>`).join('')}</div>` : ''}
+    <div class="card">
+      <div class="ctitle">累計成績 <span class="rb-badge">${RULES[g.rule]?.label||'カスタム'}</span></div>
+      <div class="snums">
+        <div class="sn"><div class="snv">${total}</div><div class="snl">半荘数</div></div>
+        <div class="sn"><div class="snv">${(g.players[curLeague]||[]).length}</div><div class="snl">選手数</div></div>
+        <div class="sn"><div class="snv" style="color:var(--gold);font-size:.78rem">${g.uma[0]}/${g.uma[1]}/${g.uma[2]}/${g.uma[3]}</div><div class="snl">ウマ</div></div>
+      </div>
+      ${sorted.every(([,s])=>s.games===0) ? '<div class="empty" style="padding:16px 0"><span class="eico">📊</span>半荘を入力してください</div>' : `
+      <table class="rtbl">
+        <thead><tr><th>選手</th><th>PT</th><th>試合</th><th>平均</th></tr></thead>
+        <tbody>${sorted.filter(([,s])=>s.games>0).map(([name,s],i)=>{
+          const pc = s.pt>0?'pp':s.pt<0?'pm':'pz';
+          const bw = Math.abs(s.pt)/maxAbs*100;
+          const bc = s.pt>=0?'var(--green)':'var(--red)';
+          const bd = badge(i);
+          return `<tr style="cursor:pointer" onclick="goToPlayer('${name.replace(/'/g,"\\'")}','${curLeague}')">
+            <td><div style="display:flex;align-items:center"><span class="${bd}">${i+1}</span><span class="nm">${name}</span><span style="font-size:.55rem;color:var(--tx2);margin-left:3px">▶</span></div>
+            <div class="bar-w"><div class="bar" style="width:${bw}%;background:${bc}"></div></div></td>
+            <td class="${pc}" style="font-size:.95rem;font-weight:700">${s.pt>0?'+':''}${s.pt}</td>
+            <td style="color:var(--tx2)">${s.games}</td>
+            <td style="color:var(--tx2)">${(s.rsum/s.games).toFixed(2)}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`}
+    </div>
+    ${sorted.some(([,s])=>s.games>0) ? `
+    <div class="card">
+      <div class="ctitle">順位分布</div>
+      <table class="rtbl">
+        <thead><tr><th>選手</th><th style="color:#f0c96a">1位</th><th style="color:#b0bec5">2位</th><th style="color:#c47d3a">3位</th><th style="color:var(--red)">4位</th></tr></thead>
+        <tbody>${sorted.filter(([,s])=>s.games>0).map(([name,s])=>`<tr>
+          <td class="nm" style="font-size:.78rem">${name}</td>
+          <td style="color:#f0c96a;font-weight:700">${s.ranks[0]}</td><td>${s.ranks[1]}</td><td>${s.ranks[2]}</td><td style="color:var(--red)">${s.ranks[3]}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+    <div class="card"><div class="ctitle">同卓回数</div><div class="dok-wrap">${renderDok(curLeague, sorted.filter(([,s])=>s.games>0).map(([n])=>n))}</div></div>
+    ` : ''}`;
+}
+
+function renderDok(league, ps) {
+  if (!ps.length) return '';
+  const mx = getDok(league);
+  const maxV = Math.max(...ps.flatMap(a=>ps.filter(b=>b!==a).map(b=>mx[a]?.[b]||0)), 1);
+  const sn = n => n.length>5 ? n.slice(0,5)+'…' : n;
+  const header = `<tr><th style="min-width:60px;font-size:.58rem;color:var(--tx2);padding:4px 3px;text-align:left"></th>${ps.map(p=>`<th style="min-width:28px;height:60px;vertical-align:bottom;padding:4px 2px;text-align:center"><div style="writing-mode:vertical-rl;font-size:.58rem;color:var(--tx2);white-space:nowrap;display:inline-block">${sn(p)}</div></th>`).join('')}</tr>`;
+  const rows = ps.map(a => {
+    const cells = ps.map(b => {
+      if (a===b) return `<td style="background:rgba(255,255,255,.04);text-align:center;padding:3px 2px"><span style="color:var(--tx2);font-size:.65rem">－</span></td>`;
+      const v = mx[a]?.[b]||0;
+      const bg = v===0 ? 'transparent' : `rgba(212,168,67,${0.08+v/maxV*0.35})`;
+      const tc = v===0 ? 'var(--tx2)' : v>=maxV*0.7 ? 'var(--gold2)' : 'var(--tx)';
+      return `<td style="text-align:center;padding:3px 2px;background:${bg};border-radius:3px"><span style="font-size:.72rem;color:${tc};font-weight:${v>0?'700':'400'}">${v||'·'}</span></td>`;
+    }).join('');
+    return `<tr><td style="font-size:.65rem;color:var(--tx);padding:4px 4px 4px 0;white-space:nowrap;font-weight:700">${sn(a)}</td>${cells}</tr>`;
+  }).join('');
+  return `<table style="border-collapse:separate;border-spacing:2px;min-width:100%"><thead>${header}</thead><tbody>${rows}</tbody></table>`;
+}
+
+// ===== 個人 =====
+function goToPlayer(name, league) { pgLeague=league; window._selPlayer=name; showTab('players'); }
+
+function renderPlayers() {
+  const el = document.getElementById('page-players');
+  if (!curGroup) { el.innerHTML=''; return; }
+  const g = curGroup;
+  const leagues = Object.keys(g.players).filter(k=>g.players[k].length>0);
+  if (!leagues.includes(pgLeague)) pgLeague = leagues[0]||'A1';
+  const stats = getStats(pgLeague);
+  const active = (g.players[pgLeague]||[]).filter(p=>stats[p]?.games>0);
+  if (!window._selPlayer || !active.includes(window._selPlayer)) window._selPlayer = active[0]||null;
+
+  el.innerHTML = `
+    ${leagues.length>1 ? `<div class="ltabs">${leagues.map(l=>`<div class="ltab ${pgLeague===l?'on':''}" onclick="pgLeague='${l}';window._selPlayer=null;renderPlayers()">${l}リーグ</div>`).join('')}</div>` : ''}
+    ${active.length===0 ? '<div class="empty"><span class="eico">👤</span>まだ記録がありません</div>' : `
+    <div class="fg"><select class="fs" onchange="window._selPlayer=this.value;renderPlayers()">${active.map(p=>`<option value="${p}"${p===window._selPlayer?' selected':''}>${p}</option>`).join('')}</select></div>
+    <div id="player-detail">${window._selPlayer ? renderPlayerDetail(window._selPlayer, pgLeague) : ''}</div>`}`;
+}
+
+function renderPlayerDetail(name, league) {
+  const g = curGroup;
+  const stats = getStats(league);
+  const s = stats[name];
+  if (!s || s.games===0) return '<div class="empty">データなし</div>';
+  const mx = getDok(league);
+  const myH = g.hanzos.filter(h=>h.league===league&&h.players.includes(name));
+  const allPts = myH.map(h => {
+    const i = h.players.indexOf(name);
+    const {pts, ranks} = calcPts(h.scores, h.ky, g.uma, g.oka, g.kaeshi);
+    return {date:h.date, score:h.scores[i], pt:pts[i], rank:ranks[i]};
+  });
+  const best = allPts.length ? Math.max(...allPts.map(x=>x.pt)) : 0;
+  const worst = allPts.length ? Math.min(...allPts.map(x=>x.pt)) : 0;
+  const avg = s.games ? (s.rsum/s.games).toFixed(2) : '-';
+  const dokList = Object.entries(mx[name]||{}).filter(([p,c])=>p!==name&&c>0).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  return `
+    <div class="stat-nums">
+      <div class="stat-n"><div class="stat-v ${s.pt>=0?'pp':'pm'}">${s.pt>=0?'+':''}${s.pt}</div><div class="stat-l">累計PT</div></div>
+      <div class="stat-n"><div class="stat-v">${s.games}</div><div class="stat-l">試合数</div></div>
+      <div class="stat-n"><div class="stat-v">${avg}</div><div class="stat-l">平均順位</div></div>
+      <div class="stat-n"><div class="stat-v" style="color:var(--green)">${best>=0?'+':''}${best}</div><div class="stat-l">最高PT</div></div>
+      <div class="stat-n"><div class="stat-v" style="color:var(--red)">${worst}</div><div class="stat-l">最低PT</div></div>
+      <div class="stat-n"><div class="stat-v" style="font-size:.8rem">${s.ranks[0]}-${s.ranks[1]}-${s.ranks[2]}-${s.ranks[3]}</div><div class="stat-l">1-2-3-4位</div></div>
+    </div>
+    <div class="card" style="padding:10px 12px;margin-bottom:10px">
+      <div class="ctitle">順位分布</div>
+      <div class="rank-bar">${[['1位',s.ranks[0],'#d4a843'],['2位',s.ranks[1],'#8a9ab0'],['3位',s.ranks[2],'#a0622a'],['4位',s.ranks[3],'var(--red)']].map(([l,c,col])=>`
+        <div class="rb-item" style="background:${col}22;border:1px solid ${col}55;color:${col}">
+          <div style="font-size:.65rem;margin-bottom:2px">${l}</div><div style="font-size:1rem">${c}</div>
+          <div style="font-size:.6rem;color:var(--tx2)">${s.games?Math.round(c/s.games*100):0}%</div>
+        </div>`).join('')}</div>
+    </div>
+    ${s.games>0?`<div class="card" style="padding:10px 12px;margin-bottom:10px"><div class="ctitle">ポイント推移</div>${makeSvg(s.hist)}</div>`:''}
+    <div class="card" style="padding:10px 12px;margin-bottom:10px">
+      <div class="ctitle">半荘成績（新→旧）</div>
+      ${[...allPts].reverse().map((x,i)=>{
+        const ri = allPts.length-1-i;
+        const cum = s.hist[ri];
+        const bd = badge(x.rank-1);
+        const pc = x.pt>0?'var(--green)':x.pt<0?'var(--red)':'var(--tx2)';
+        return `<div class="pm-hrow">
+          <div style="display:flex;align-items:center;gap:6px"><span class="${bd}" style="width:18px;height:18px;font-size:.6rem">${x.rank}</span><span style="color:var(--tx2);font-size:.72rem">${x.date}</span></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="color:var(--tx2);font-size:.75rem">${x.score.toLocaleString()}</span>
+            <span style="color:${pc};font-weight:700;min-width:38px;text-align:right">${x.pt>=0?'+':''}${x.pt}</span>
+            <span style="color:var(--tx2);font-size:.68rem;min-width:52px;text-align:right">累計${cum>=0?'+':''}${cum}</span>
+          </div>
+        </div>`;
+      }).join('')||'<div style="color:var(--tx2);text-align:center;padding:12px;font-size:.8rem">記録なし</div>'}
+    </div>
+    ${dokList.length?`<div class="card" style="padding:10px 12px;margin-bottom:10px"><div class="ctitle">よく同卓する選手</div>${dokList.map(([p,c])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd);font-size:.82rem"><span>${p}</span><span style="color:var(--gold);font-weight:700">${c}回</span></div>`).join('')}</div>`:''}`;
+}
+
+function makeSvg(hist) {
+  if (!hist||!hist.length) return '';
+  const data = [0,...hist];
+  const W=340,H=120,PL=36,PR=10,PT=10,PB=24,gW=W-PL-PR,gH=H-PT-PB;
+  const minV=Math.min(...data),maxV=Math.max(...data),range=maxV-minV||1;
+  const tx=i=>PL+(i/(data.length-1))*gW, ty=v=>PT+(1-(v-minV)/range)*gH;
+  const zl=(minV<0&&maxV>0)?`<line x1="${PL}" y1="${ty(0)}" x2="${PL+gW}" y2="${ty(0)}" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-dasharray="3,3"/>`:'';
+  const pts=data.map((v,i)=>`${tx(i)},${ty(v)}`).join(' ');
+  const lc=hist[hist.length-1]>=0?'#4caf82':'#e05252';
+  const yL=[minV,(minV+maxV)/2,maxV].map(v=>`<text x="${PL-3}" y="${ty(v)+4}" font-size="8" fill="#8888a0" text-anchor="end">${v>=0?'+':''}${Math.round(v)}</text>`).join('');
+  const xL=data.map((_,i)=>i===0?`<text x="${tx(0)}" y="${H-4}" font-size="8" fill="#8888a0" text-anchor="middle">開始</text>`:i===data.length-1?`<text x="${tx(i)}" y="${H-4}" font-size="8" fill="#8888a0" text-anchor="middle">第${i}戦</text>`:'').join('');
+  const dots=data.map((v,i)=>`<circle cx="${tx(i)}" cy="${ty(v)}" r="3" fill="${lc}" stroke="var(--bg2)" stroke-width="1.5"/>`).join('');
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible">${zl}<polyline points="${pts}" fill="none" stroke="${lc}" stroke-width="2" stroke-linejoin="round"/><polygon points="${PL},${PT+gH} ${pts} ${PL+gW},${PT+gH}" fill="${lc}" fill-opacity="0.12"/>${dots}${yL}${xL}</svg>`;
+}
+
+// ===== 半荘一覧 =====
+function renderHanzos() {
+  const el = document.getElementById('hanzo-list');
+  if (!curGroup) { el.innerHTML=''; return; }
+  const g = curGroup;
+  if (!g.hanzos.length && !(g.deleted&&g.deleted.length)) { el.innerHTML='<div class="empty"><span class="eico">🎴</span>まだ記録がありません</div>'; return; }
+  let html = [...g.hanzos].reverse().map((h,ri) => {
+    const oi = g.hanzos.length-1-ri;
+    const {pts,ranks} = calcPts(h.scores, h.ky, g.uma, g.oka, g.kaeshi);
+    const ti = ranks.indexOf(1);
+    const wd = ['東','南','西','北'];
+    const rows = h.players.map((p,i) => {
+      const bd = badge(ranks[i]-1);
+      const pc = pts[i]>0?'pp':pts[i]<0?'pm':'pz';
+      return `<div class="hi-row"><div style="display:flex;align-items:center;gap:5px"><span class="${bd}" style="width:17px;height:17px;font-size:.6rem">${ranks[i]}</span><span style="font-size:.72rem;color:var(--tx2)">${wd[i]}</span><span>${p}</span></div><div><span style="color:var(--tx2);font-size:.78rem;margin-right:6px">${h.scores[i].toLocaleString()}</span><span class="${pc}" style="font-weight:700">${pts[i]>0?'+'+pts[i]:pts[i]}</span></div></div>`;
+    }).join('');
+    return `<div class="hi-wrap" id="wrap-${h.id}">
+      <div class="hi-del" id="del-${h.id}">削除</div>
+      <div class="hi" id="hi-${h.id}" ontouchstart="tsStart(event,${h.id})" ontouchmove="tsMove(event,${h.id})" ontouchend="tsEnd(event,${h.id})" onclick="tsClick(event,${h.id})">
+        <div class="hi-head"><span class="hi-num">#${oi+1}</span>
+          <div style="flex:1"><div class="hi-top">🏆 ${h.players[ti]}　<span style="font-size:.72rem;color:var(--tx2);font-weight:400">${h.date}</span></div></div>
+          <span style="font-size:.88rem;font-weight:700;color:var(--green)">+${pts[ti]}</span>
+        </div>
+        <div class="hi-det"><div style="font-size:.65rem;color:var(--tx2);margin-bottom:6px">${h.league}${h.ky?'　供託'+h.ky+'本':''}</div>${rows}</div>
+      </div>
+    </div>`;
+  }).join('');
+  if (g.deleted && g.deleted.length) {
+    html += `<div style="margin-top:16px"><div style="font-size:.68rem;color:var(--tx2);letter-spacing:.12em;margin-bottom:8px">── 削除済み ──</div>
+    ${g.deleted.slice().reverse().map(h=>{
+      const {pts,ranks}=calcPts(h.scores,h.ky,g.uma,g.oka,g.kaeshi);
+      const ti=ranks.indexOf(1);
+      return `<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:9px;padding:9px 12px;margin-bottom:6px;opacity:.7">
+        <div style="flex:1"><div style="font-size:.82rem;color:var(--tx2)">${h.players[ti]}（1位）</div><div style="font-size:.62rem;color:var(--tx2)">${h.date}　${h.league}</div></div>
+        <button onclick="restoreH(${h.id})" style="background:rgba(76,175,130,.15);border:1px solid rgba(76,175,130,.4);color:#4caf82;padding:5px 10px;border-radius:6px;font-size:.72rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap">復元</button>
+        <button onclick="permDelH(${h.id})" style="background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);color:var(--red);padding:5px 8px;border-radius:6px;font-size:.72rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">完全削除</button>
+      </div>`;
+    }).join('')}</div>`;
+  }
+  el.innerHTML = html;
+}
+
+function delH(id) { requireAuth(() => _delH(id)); }
+function _delH(id) {
+  const g = curGroup; if (!g) return;
+  const h = g.hanzos.find(x=>x.id===id);
+  if (h) { if(!g.deleted) g.deleted=[]; g.deleted.push(h); if(g.deleted.length>10) g.deleted.shift(); }
+  g.hanzos = g.hanzos.filter(x=>x.id!==id);
+  save(); renderHanzos();
+}
+function restoreH(id) { requireAuth(() => _restoreH(id)); }
+function _restoreH(id) {
+  const g = curGroup; if (!g||!g.deleted) return;
+  const h = g.deleted.find(x=>x.id===id); if (!h) return;
+  g.hanzos.push(h); g.hanzos.sort((a,b)=>a.id-b.id);
+  g.deleted = g.deleted.filter(x=>x.id!==id);
+  save(); renderHanzos();
+}
+function permDelH(id) { requireAuth(() => _permDelH(id)); }
+function _permDelH(id) {
+  const g = curGroup; if (!g||!g.deleted) return;
+  g.deleted = g.deleted.filter(x=>x.id!==id);
+  save(); renderHanzos();
+}
+
+// スワイプ削除
+const _ts = {};
+function tsStart(e, id) { const t=e.touches[0]; _ts[id]={x0:t.clientX,y0:t.clientY,dx:0,dir:null,swiped:false}; }
+function tsMove(e, id) {
+  const s=_ts[id]; if(!s) return;
+  const t=e.touches[0]; const dx=t.clientX-s.x0, dy=t.clientY-s.y0;
+  if (!s.dir) { if(Math.abs(dx)<6&&Math.abs(dy)<6) return; s.dir=Math.abs(dx)>=Math.abs(dy)?'h':'v'; }
+  if (s.dir==='v') return;
+  e.preventDefault(); s.dx=Math.min(0,dx);
+  const el=document.getElementById('hi-'+id);
+  if (el) { el.style.transition='none'; el.style.transform=`translateX(${s.dx}px)`; }
+  const del=document.getElementById('del-'+id);
+  if (del) del.style.opacity=String(Math.min(1,Math.abs(s.dx)/80));
+}
+function tsEnd(e, id) {
+  const s=_ts[id]; if(!s||s.dir!=='h') return;
+  const el=document.getElementById('hi-'+id); if(!el) return;
+  el.style.transition='transform .2s ease';
+  if (s.dx<-80) {
+    s.swiped=true; el.style.transform='translateX(-110%)';
+    const wrap=document.getElementById('wrap-'+id);
+    if (wrap) { wrap.style.transition='max-height .25s,opacity .25s'; wrap.style.overflow='hidden'; }
+    setTimeout(()=>{ if(wrap){wrap.style.maxHeight='0';wrap.style.opacity='0';} setTimeout(()=>delH(id),250); },180);
+  } else {
+    el.style.transform='translateX(0)';
+    const del=document.getElementById('del-'+id); if(del) del.style.opacity='0';
+  }
+  _ts[id]={..._ts[id],dx:0};
+}
+function tsClick(e, id) { if(_ts[id]?.swiped){_ts[id].swiped=false;return;} document.getElementById('hi-'+id)?.classList.toggle('open'); }
+
+// ===== グラフ =====
+function renderGraph() {
+  if (!curGroup) return;
+  const g = curGroup;
+  const leagues = Object.keys(g.players).filter(k=>g.players[k].length>0);
+  document.getElementById('graph-ltabs').innerHTML = leagues.length>1 ? leagues.map(l=>`<div class="ltab ${gLeague===l?'on':''}" onclick="gLeague='${l}';renderGraph()">${l}リーグ</div>`).join('') : '';
+  const stats = getStats(gLeague);
+  const players = (g.players[gLeague]||[]).filter(p=>stats[p]?.games>0);
+  const COLORS=['#d4a843','#5b6af0','#4caf82','#e05252','#a78bfa','#34d399','#fb923c','#60a5fa','#f472b6','#94a3b8'];
+  const maxLen = Math.max(...players.map(p=>stats[p].hist.length),1);
+  const labels = Array.from({length:maxLen+1},(_,i)=>i===0?'開始':`第${i}戦`);
+
+  function sdestroy(c,id){if(c){try{c.destroy();}catch(e){}} try{const ex=Chart.getChart(id);if(ex)ex.destroy();}catch(e){} return null;}
+  lChart=sdestroy(lChart,'gc-line');
+  const lw=document.getElementById('gwrap-line');
+  if(lw){lw.innerHTML='<canvas id="gc-line"></canvas>';try{lChart=new Chart(document.getElementById('gc-line'),{type:'line',data:{labels,datasets:players.map((p,i)=>({label:p,data:[0,...stats[p].hist],borderColor:COLORS[i%COLORS.length],backgroundColor:COLORS[i%COLORS.length]+'22',borderWidth:2,pointRadius:3,tension:0.3,fill:false}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8888a0',font:{size:10},boxWidth:10}}},scales:{x:{ticks:{color:'#8888a0',font:{size:9}},grid:{color:'#2a2a35'}},y:{ticks:{color:'#8888a0',font:{size:9}},grid:{color:'#2a2a35'}}}}});}catch(e){}}
+  rChart=sdestroy(rChart,'gc-rank');
+  const rw=document.getElementById('gwrap-rank');
+  if(rw){rw.innerHTML='<canvas id="gc-rank"></canvas>';try{rChart=new Chart(document.getElementById('gc-rank'),{type:'bar',data:{labels:players.length?players:['データなし'],datasets:[{label:'1位',data:players.map(p=>stats[p].ranks[0]),backgroundColor:'#d4a843'},{label:'2位',data:players.map(p=>stats[p].ranks[1]),backgroundColor:'#8a9ab0'},{label:'3位',data:players.map(p=>stats[p].ranks[2]),backgroundColor:'#a0622a'},{label:'4位',data:players.map(p=>stats[p].ranks[3]),backgroundColor:'#3d2020'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8888a0',font:{size:10},boxWidth:10}}},scales:{x:{stacked:true,ticks:{color:'#8888a0',font:{size:9}},grid:{color:'#2a2a35'}},y:{stacked:true,ticks:{color:'#8888a0',font:{size:9}},grid:{color:'#2a2a35'}}}}});}catch(e){}}
+}
+
+// ===== 設定 =====
+function renderSettings() {
+  const el=document.getElementById('page-settings'); if(!curGroup){el.innerHTML='';return;}
+  const g=curGroup;
+  el.innerHTML=`
+  <div class="card"><div class="ctitle">ルール設定</div>
+    <div class="fg"><label class="fl">ルール</label>
+      <select class="fs" id="s-rule" onchange="onSRuleChange()">
+        ${Object.entries(RULES).map(([k,v])=>`<option value="${k}"${g.rule===k?' selected':''}>${v.label}</option>`).join('')}
+      </select>
+    </div>
+    <div class="rule-info">
+      <div class="rule-row"><span class="rule-key">ウマ（1/2/3/4位）</span><span class="rule-val">${g.uma[0]}/${g.uma[1]}/${g.uma[2]}/${g.uma[3]}</span></div>
+      <div class="rule-row"><span class="rule-key">オカ</span><span class="rule-val">+${g.oka}</span></div>
+      <div class="rule-row"><span class="rule-key">返し点</span><span class="rule-val">${g.kaeshi.toLocaleString()}</span></div>
+    </div>
+    <div id="s-custom" style="display:${g.rule==='custom'?'block':'none'}">
+      <div class="fg"><label class="fl">ウマ（1位/2位/3位/4位）</label>
+        <div class="uma-row">
+          ${[0,1,2,3].map(i=>`<input class="uma-inp" type="number" id="s-u${i}" value="${g.uma[i]}" oninput="saveCustomRule()">`).join('')}
+        </div>
+      </div>
+      <div class="fg"><label class="fl">オカ</label><input class="fi" type="number" id="s-oka" value="${g.oka}" style="text-align:center" oninput="saveCustomRule()"></div>
+      <div class="fg"><label class="fl">返し点</label><input class="fi" type="number" id="s-kaeshi" value="${g.kaeshi}" style="text-align:center" oninput="saveCustomRule()"></div>
+    </div>
+  </div>
+  ${['A1','A2'].map(league=>`
+  <div class="card"><div class="ctitle">${league}リーグ選手（<span id="cnt-${league}">${(g.players[league]||[]).length}</span>名）</div>
+    <div id="plist-${league}">${renderPList(league)}</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input class="fi" id="padd-${league}" placeholder="選手名を追加" style="flex:1">
+      <button class="btn btn-g" style="width:72px;padding:9px;font-size:.8rem;margin:0" onclick="addP('${league}')">追加</button>
+    </div>
+  </div>`).join('')}
+  <div class="card"><div class="ctitle">🌐 データ共有（Googleスプレッドシート）</div>
+    <div style="font-size:.75rem;color:var(--tx2);line-height:1.7;margin-bottom:10px">
+      Apps Script URLを設定すると、URLを共有した全員が同じデータを使えます。<br>
+      ※ 設定方法は apps-script.gs ファイルの手順を参照してください。
+    </div>
+    <div class="fg"><label class="fl">Apps Script URL</label><input class="fi" id="gas-url" value="${localStorage.getItem('janki_gas')||''}" placeholder="https://script.google.com/macros/s/..." style="font-size:.72rem"></div>
+    <button class="btn btn-g" style="margin-bottom:6px" onclick="saveGasUrl()">URLを保存・同期</button>
+    <div id="gas-status" style="font-size:.75rem;color:var(--tx2);min-height:18px">${localStorage.getItem('janki_gas')?'GAS URL設定済み':'未設定'}</div>
+  </div>
+  <button class="btn btn-gh" onclick="askReset(this)">⚠ この大会の記録をリセット</button>
+  <div id="reset-confirm" style="display:none;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:9px;padding:12px;margin-bottom:8px">
+    <div style="font-size:.82rem;color:var(--red);margin-bottom:8px">本当にリセットしますか？</div>
+    <div style="display:flex;gap:8px">
+      <button class="mbtn mok" style="background:var(--red);border:none" onclick="doReset()">リセット</button>
+      <button class="mbtn mng" onclick="document.getElementById('reset-confirm').style.display='none'">キャンセル</button>
+    </div>
+  </div>`;
+}
+
+function onSRuleChange(){
+  const g=curGroup; if(!g) return;
+  const k=document.getElementById('s-rule').value;
+  g.rule=k;
+  if(k!=='custom'){g.uma=[...RULES[k].uma];g.oka=RULES[k].oka;g.kaeshi=RULES[k].kaeshi;}
+  document.getElementById('s-custom').style.display=k==='custom'?'block':'none';
+  save();
+}
+function saveCustomRule(){
+  const g=curGroup; if(!g) return;
+  g.uma=[0,1,2,3].map(i=>parseFloat(document.getElementById('s-u'+i)?.value)||0);
+  g.oka=parseFloat(document.getElementById('s-oka')?.value)||0;
+  g.kaeshi=parseInt(document.getElementById('s-kaeshi')?.value)||30000;
+  save();
+}
+function saveGasUrl(){
+  const url=document.getElementById('gas-url')?.value.trim()||'';
+  localStorage.setItem('janki_gas', url);
+  if (url) {
+    // GASから最新データを取得して反映
+    const el=document.getElementById('gas-url');
+    if(el) el.disabled=true;
+    document.getElementById('gas-status').textContent='読み込み中...';
+    loadFromGas().then(ok=>{
+      if(el) el.disabled=false;
+      document.getElementById('gas-status').textContent = ok ? '✓ 接続成功・データを同期しました' : '⚠ 接続できませんでした（URLを確認してください）';
+      document.getElementById('gas-status').style.color = ok ? 'var(--green)' : 'var(--red)';
+      if(ok) renderSettings();
+    });
+  } else {
+    document.getElementById('gas-status').textContent='URLを削除しました';
+    document.getElementById('gas-status').style.color='var(--tx2)';
+  }
+}
+function askReset(btn){ document.getElementById('reset-confirm').style.display='block'; }
+function doReset(){ if(!curGroup) return; curGroup.hanzos=[]; curGroup.deleted=[]; save(); document.getElementById('reset-confirm').style.display='none'; renderSettings(); }
+
+function renderPList(league){
+  const g=curGroup; if(!g) return '';
+  return (g.players[league]||[]).map((name,idx)=>`
+    <div id="prow-${league}-${idx}" style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--bd)">
+      <span style="font-size:.82rem;flex:1">${name}</span>
+      <button onclick="startEditP('${league}',${idx})" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 9px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">編集</button>
+      <button onclick="askDelP('${league}',${idx})" style="background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);color:var(--red);padding:4px 9px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">削除</button>
+    </div>`).join('');
+}
+function refreshPList(league){
+  const l=document.getElementById('plist-'+league), c=document.getElementById('cnt-'+league);
+  if(l&&curGroup) l.innerHTML=renderPList(league);
+  if(c&&curGroup) c.textContent=(curGroup.players[league]||[]).length;
+}
+function addP(league){
+  if(!curGroup) return;
+  const inp=document.getElementById('padd-'+league); const name=inp.value.trim();
+  if(!name||(curGroup.players[league]||[]).includes(name)) return;
+  if(!curGroup.players[league]) curGroup.players[league]=[];
+  curGroup.players[league].push(name); inp.value=''; save(); refreshPList(league);
+}
+function askDelP(league,idx){
+  const g=curGroup; if(!g) return;
+  const name=(g.players[league]||[])[idx];
+  const row=document.getElementById(`prow-${league}-${idx}`); if(!row) return;
+  row.innerHTML=`<span style="font-size:.78rem;flex:1;color:var(--red)">「${name}」を削除しますか？</span>
+    <button onclick="doDelP('${league}',${idx})" style="background:rgba(224,82,82,.25);border:1px solid var(--red);color:var(--red);padding:4px 9px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700">はい</button>
+    <button onclick="refreshPList('${league}')" style="background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2);padding:4px 9px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">取消</button>`;
+}
+function doDelP(league,idx){ if(!curGroup) return; curGroup.players[league].splice(idx,1); save(); refreshPList(league); }
+function startEditP(league,idx){
+  if(!curGroup) return;
+  const name=(curGroup.players[league]||[])[idx];
+  const row=document.getElementById(`prow-${league}-${idx}`); if(!row) return;
+  row.innerHTML=`<input class="fi" id="edit-${league}-${idx}" value="${name}" style="flex:1;padding:5px 8px;font-size:.82rem">
+    <button onclick="doEditP('${league}',${idx})" style="background:rgba(76,175,130,.15);border:1px solid rgba(76,175,130,.4);color:#4caf82;padding:4px 9px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">確定</button>
+    <button onclick="refreshPList('${league}')" style="background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2);padding:4px 9px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">取消</button>`;
+  document.getElementById(`edit-${league}-${idx}`)?.focus();
+}
+function doEditP(league,idx){
+  if(!curGroup) return;
+  const inp=document.getElementById(`edit-${league}-${idx}`); const nname=inp?.value.trim(); if(!nname) return;
+  const old=(curGroup.players[league]||[])[idx];
+  curGroup.hanzos.forEach(h=>{h.players=h.players.map(p=>p===old?nname:p);});
+  if(curGroup.deleted) curGroup.deleted.forEach(h=>{h.players=h.players.map(p=>p===old?nname:p);});
+  curGroup.players[league][idx]=nname; save(); refreshPList(league);
+}
+
+// ===== 半荘入力モーダル =====
+function openHanzoModal() { requireAuth(_openHanzoModal); }
+function _openHanzoModal(){
+  if(!curGroup) return;
+  const g=curGroup;
+  const leagues=Object.keys(g.players).filter(k=>g.players[k].length>0);
+  mhLeague=leagues[0]||'A1';
+  const today=new Date();
+  document.getElementById('mh-date').value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const lw=document.getElementById('mh-league-wrap');
+  const lb=document.getElementById('mh-league-btns');
+  if(leagues.length>1){ lw.style.display=''; lb.innerHTML=leagues.map(l=>`<div class="ltab ${l===mhLeague?'on':''}" id="mlb-${l}" onclick="setMhLeague('${l}')" style="flex:1">${l}リーグ</div>`).join(''); }
+  else { lw.style.display='none'; }
+  buildMhSelects(); buildMhScores();
+  document.getElementById('mh-ky').value='0';
+  updateMhPreview();
+  document.getElementById('modal-hanzo').classList.add('open');
+}
+
+function setMhLeague(l){
+  mhLeague=l;
+  if(!curGroup) return;
+  const leagues=Object.keys(curGroup.players).filter(k=>curGroup.players[k].length>0);
+  leagues.forEach(ll=>{ const el=document.getElementById('mlb-'+ll); if(el) el.classList.toggle('on',ll===l); });
+  buildMhSelects(); buildMhScores(); updateMhPreview();
+}
+
+function buildMhSelects(){
+  if(!curGroup) return;
+  const ps=curGroup.players[mhLeague]||[];
+  const opt='<option value="">-- 選択 --</option>'+ps.map(p=>`<option value="${p}">${p}</option>`).join('');
+  [0,1,2,3].forEach(i=>{
+    const sel=document.getElementById('mh-s'+i); if(!sel) return;
+    const prev=sel.value; sel.innerHTML=opt;
+    if(ps.includes(prev)) sel.value=prev; else if(ps[i]) sel.value=ps[i];
+    sel.onchange=()=>{ buildMhScores(); updateMhPreview(); };
+  });
+}
+
+function buildMhScores(){
+  const el=document.getElementById('mh-scores'); if(!el) return;
+  const winds=['東','南','西','北'];
+  el.innerHTML=[0,1,2,3].map(i=>{
+    const name=document.getElementById('mh-s'+i)?.value||`選手${i+1}`;
+    const isLast=i===3;
+    return `<div class="sc"><div class="sc-wind">${winds[i]}家</div><div class="sc-name">${name}</div>
+      <input class="sc-inp" type="number" id="mh-sc${i}" value="" placeholder="${isLast?'自動計算':''}"
+        ${isLast?'readonly style="background:rgba(212,168,67,.08);color:var(--gold);border-color:rgba(212,168,67,.3);"':''}
+        oninput="onMhScoreInput()"></div>`;
+  }).join('');
+}
+
+function onMhScoreInput(){
+  const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
+  const exp=100000-ky*1000;
+  const vs=[0,1,2].map(i=>document.getElementById('mh-sc'+i)?.value);
+  const ss=vs.map(v=>v!==''?parseInt(v)||0:null);
+  const sc3=document.getElementById('mh-sc3');
+  if(sc3 && ss.every(s=>s!==null)) sc3.value=exp-ss[0]-ss[1]-ss[2];
+  else if(sc3) sc3.value='';
+  updateMhPreview();
+}
+
+function updateMhPreview(){
+  if(!curGroup) return;
+  const g=curGroup;
+  const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
+  const vals=[0,1,2,3].map(i=>{ const el=document.getElementById('mh-sc'+i); return el?el.value:''; });
+  const pg=document.getElementById('mh-prev');
+  const errEl=document.getElementById('mh-err');
+
+  if(vals.some(v=>v==='')){
+    if(errEl) errEl.style.display='none';
+    if(pg) pg.innerHTML='<div style="color:var(--tx2);font-size:.78rem;grid-column:span 2;text-align:center;padding:8px">3人分の素点を入力すると自動計算されます</div>';
+    return;
+  }
+
+  const scores=vals.map(v=>parseInt(v)||0);
+  const total=scores.reduce((a,b)=>a+b,0);
+  const exp=100000-ky*1000;
+  if(errEl){
+    if(total!==exp){ errEl.style.display='block'; errEl.innerHTML=`⚠ 合計点が合いません　現在:<b>${total.toLocaleString()}</b> 期待値:<b>${exp.toLocaleString()}</b>`; }
+    else errEl.style.display='none';
+  }
+  if(total!==exp) return;
+
+  const players=[0,1,2,3].map(i=>document.getElementById('mh-s'+i)?.value||`選手${i+1}`);
+  const {pts,ranks}=calcPts(scores,ky,g.uma,g.oka,g.kaeshi);
+  const sorted=players.map((p,i)=>({p,pt:pts[i],r:ranks[i]})).sort((a,b)=>a.r-b.r);
+  if(pg) pg.innerHTML=sorted.map(s=>{
+    const c=s.pt>0?'var(--green)':s.pt<0?'var(--red)':'var(--tx2)';
+    return `<div class="prev-item"><div class="prev-name">${s.r}位　${s.p}</div><div class="prev-pt" style="color:${c}">${s.pt>0?'+'+s.pt:s.pt}</div></div>`;
+  }).join('');
+}
+
+function saveHanzo(cont){
+  if(!curGroup) return;
+  const players=[0,1,2,3].map(i=>document.getElementById('mh-s'+i)?.value||'');
+  if(players.some(p=>!p)) return;
+  const scores=[0,1,2,3].map(i=>parseInt(document.getElementById('mh-sc'+i)?.value)||0);
+  const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
+  if(scores.reduce((a,b)=>a+b,0)!==100000-ky*1000) return;
+  const d=document.getElementById('mh-date')?.value||new Date().toISOString().split('T')[0];
+  curGroup.hanzos.push({id:Date.now(), date:d, league:mhLeague, players, scores, ky});
+  save();
+  if(cont){
+    buildMhScores();
+    document.getElementById('mh-ky').value='0';
+    updateMhPreview();
+    showToast();
+  } else {
+    closeOvl('modal-hanzo');
+    showTab('ranking');
+  }
+}
+
+// ===== 起動 =====
+load(); // まずlocalStorageから
+renderTop();
+// GASが設定されていれば最新データを取得
+const _gasUrl = localStorage.getItem('janki_gas') || '';
+if (_gasUrl) {
+  loadFromGas().then(ok => {
+    if (ok) renderTop();
+  });
+}
+</script>
+</body>
+</html>
