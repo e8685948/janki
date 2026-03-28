@@ -161,7 +161,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <body>
 
 <div id="hdr">
-  <div id="hdr-logo"></div>
+  <div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div>
   <div style="font-size:1.4rem">🀄</div>
 </div>
 
@@ -311,7 +311,6 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 </div>
 
 <script>
-const EMA_LOGO = "https://e8685948.github.io/janki/ema-logo.jpg";
 
 // ===== データ定義 =====
 const RULES = {
@@ -589,8 +588,7 @@ function openGroup(id) {
 
 function goTop() {
   curGroup = null;
-  document.getElementById('hdr').innerHTML = '<div id="hdr-logo"></div><div style="font-size:1.4rem">🀄</div>';
-  document.getElementById('hdr-logo').innerHTML = '<img src="' + EMA_LOGO + '" style="height:36px;object-fit:contain;mix-blend-mode:screen;filter:brightness(1.1)">';
+  document.getElementById('hdr').innerHTML = '<div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div><div style="font-size:1.4rem">🀄</div>';
   document.getElementById('tabs').style.display = 'none';
   document.getElementById('screen-main').classList.remove('on');
   document.getElementById('screen-top').classList.add('on');
@@ -1517,7 +1515,6 @@ function saveHanzo(cont){
 
 // ===== 起動 =====
 load();
-document.getElementById('hdr-logo').innerHTML = '<img src="' + EMA_LOGO + '" style="height:36px;object-fit:contain;mix-blend-mode:screen;filter:brightness(1.1)">';
 renderTop();
 
 function refreshCurrentView() {
