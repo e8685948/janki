@@ -394,7 +394,9 @@ function cancelPw() {
 
 // ===== 保存/読み込み =====
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxiB4TcM5GaxS_Ppua-vD-r3MWZA2jGCJCj2G9vPyS9NEFh6QnNybPGeHFFH5GA2QLE/exec';
-let _pendingSync = false;
+
+function isPendingSync() { return localStorage.getItem('janki_pending') === '1'; }
+function setPendingSync(v) { localStorage.setItem('janki_pending', v ? '1' : '0'); }
 
 function save() {
   try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
@@ -403,9 +405,15 @@ function save() {
       method: 'POST',
       headers: {'Content-Type': 'text/plain'},
       body: JSON.stringify({data: JSON.stringify(groups)})
-    }).catch(() => { _pendingSync = true; showOfflineBadge(); });
+    }).then(() => {
+      setPendingSync(false);
+      hideOfflineBadge();
+    }).catch(() => {
+      setPendingSync(true);
+      showOfflineBadge();
+    });
   } else {
-    _pendingSync = true;
+    setPendingSync(true);
     showOfflineBadge();
   }
 }
@@ -426,22 +434,28 @@ function hideOfflineBadge() {
   if (badge) badge.remove();
 }
 
+function syncPendingData() {
+  if (!navigator.onLine || !isPendingSync()) return;
+  showOfflineBadge();
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain'},
+    body: JSON.stringify({data: JSON.stringify(groups)})
+  }).then(() => {
+    setPendingSync(false);
+    hideOfflineBadge();
+    showToast();
+  }).catch(() => {
+    showOfflineBadge();
+  });
+}
+
 // オンライン復帰時に自動同期
 window.addEventListener('online', () => {
-  if (_pendingSync) {
-    showOfflineBadge();
-    fetch(GAS_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({data: JSON.stringify(groups)})
-    }).then(() => {
-      _pendingSync = false;
-      hideOfflineBadge();
-      showToast();
-    }).catch(() => {});
+  syncPendingData();
+  if (!isPendingSync()) {
+    loadFromGas().then(ok => { if (ok) refreshCurrentView(); });
   }
-  // 最新データも取得
-  loadFromGas().then(ok => { if (ok) refreshCurrentView(); });
 });
 
 window.addEventListener('offline', () => {
@@ -1614,10 +1628,16 @@ function refreshCurrentView() {
   }
 }
 
-// 起動時に常にGASから最新データを取得
-loadFromGas().then(ok => {
-  if (ok) refreshCurrentView();
-});
+// 起動時に未同期データがあれば先に同期、なければGASから最新を取得
+if (navigator.onLine) {
+  if (isPendingSync()) {
+    syncPendingData();
+  } else {
+    loadFromGas().then(ok => { if (ok) refreshCurrentView(); });
+  }
+} else {
+  if (isPendingSync()) showOfflineBadge();
+}
 </script>
 </body>
 </html>
