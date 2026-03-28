@@ -285,7 +285,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div class="serr" id="mh-err"></div>
     <div class="prev">
       <div class="prev-title">── ポイントプレビュー ──</div>
-      <div class="prev-grid" id="mh-prev"><div style="color:var(--tx2);font-size:.78rem;grid-column:span 2;text-align:center;padding:8px">3人分の素点を入力すると自動計算されます</div></div>
+      <div class="prev-grid" id="mh-prev"><div style="color:var(--tx2);font-size:.65rem;grid-column:span 2;text-align:center;padding:4px 0">3人分の素点を入力すると自動計算されます</div></div>
+      <div style="font-size:.65rem;color:var(--tx2);text-align:center;margin-top:6px">「次の半荘へ」を押すと席が回ります</div>
     </div>
     <div class="mbtns">
       <button class="mbtn mng" onclick="closeOvl('modal-hanzo')">キャンセル</button>
@@ -1312,7 +1313,7 @@ function updateMhPreview(){
 
   if(vals.some(v=>v==='')){
     if(errEl) errEl.style.display='none';
-    if(pg) pg.innerHTML='<div style="color:var(--tx2);font-size:.78rem;grid-column:span 2;text-align:center;padding:8px">3人分の素点を入力すると自動計算されます</div>';
+    if(pg) pg.innerHTML='<div style="color:var(--tx2);font-size:.65rem;grid-column:span 2;text-align:center;padding:4px 0">3人分の素点を入力すると自動計算されます</div>';
     return;
   }
 
@@ -1371,17 +1372,35 @@ function saveHanzo(cont){
 // ===== 起動 =====
 load(); // まずlocalStorageから
 renderTop();
+
+function refreshCurrentView() {
+  // curGroupが開いていれば現在のタブも再描画
+  if (curGroup) {
+    const newGroup = groups.find(g => g.id === curGroup.id);
+    if (newGroup) {
+      curGroup = newGroup;
+      const activeTab = ['ranking','players','hanzos','graph','settings'].find(t =>
+        document.getElementById('page-'+t)?.classList.contains('on')
+      ) || 'ranking';
+      showTab(activeTab);
+    } else {
+      goTop();
+    }
+  } else {
+    renderTop();
+  }
+}
+
 // GAS経由でアクセスしている場合は常にGASから最新データを取得
 if (IS_GAS) {
   loadFromGas().then(ok => {
-    if (ok) renderTop();
+    if (ok) refreshCurrentView();
   });
 } else {
-  // ローカルHTMLの場合はGAS URLが設定されていれば取得
   const _gasUrl = localStorage.getItem('janki_gas') || '';
   if (_gasUrl) {
     loadFromGas().then(ok => {
-      if (ok) renderTop();
+      if (ok) refreshCurrentView();
     });
   }
 }
