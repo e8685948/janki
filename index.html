@@ -161,7 +161,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <body>
 
 <div id="hdr">
-  <div><img src="https://e8685948.github.io/janki/unnamed.jpg" style="height:36px;object-fit:contain;mix-blend-mode:screen;filter:brightness(1.1)" onerror="this.style.display='none';this.nextSibling.style.display='block'"><div style="display:none"><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div></div>
+  <div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div>
   <div style="font-size:1.4rem">🀄</div>
 </div>
 
@@ -642,7 +642,7 @@ function openGroup(id) {
 
 function goTop() {
   curGroup = null;
-  document.getElementById('hdr').innerHTML = '<div><img src="https://e8685948.github.io/janki/unnamed.jpg" style="height:36px;object-fit:contain;mix-blend-mode:screen;filter:brightness(1.1)"><\/div><div style="font-size:1.4rem">🀄<\/div>';
+  document.getElementById('hdr').innerHTML = '<div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div><div style="font-size:1.4rem">🀄</div>';
   document.getElementById('tabs').style.display = 'none';
   document.getElementById('screen-main').classList.remove('on');
   document.getElementById('screen-top').classList.add('on');
