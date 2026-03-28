@@ -394,15 +394,59 @@ function cancelPw() {
 
 // ===== 保存/読み込み =====
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxiB4TcM5GaxS_Ppua-vD-r3MWZA2jGCJCj2G9vPyS9NEFh6QnNybPGeHFFH5GA2QLE/exec';
+let _pendingSync = false;
 
 function save() {
   try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
-  fetch(GAS_URL, {
-    method: 'POST',
-    headers: {'Content-Type': 'text/plain'},
-    body: JSON.stringify({data: JSON.stringify(groups)})
-  }).catch(() => {});
+  if (navigator.onLine) {
+    fetch(GAS_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({data: JSON.stringify(groups)})
+    }).catch(() => { _pendingSync = true; showOfflineBadge(); });
+  } else {
+    _pendingSync = true;
+    showOfflineBadge();
+  }
 }
+
+function showOfflineBadge() {
+  let badge = document.getElementById('offline-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'offline-badge';
+    badge.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(212,168,67,.9);color:#1a1200;font-size:.75rem;font-weight:700;padding:6px 16px;border-radius:20px;z-index:400;font-family:\'Noto Sans JP\',sans-serif';
+    document.body.appendChild(badge);
+  }
+  badge.textContent = navigator.onLine ? '⏳ 同期中...' : '📵 オフライン（復帰後に自動同期）';
+}
+
+function hideOfflineBadge() {
+  const badge = document.getElementById('offline-badge');
+  if (badge) badge.remove();
+}
+
+// オンライン復帰時に自動同期
+window.addEventListener('online', () => {
+  if (_pendingSync) {
+    showOfflineBadge();
+    fetch(GAS_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({data: JSON.stringify(groups)})
+    }).then(() => {
+      _pendingSync = false;
+      hideOfflineBadge();
+      showToast();
+    }).catch(() => {});
+  }
+  // 最新データも取得
+  loadFromGas().then(ok => { if (ok) refreshCurrentView(); });
+});
+
+window.addEventListener('offline', () => {
+  showOfflineBadge();
+});
 
 function load() {
   try {
@@ -1058,17 +1102,20 @@ function renderHanzos() {
     const {pts,ranks} = calcPts(h.scores, h.ky, h.uma||g.uma, h.oka!==undefined?h.oka:g.oka, h.kaeshi||g.kaeshi);
     const ti = ranks.indexOf(1);
     const wd = ['東','南','西','北'];
-    const rows = h.players.map((p,i) => {
-      const bd = badge(ranks[i]-1);
-      const pc = pts[i]>0?'pp':pts[i]<0?'pm':'pz';
-      return `<div class="hi-row"><div style="display:flex;align-items:center;gap:5px"><span class="${bd}" style="width:17px;height:17px;font-size:.6rem">${ranks[i]}</span><span style="font-size:.72rem;color:var(--tx2)">${wd[i]}</span><span>${p}</span></div><div><span style="color:var(--tx2);font-size:.78rem;margin-right:6px">${h.scores[i].toLocaleString()}</span><span class="${pc}" style="font-weight:700">${pts[i]>0?'+'+pts[i]:pts[i]}</span></div></div>`;
-    }).join('');
+    const rows = h.players.map((p,i) => ({p, i, rank:ranks[i], pt:pts[i], score:h.scores[i]}))
+      .sort((a,b) => a.rank - b.rank)
+      .map(({p,i,rank,pt,score}) => {
+        const bd = badge(rank-1);
+        const pc = pt>0?'pp':pt<0?'pm':'pz';
+        return `<div class="hi-row"><div style="display:flex;align-items:center;gap:5px"><span class="${bd}" style="width:17px;height:17px;font-size:.6rem">${rank}</span><span style="font-size:.72rem;color:var(--tx2)">${wd[i]}</span><span>${p}</span></div><div><span style="color:var(--tx2);font-size:.78rem;margin-right:6px">${score.toLocaleString()}</span><span class="${pc}" style="font-weight:700">${pt>0?'+'+pt:pt}</span></div></div>`;
+      }).join('');
     return `<div class="hi-wrap" id="wrap-${h.id}">
       <div class="hi-del" id="del-${h.id}">削除</div>
       <div class="hi" id="hi-${h.id}" ontouchstart="tsStart(event,${h.id})" ontouchmove="tsMove(event,${h.id})" ontouchend="tsEnd(event,${h.id})" onclick="tsClick(event,${h.id})">
         <div class="hi-head"><span class="hi-num">#${oi+1}</span>
-          <div style="flex:1"><div class="hi-top">🏆 ${h.players[ti]}　<span style="font-size:.72rem;color:var(--tx2);font-weight:400">${h.date}</span></div></div>
+          <div style="flex:1"><div class="hi-top">${h.date}　<span style="font-size:.72rem;color:var(--tx2);font-weight:400">${new Date(h.id).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span></div></div>
           <span style="font-size:.88rem;font-weight:700;color:var(--green)">+${pts[ti]}</span>
+          <span style="font-size:.75rem;color:var(--tx2);margin-left:2px">${h.players[ti]}</span>
           <button onclick="event.stopPropagation();delH(${h.id})" style="background:none;border:none;color:var(--tx2);font-size:1.1rem;cursor:pointer;padding:2px 4px;margin-left:4px;line-height:1">×</button>
         </div>
         <div class="hi-det"><div style="font-size:.65rem;color:var(--tx2);margin-bottom:6px">${h.league}${h.ky?'　供託'+h.ky+'本':''}</div>${rows}${h.penalties&&h.penalties.length?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">${h.penalties.map(p=>`<div style="font-size:.75rem;color:var(--red);padding:2px 0">⚠ ${p.player}：${p.pt}pt（ペナルティ）</div>`).join('')}</div>`:''}</div>
@@ -1434,7 +1481,18 @@ function buildMhSelects(){
     const sel=document.getElementById('mh-s'+i); if(!sel) return;
     const prev=sel.value; sel.innerHTML=opt;
     if(ps.includes(prev)) sel.value=prev; else if(ps[i]) sel.value=ps[i];
-    sel.onchange=()=>{ buildMhScores(); updateMhPreview(); };
+    sel.onchange=()=>{
+      // 現在の点数を保存
+      const savedScores = [0,1,2,3].map(i => document.getElementById('mh-sc'+i)?.value || '');
+      buildMhScores();
+      // 点数を復元
+      savedScores.forEach((v, i) => {
+        const el = document.getElementById('mh-sc'+i);
+        if (el && !el.readOnly) el.value = v;
+      });
+      onMhScoreInput();
+      updateMhPreview();
+    };
   });
 }
 
