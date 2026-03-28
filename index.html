@@ -224,6 +224,13 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div class="mtitle" id="mg-title">大会・グループを作成</div>
     <div class="fg"><label class="fl">名前</label><input class="fi" id="mg-name" placeholder="例：龍聖戦"></div>
     <div class="fg"><label class="fl">メモ（任意）</label><input class="fi" id="mg-memo" placeholder="例：月1回の定期戦"></div>
+    <div class="fg"><label class="fl">編集パスワード</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button id="mg-pw-none" onclick="setMgPwMode('none')" style="flex:1;padding:8px;border-radius:7px;font-size:.78rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;border:1px solid var(--gold);background:rgba(212,168,67,.2);color:var(--gold)">なし</button>
+        <button id="mg-pw-set" onclick="setMgPwMode('set')" style="flex:1;padding:8px;border-radius:7px;font-size:.78rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;border:1px solid var(--bd);background:rgba(255,255,255,.05);color:var(--tx2)">設定する</button>
+      </div>
+      <div id="mg-pw-wrap" style="display:none"><input class="fi" type="password" id="mg-pw" placeholder="パスワードを入力"></div>
+    </div>
     <div class="fg">
       <label class="fl">グループ画像（任意）</label>
       <div id="mg-img-preview" style="margin-bottom:8px;display:none"><img id="mg-img-thumb" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--bd)"></div>
@@ -341,12 +348,19 @@ let lChart = null, rChart = null;
 // ===== 認証 =====
 const PW = '1001';
 let _authed = false;
+let _authedGroups = new Set();
 let _authCallback = null;
 
 function isAuthed() { return _authed; }
 
 function requireAuth(callback) {
-  if (_authed) { callback(); return; }
+  const groupPw = curGroup?.pw || null;
+  // グループのパスワードがnullなら認証不要
+  if (groupPw === null && curGroup) { callback(); return; }
+  // グループパスワードで認証済み
+  if (groupPw && _authedGroups.has(curGroup?.id)) { callback(); return; }
+  // グローバル認証済み（グループパスワードなし）
+  if (!groupPw && _authed) { callback(); return; }
   _authCallback = callback;
   document.getElementById('pw-input').value = '';
   document.getElementById('pw-err').style.display = 'none';
@@ -356,8 +370,14 @@ function requireAuth(callback) {
 
 function submitPw() {
   const pw = document.getElementById('pw-input').value;
-  if (pw === PW) {
-    _authed = true;
+  const groupPw = curGroup?.pw || null;
+  const targetPw = groupPw || PW;
+  if (pw === targetPw) {
+    if (groupPw && curGroup) {
+      _authedGroups.add(curGroup.id);
+    } else {
+      _authed = true;
+    }
     document.getElementById('modal-pw').classList.remove('open');
     if (_authCallback) { _authCallback(); _authCallback = null; }
   } else {
@@ -373,25 +393,15 @@ function cancelPw() {
 }
 
 // ===== 保存/読み込み =====
-// ===== 保存/読み込み =====
-const IS_GAS = (typeof google !== 'undefined' && typeof google.script !== 'undefined');
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxiB4TcM5GaxS_Ppua-vD-r3MWZA2jGCJCj2G9vPyS9NEFh6QnNybPGeHFFH5GA2QLE/exec';
 
 function save() {
   try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
-  if (IS_GAS) {
-    // GAS経由で開いている場合
-    google.script.run.saveData(JSON.stringify(groups));
-  } else {
-    // GitHub Pages経由で開いている場合
-    const gasUrl = localStorage.getItem('janki_gas') || '';
-    if (gasUrl) {
-      fetch(gasUrl, {
-        method: 'POST',
-        headers: {'Content-Type': 'text/plain'},
-        body: JSON.stringify({data: JSON.stringify(groups)})
-      }).catch(() => {});
-    }
-  }
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain'},
+    body: JSON.stringify({data: JSON.stringify(groups)})
+  }).catch(() => {});
 }
 
 function load() {
@@ -402,28 +412,8 @@ function load() {
 }
 
 async function loadFromGas() {
-  if (IS_GAS) {
-    return new Promise(resolve => {
-      google.script.run
-        .withSuccessHandler(data => {
-          try {
-            const loaded = JSON.parse(data);
-            if (Array.isArray(loaded) && loaded.length > 0) {
-              groups = loaded;
-              try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
-              resolve(true);
-            } else resolve(false);
-          } catch(e) { resolve(false); }
-        })
-        .withFailureHandler(() => resolve(false))
-        .loadData();
-    });
-  }
-  // GitHub Pages経由の場合はGAS URLに?action=getDataでリクエスト
-  const gasUrl = localStorage.getItem('janki_gas') || '';
-  if (!gasUrl) return false;
   try {
-    const res = await fetch(gasUrl + '?action=getData');
+    const res = await fetch(GAS_URL);
     const json = await res.json();
     if (json.ok && json.data) {
       const loaded = JSON.parse(json.data);
@@ -467,7 +457,9 @@ function getStats(league, ruleFilter) {
   const stats = {};
   players.forEach(p => { stats[p] = {pt:0, games:0, rsum:0, ranks:[0,0,0,0], hist:[]}; });
   g.hanzos.filter(h => {
-    if (h.league !== league) return false;
+    const hLeague = h.league || '';
+    const targetLeague = league === '_default' ? '' : league;
+    if (hLeague !== targetLeague) return false;
     if (ruleFilter && ruleFilter !== 'all') {
       // ハンゾ保存時のルールラベルと照合
       const uma = h.uma || g.uma;
@@ -560,7 +552,11 @@ function renderTop() {
     </div>`).join('');
 }
 
-function askDelGroup(id, btn) { requireAuth(() => _askDelGroup(id, btn)); }
+function askDelGroup(id, btn) {
+  const g = groups.find(x => x.id === id);
+  if (g && !g.pw) { _askDelGroup(id, btn); return; }
+  requireAuth(() => _askDelGroup(id, btn));
+}
 function _askDelGroup(id, btn) {
   const row = btn.closest('.gc-acts');
   row.innerHTML = `<span style="font-size:.75rem;color:var(--red);flex:1">本当に削除しますか？</span>
@@ -580,7 +576,7 @@ function openGroup(id) {
   document.getElementById('screen-top').classList.remove('on');
   document.getElementById('screen-main').classList.add('on');
   const leagues = Object.keys(curGroup.players).filter(k => curGroup.players[k].length > 0);
-  curLeague = leagues[0] || 'A1';
+  curLeague = leagues[0] || '_default';
   pgLeague = curLeague;
   gLeague = curLeague;
   showTab('ranking');
@@ -607,10 +603,16 @@ function _openGroupModal() {
   document.getElementById('mg-custom').style.display = 'none';
   document.getElementById('mg-img-preview').style.display = 'none';
   document.getElementById('mg-img-input').value = '';
+  document.getElementById('mg-pw').value = '';
+  setMgPwMode('none');
   window._mgImgData = null;
   document.getElementById('modal-group').classList.add('open');
 }
-function editGroup(id) { requireAuth(() => _editGroup(id)); }
+function editGroup(id) {
+  const g = groups.find(x => x.id === id);
+  if (g && !g.pw) { _editGroup(id); return; }
+  requireAuth(() => _editGroup(id));
+}
 function _editGroup(id) {
   const g = groups.find(x => x.id === id);
   if (!g) return;
@@ -623,6 +625,8 @@ function _editGroup(id) {
   document.getElementById('mg-custom').style.display = g.rule === 'custom' ? 'block' : 'none';
   // 画像
   window._mgImgData = g.img || null;
+  document.getElementById('mg-pw').value = g.pw || '';
+  if (g.pw) { setMgPwMode('set'); } else { setMgPwMode('none'); }
   if (g.img) {
     document.getElementById('mg-img-preview').style.display = 'block';
     document.getElementById('mg-img-thumb').src = g.img;
@@ -636,6 +640,22 @@ function _editGroup(id) {
     document.getElementById('mg-kaeshi').value = g.kaeshi;
   }
   document.getElementById('modal-group').classList.add('open');
+}
+
+function setMgPwMode(mode) {
+  const wrap = document.getElementById('mg-pw-wrap');
+  const noneBtn = document.getElementById('mg-pw-none');
+  const setBtn = document.getElementById('mg-pw-set');
+  if (mode === 'none') {
+    wrap.style.display = 'none';
+    noneBtn.style.background = 'rgba(212,168,67,.2)'; noneBtn.style.borderColor = 'var(--gold)'; noneBtn.style.color = 'var(--gold)';
+    setBtn.style.background = 'rgba(255,255,255,.05)'; setBtn.style.borderColor = 'var(--bd)'; setBtn.style.color = 'var(--tx2)';
+  } else {
+    wrap.style.display = 'block';
+    setBtn.style.background = 'rgba(212,168,67,.2)'; setBtn.style.borderColor = 'var(--gold)'; setBtn.style.color = 'var(--gold)';
+    noneBtn.style.background = 'rgba(255,255,255,.05)'; noneBtn.style.borderColor = 'var(--bd)'; noneBtn.style.color = 'var(--tx2)';
+    setTimeout(() => document.getElementById('mg-pw')?.focus(), 50);
+  }
 }
 
 function onMgImgChange(input) {
@@ -668,11 +688,13 @@ function saveGroup() {
   const oka = rule === 'custom' ? parseFloat(document.getElementById('mg-oka').value)||0 : preset.oka;
   const kaeshi = rule === 'custom' ? parseInt(document.getElementById('mg-kaeshi').value)||30000 : preset.kaeshi;
   const memo = document.getElementById('mg-memo').value.trim();
+  const pwWrap = document.getElementById('mg-pw-wrap');
+  const pw = pwWrap?.style.display !== 'none' ? (document.getElementById('mg-pw').value.trim() || null) : null;
   if (editGroupId) {
     const g = groups.find(x => x.id === editGroupId);
-    if (g) { g.name=name; g.memo=memo; g.rule=rule; g.uma=uma; g.oka=oka; g.kaeshi=kaeshi; g.img=window._mgImgData||g.img||null; }
+    if (g) { g.name=name; g.memo=memo; g.rule=rule; g.uma=uma; g.oka=oka; g.kaeshi=kaeshi; g.img=window._mgImgData||g.img||null; g.pw=pw||null; }
   } else {
-    groups.push({id:Date.now(), name, memo, rule, uma, oka, kaeshi, img: window._mgImgData||null,
+    groups.push({id:Date.now(), name, memo, rule, uma, oka, kaeshi, img: window._mgImgData||null, pw: pw||null,
       players:{}, hanzos:[], deleted:[]});
   }
   save();
@@ -702,12 +724,17 @@ function renderRanking() {
 
   // リーグが未設定の場合
   if (leagues.length === 0) {
-    el.innerHTML = `<div class="empty"><span class="eico">⚙️</span>設定タブから選手を追加してください</div>`;
-    return;
+    // _playersがあればそちらを使う
+    if (g._players && g._players.length > 0) {
+      if (curLeague !== '_default') curLeague = '_default';
+    } else {
+      el.innerHTML = `<div class="empty"><span class="eico">⚙️</span>設定タブから選手を追加してください</div>`;
+      return;
+    }
   }
 
   // curLeagueがleaguesに含まれていなければ先頭に合わせる
-  if (!leagues.includes(curLeague)) curLeague = leagues[0];
+  if (leagues.length > 0 && !leagues.includes(curLeague)) curLeague = leagues[0];
 
   // 使用されているルールを収集
   const usedRules = ['all'];
@@ -738,7 +765,7 @@ function renderRanking() {
       <div class="ctitle">累計成績 <span class="rb-badge">${curRuleFilter==='all'?'全ルール':curRuleFilter}</span></div>
       <div class="snums">
         <div class="sn"><div class="snv">${total}</div><div class="snl">半荘数</div></div>
-        <div class="sn"><div class="snv">${(g.players[curLeague]||[]).length}</div><div class="snl">選手数</div></div>
+        <div class="sn"><div class="snv">${curLeague==='_default'?(g._players||[]).length:(g.players[curLeague]||[]).length}</div><div class="snl">選手数</div></div>
         <div class="sn"><div class="snv" style="color:var(--gold);font-size:.78rem">${g.uma[0]}/${g.uma[1]}/${g.uma[2]}/${g.uma[3]}</div><div class="snl">ウマ</div></div>
       </div>
       ${sorted.every(([,s])=>s.games===0) ? '<div class="empty" style="padding:16px 0"><span class="eico">📊</span>半荘を入力してください</div>' : `
@@ -1182,13 +1209,6 @@ function renderSettings() {
         <button class="btn btn-g" style="width:72px;padding:9px;font-size:.8rem;margin:0" onclick="addPSimple()">追加</button>
       </div>
     </div>
-    <div class="card">
-      <div class="ctitle">リーグ分けが必要な場合</div>
-      <div style="font-size:.75rem;color:var(--tx2);line-height:1.7;margin-bottom:10px">A1・A2などリーグ分けが必要な場合は下のボタンから追加できます。</div>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-gh" style="margin:0" onclick="addLeague('A1')">＋ A1リーグを追加</button>
-        <button class="btn btn-gh" style="margin:0" onclick="addLeague('A2')">＋ A2リーグを追加</button>
-      </div>
     </div>`
   }
   <button class="btn btn-gh" onclick="askReset(this)">⚠ この大会の記録をリセット</button>
@@ -1378,8 +1398,11 @@ function openHanzoModal() { requireAuth(_openHanzoModal); }
 function _openHanzoModal(){
   if(!curGroup) return;
   const g=curGroup;
-  const leagues=Object.keys(g.players).filter(k=>g.players[k].length>0);
-  mhLeague=leagues[0]||'A1';
+  const hasLeagues = Object.keys(g.players).length > 0;
+  const leagues = hasLeagues ? Object.keys(g.players).filter(k=>g.players[k].length>0) : [];
+  // _playersがある場合は_defaultリーグ
+  const hasSimplePlayers = !hasLeagues && (g._players||[]).length > 0;
+  mhLeague = leagues[0] || (hasSimplePlayers ? '_default' : '_default');
   const today=new Date();
   document.getElementById('mh-date').value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   const lw=document.getElementById('mh-league-wrap');
@@ -1404,7 +1427,8 @@ function setMhLeague(l){
 
 function buildMhSelects(){
   if(!curGroup) return;
-  const ps=curGroup.players[mhLeague]||[];
+  const g=curGroup;
+  const ps = mhLeague==='_default' ? (g._players||[]) : (g.players[mhLeague]||[]);
   const opt='<option value="">-- 選択 --</option>'+ps.map(p=>`<option value="${p}">${p}</option>`).join('');
   [0,1,2,3].forEach(i=>{
     const sel=document.getElementById('mh-s'+i); if(!sel) return;
@@ -1474,12 +1498,18 @@ function saveHanzo(cont){
   if(!curGroup) return;
   const players=[0,1,2,3].map(i=>document.getElementById('mh-s'+i)?.value||'');
   if(players.some(p=>!p)) return;
+  // 同じ選手が複数いる場合は記録不可
+  if(new Set(players).size < 4) {
+    const errEl=document.getElementById('mh-err');
+    if(errEl){ errEl.style.display='block'; errEl.innerHTML='⚠ 同じ選手が複数選択されています'; }
+    return;
+  }
   const scores=[0,1,2,3].map(i=>parseInt(document.getElementById('mh-sc'+i)?.value)||0);
   const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
   if(scores.reduce((a,b)=>a+b,0)!==100000-ky*1000) return;
   const d=document.getElementById('mh-date')?.value||new Date().toISOString().split('T')[0];
   const validPenalties = penalties.filter(p => p.player && p.pt !== 0);
-  curGroup.hanzos.push({id:Date.now(), date:d, league:mhLeague, players, scores, ky,
+  curGroup.hanzos.push({id:Date.now(), date:d, league:mhLeague==='_default'?'':mhLeague, players, scores, ky,
     penalties: validPenalties,
     uma:[...curGroup.uma], oka:curGroup.oka, kaeshi:curGroup.kaeshi});
   save();
@@ -1526,19 +1556,10 @@ function refreshCurrentView() {
   }
 }
 
-// GAS経由でアクセスしている場合は常にGASから最新データを取得
-if (IS_GAS) {
-  loadFromGas().then(ok => {
-    if (ok) refreshCurrentView();
-  });
-} else {
-  const _gasUrl = localStorage.getItem('janki_gas') || '';
-  if (_gasUrl) {
-    loadFromGas().then(ok => {
-      if (ok) refreshCurrentView();
-    });
-  }
-}
+// 起動時に常にGASから最新データを取得
+loadFromGas().then(ok => {
+  if (ok) refreshCurrentView();
+});
 </script>
 </body>
 </html>
