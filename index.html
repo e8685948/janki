@@ -161,7 +161,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <body>
 
 <div id="hdr">
-  <div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div>
+  <div><img src="https://e8685948.github.io/janki/unnamed.jpg" style="height:36px;object-fit:contain;mix-blend-mode:screen;filter:brightness(1.1)" onerror="this.style.display='none';this.nextSibling.style.display='block'"><div style="display:none"><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div></div>
   <div style="font-size:1.4rem">🀄</div>
 </div>
 
@@ -588,7 +588,7 @@ function openGroup(id) {
 
 function goTop() {
   curGroup = null;
-  document.getElementById('hdr').innerHTML = '<div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div><div style="font-size:1.4rem">🀄</div>';
+  document.getElementById('hdr').innerHTML = '<div><img src="https://e8685948.github.io/janki/unnamed.jpg" style="height:36px;object-fit:contain;mix-blend-mode:screen;filter:brightness(1.1)"><\/div><div style="font-size:1.4rem">🀄<\/div>';
   document.getElementById('tabs').style.display = 'none';
   document.getElementById('screen-main').classList.remove('on');
   document.getElementById('screen-top').classList.add('on');
@@ -1191,15 +1191,6 @@ function renderSettings() {
       </div>
     </div>`
   }
-  <div class="card"><div class="ctitle">🌐 データ共有（Googleスプレッドシート）</div>
-    <div style="font-size:.75rem;color:var(--tx2);line-height:1.7;margin-bottom:10px">
-      Apps Script URLを設定すると、URLを共有した全員が同じデータを使えます。<br>
-      ※ 設定方法は apps-script.gs ファイルの手順を参照してください。
-    </div>
-    <div class="fg"><label class="fl">Apps Script URL</label><input class="fi" id="gas-url" value="${localStorage.getItem('janki_gas')||''}" placeholder="https://script.google.com/macros/s/..." style="font-size:.72rem"></div>
-    <button class="btn btn-g" style="margin-bottom:6px" onclick="saveGasUrl()">URLを保存・同期</button>
-    <div id="gas-status" style="font-size:.75rem;color:var(--tx2);min-height:18px">${localStorage.getItem('janki_gas')?'GAS URL設定済み':'未設定'}</div>
-  </div>
   <button class="btn btn-gh" onclick="askReset(this)">⚠ この大会の記録をリセット</button>
   <div id="reset-confirm" style="display:none;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:9px;padding:12px;margin-bottom:8px">
     <div style="font-size:.82rem;color:var(--red);margin-bottom:8px">本当にリセットしますか？</div>
