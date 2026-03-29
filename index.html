@@ -307,7 +307,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div style="font-size:.65rem;color:var(--tx2);text-align:center;margin-top:6px">「次の半荘へ」を押すと席が回ります</div>
     </div>
     <div class="mbtns">
-      <button class="mbtn mng" onclick="closeOvl('modal-hanzo')">キャンセル</button>
+      <button class="mbtn mng" onclick="window._editHanzoId=null;document.getElementById('mh-save').textContent='記録する';document.getElementById('mh-cont').style.display='';closeOvl('modal-hanzo')">キャンセル</button>
       <button class="mbtn mok" id="mh-save" onclick="saveHanzo(false)">記録する</button>
     </div>
     <button class="mbtn mok" id="mh-cont" onclick="saveHanzo(true)"
@@ -321,7 +321,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
 // ===== データ定義 =====
 const RULES = {
-  mleague:   {label:'Mリーグ',  uma:[20,10,-10,-20], oka:20, kaeshi:30000},
+  mleague:   {label:'Mリーグ',  uma:[30,10,-10,-30], oka:20, kaeshi:30000},
   saikouisen:{label:'最高位戦', uma:[10,5,-5,-10],   oka:10, kaeshi:30000},
   renmei:    {label:'連盟A',    uma:[10,5,-5,-10],   oka:0,  kaeshi:30000},
   tenho:     {label:'天鳳',     uma:[20,10,-10,-20], oka:30, kaeshi:25000},
@@ -1130,7 +1130,8 @@ function renderHanzos() {
           <div style="flex:1"><div class="hi-top">${h.date}　<span style="font-size:.72rem;color:var(--tx2);font-weight:400">${new Date(h.id).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span></div></div>
           <span style="font-size:.88rem;font-weight:700;color:var(--green)">+${pts[ti]}</span>
           <span style="font-size:.75rem;color:var(--tx2);margin-left:2px">${h.players[ti]}</span>
-          <button onclick="event.stopPropagation();delH(${h.id})" style="background:none;border:none;color:var(--tx2);font-size:1.1rem;cursor:pointer;padding:2px 4px;margin-left:4px;line-height:1">×</button>
+          <button onclick="event.stopPropagation();editH(${h.id})" style="background:none;border:none;color:var(--gold);font-size:.8rem;cursor:pointer;padding:2px 4px;margin-left:2px;line-height:1">✏</button>
+          <button onclick="event.stopPropagation();delH(${h.id})" style="background:none;border:none;color:var(--tx2);font-size:1.1rem;cursor:pointer;padding:2px 4px;margin-left:2px;line-height:1">×</button>
         </div>
         <div class="hi-det"><div style="font-size:.65rem;color:var(--tx2);margin-bottom:6px">${h.league}${h.ky?'　供託'+h.ky+'本':''}</div>${rows}${h.penalties&&h.penalties.length?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">${h.penalties.map(p=>`<div style="font-size:.75rem;color:var(--red);padding:2px 0">⚠ ${p.player}：${p.pt}pt（ペナルティ）</div>`).join('')}</div>`:''}</div>
       </div>
@@ -1149,6 +1150,59 @@ function renderHanzos() {
     }).join('')}</div>`;
   }
   el.innerHTML = html;
+}
+
+function editH(id) { requireAuth(() => _editH(id)); }
+function _editH(id) {
+  if (!curGroup) return;
+  const g = curGroup;
+  const h = g.hanzos.find(x => x.id === id);
+  if (!h) return;
+
+  // モーダルを開く（通常の入力モーダルを流用）
+  _openHanzoModal();
+
+  // 編集中のIDを記録
+  window._editHanzoId = id;
+
+  // 既存データをセット
+  document.getElementById('mh-date').value = h.date;
+
+  // リーグをセット
+  mhLeague = h.league || '_default';
+  const libtns = document.getElementById('mh-league-btns');
+  if (libtns) {
+    libtns.querySelectorAll('.ltab').forEach(el => {
+      el.classList.toggle('on', el.textContent.trim() === mhLeague);
+    });
+  }
+
+  // 選手をセット
+  buildMhSelects();
+  h.players.forEach((p, i) => {
+    const sel = document.getElementById('mh-s' + i);
+    if (sel) sel.value = p;
+  });
+
+  // 素点をセット
+  buildMhScores();
+  h.scores.forEach((s, i) => {
+    const el = document.getElementById('mh-sc' + i);
+    if (el && !el.readOnly) el.value = s;
+  });
+
+  // 供託
+  document.getElementById('mh-ky').value = h.ky || 0;
+
+  // ペナルティ
+  penalties = h.penalties ? [...h.penalties] : [];
+  renderPenalties();
+
+  // ボタンを「更新する」に変更
+  document.getElementById('mh-save').textContent = '更新する';
+  document.getElementById('mh-cont').style.display = 'none';
+
+  updateMhPreview();
 }
 
 function delH(id) { requireAuth(() => _delH(id)); }
@@ -1230,6 +1284,14 @@ function renderGraph() {
 function renderSettings() {
   const el=document.getElementById('page-settings'); if(!curGroup){el.innerHTML='';return;}
   const g=curGroup;
+  // ルールがcustomでない場合、プリセットのumaと現在のumaが異なれば自動修正
+  if(g.rule && g.rule !== 'custom' && RULES[g.rule]) {
+    const preset = RULES[g.rule];
+    if(JSON.stringify(g.uma) !== JSON.stringify(preset.uma) || g.oka !== preset.oka || g.kaeshi !== preset.kaeshi) {
+      g.uma = [...preset.uma]; g.oka = preset.oka; g.kaeshi = preset.kaeshi;
+      save();
+    }
+  }
   el.innerHTML=`
   <div class="card"><div class="ctitle">ルール設定</div>
     <div class="fg"><label class="fl">ルール</label>
@@ -1456,8 +1518,57 @@ function renderPenalties() {
 
 // ===== 半荘入力モーダル =====
 function openHanzoModal() { requireAuth(_openHanzoModal); }
+function editH(id) { requireAuth(() => _editH(id)); }
+function _editH(id) {
+  const g = curGroup; if (!g) return;
+  const h = g.hanzos.find(x => x.id === id); if (!h) return;
+  window._editHanzoId = id;
+
+  // モーダルを開いて既存データを流し込む
+  const leagues = Object.keys(g.players).filter(k => g.players[k].length > 0);
+  mhLeague = h.league || leagues[0] || '_default';
+
+  document.getElementById('mh-date').value = h.date;
+
+  const lw = document.getElementById('mh-league-wrap');
+  const lb = document.getElementById('mh-league-btns');
+  if (leagues.length > 1) {
+    lw.style.display = '';
+    lb.innerHTML = leagues.map(l => `<div class="ltab ${l===mhLeague?'on':''}" id="mlb-${l}" onclick="setMhLeague('${l}')" style="flex:1">${l}リーグ</div>`).join('');
+  } else { lw.style.display = 'none'; }
+
+  buildMhSelects();
+  // 選手をセット
+  const ps = mhLeague === '_default' ? (g._players||[]) : (g.players[mhLeague]||[]);
+  h.players.forEach((p, i) => {
+    const sel = document.getElementById('mh-s' + i);
+    if (sel) sel.value = p;
+  });
+  buildMhScores();
+  // 素点をセット
+  h.scores.forEach((s, i) => {
+    const el = document.getElementById('mh-sc' + i);
+    if (el && !el.readOnly) el.value = s;
+  });
+  document.getElementById('mh-ky').value = h.ky || 0;
+  penalties = h.penalties ? [...h.penalties] : [];
+  renderPenalties();
+  updateMhPreview();
+
+  // タイトルを「編集」に変更
+  document.querySelector('#modal-hanzo .mtitle').textContent = '半荘を編集';
+  document.getElementById('mh-save').textContent = '更新する';
+  document.getElementById('mh-cont').style.display = 'none';
+
+  document.getElementById('modal-hanzo').classList.add('open');
+}
+
 function _openHanzoModal(){
   if(!curGroup) return;
+  window._editHanzoId = null;
+  document.querySelector('#modal-hanzo .mtitle').textContent = '半荘を入力';
+  document.getElementById('mh-save').textContent = '記録する';
+  document.getElementById('mh-cont').style.display = '';
   const g=curGroup;
   const hasLeagues = Object.keys(g.players).length > 0;
   const leagues = hasLeagues ? Object.keys(g.players).filter(k=>g.players[k].length>0) : [];
@@ -1570,7 +1681,6 @@ function saveHanzo(cont){
   if(!curGroup) return;
   const players=[0,1,2,3].map(i=>document.getElementById('mh-s'+i)?.value||'');
   if(players.some(p=>!p)) return;
-  // 同じ選手が複数いる場合は記録不可
   if(new Set(players).size < 4) {
     const errEl=document.getElementById('mh-err');
     if(errEl){ errEl.style.display='block'; errEl.innerHTML='⚠ 同じ選手が複数選択されています'; }
@@ -1581,6 +1691,30 @@ function saveHanzo(cont){
   if(scores.reduce((a,b)=>a+b,0)!==100000-ky*1000) return;
   const d=document.getElementById('mh-date')?.value||new Date().toISOString().split('T')[0];
   const validPenalties = penalties.filter(p => p.player && p.pt !== 0);
+
+  // 編集モード
+  if (window._editHanzoId) {
+    const idx = curGroup.hanzos.findIndex(x => x.id === window._editHanzoId);
+    if (idx !== -1) {
+      const old = curGroup.hanzos[idx];
+      curGroup.hanzos[idx] = {
+        ...old,
+        date: d,
+        league: mhLeague === '_default' ? '' : mhLeague,
+        players, scores, ky,
+        penalties: validPenalties,
+        uma: [...curGroup.uma], oka: curGroup.oka, kaeshi: curGroup.kaeshi
+      };
+    }
+    window._editHanzoId = null;
+    document.getElementById('mh-save').textContent = '記録する';
+    document.getElementById('mh-cont').style.display = '';
+    save();
+    closeOvl('modal-hanzo');
+    renderHanzos();
+    showToast();
+    return;
+  }
   curGroup.hanzos.push({id:Date.now(), date:d, league:mhLeague==='_default'?'':mhLeague, players, scores, ky,
     penalties: validPenalties,
     uma:[...curGroup.uma], oka:curGroup.oka, kaeshi:curGroup.kaeshi});
