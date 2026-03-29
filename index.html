@@ -304,7 +304,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div class="prev">
       <div class="prev-title">── ポイントプレビュー ──</div>
       <div class="prev-grid" id="mh-prev"><div style="color:var(--tx2);font-size:.65rem;grid-column:span 2;text-align:center;padding:4px 0">3人分の素点を入力すると自動計算されます</div></div>
-      <div style="font-size:.65rem;color:var(--tx2);text-align:center;margin-top:6px">「次の半荘へ」を押すと席が回ります</div>
+      <div style="font-size:.65rem;color:var(--tx2);text-align:center;margin-top:6px">点数の下2桁（00）は入力不要です</div>
+      <div style="font-size:.65rem;color:var(--tx2);text-align:center;margin-top:2px">「次の半荘へ」を押すと席が回ります</div>
     </div>
     <div class="mbtns">
       <button class="mbtn mng" onclick="window._editHanzoId=null;document.getElementById('mh-save').textContent='記録する';document.getElementById('mh-cont').style.display='';closeOvl('modal-hanzo')">キャンセル</button>
@@ -1628,7 +1629,7 @@ function buildMhScores(){
     const name=document.getElementById('mh-s'+i)?.value||`選手${i+1}`;
     const isLast=i===3;
     return `<div class="sc"><div class="sc-wind">${winds[i]}家</div><div class="sc-name">${name}</div>
-      <input class="sc-inp" type="number" id="mh-sc${i}" value="" placeholder="${isLast?'自動計算':''}"
+      <input class="sc-inp" type="number" id="mh-sc${i}" value="" placeholder="${isLast?'自動計算':'例：300'}"
         ${isLast?'readonly style="background:rgba(212,168,67,.08);color:var(--gold);border-color:rgba(212,168,67,.3);"':''}
         oninput="onMhScoreInput()"></div>`;
   }).join('');
@@ -1636,7 +1637,7 @@ function buildMhScores(){
 
 function onMhScoreInput(){
   const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
-  const exp=100000-ky*1000;
+  const exp=1000-ky*10; // 100点単位での期待値
   const vs=[0,1,2].map(i=>document.getElementById('mh-sc'+i)?.value);
   const ss=vs.map(v=>v!==''?parseInt(v)||0:null);
   const sc3=document.getElementById('mh-sc3');
@@ -1659,11 +1660,11 @@ function updateMhPreview(){
     return;
   }
 
-  const scores=vals.map(v=>parseInt(v)||0);
+  const scores=vals.map(v=>(parseInt(v)||0)*100); // 100倍して実際の点数に
   const total=scores.reduce((a,b)=>a+b,0);
   const exp=100000-ky*1000;
   if(errEl){
-    if(total!==exp){ errEl.style.display='block'; errEl.innerHTML=`⚠ 合計点が合いません　現在:<b>${total.toLocaleString()}</b> 期待値:<b>${exp.toLocaleString()}</b>`; }
+    if(total!==exp){ errEl.style.display='block'; errEl.innerHTML=`⚠ 合計点が合いません　現在:<b>${(total/100).toLocaleString()}</b> 期待値:<b>${exp/100}</b>`; }
     else errEl.style.display='none';
   }
   if(total!==exp) return;
@@ -1686,7 +1687,7 @@ function saveHanzo(cont){
     if(errEl){ errEl.style.display='block'; errEl.innerHTML='⚠ 同じ選手が複数選択されています'; }
     return;
   }
-  const scores=[0,1,2,3].map(i=>parseInt(document.getElementById('mh-sc'+i)?.value)||0);
+  const scores=[0,1,2,3].map(i=>(parseInt(document.getElementById('mh-sc'+i)?.value)||0)*100);
   const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
   if(scores.reduce((a,b)=>a+b,0)!==100000-ky*1000) return;
   const d=document.getElementById('mh-date')?.value||new Date().toISOString().split('T')[0];
@@ -1720,7 +1721,7 @@ function saveHanzo(cont){
     uma:[...curGroup.uma], oka:curGroup.oka, kaeshi:curGroup.kaeshi});
   save();
   if(cont){
-    const rotated = [players[3], players[0], players[1], players[2]];
+    const rotated = [players[1], players[2], players[3], players[0]];
     const ps = curGroup.players[mhLeague]||[];
     buildMhSelects(); // まずリセット
     // ローテーション後の選手をセット
