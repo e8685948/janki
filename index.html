@@ -254,10 +254,10 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div id="mg-custom" style="display:none">
       <div class="fg"><label class="fl">ウマ（1位/2位/3位/4位）</label>
         <div class="uma-row">
-          <input class="uma-inp" type="number" id="mg-u0" value="20">
+          <input class="uma-inp" type="number" id="mg-u0" value="30">
           <input class="uma-inp" type="number" id="mg-u1" value="10">
           <input class="uma-inp" type="number" id="mg-u2" value="-10">
-          <input class="uma-inp" type="number" id="mg-u3" value="-20">
+          <input class="uma-inp" type="number" id="mg-u3" value="-30">
         </div>
       </div>
       <div class="fg"><label class="fl">オカ</label><input class="fi" type="number" id="mg-oka" value="0" style="text-align:center"></div>
@@ -323,8 +323,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 const RULES = {
   mleague:   {label:'Mリーグ',  uma:[30,10,-10,-30], oka:20, kaeshi:30000},
   saikouisen:{label:'最高位戦', uma:[10,5,-5,-10],   oka:10, kaeshi:30000},
-  renmei:    {label:'連盟A',    uma:[10,5,-5,-10],   oka:0,  kaeshi:30000},
-  tenho:     {label:'天鳳',     uma:[20,10,-10,-20], oka:30, kaeshi:25000},
+  renmei:    {label:'連盟A',    uma:[8,4,-4,-8],     oka:0,  kaeshi:30000},
+  tenho:     {label:'天鳳',     uma:[20,10,-10,-20], oka:20, kaeshi:25000},
   custom:    {label:'カスタム', uma:[20,10,-10,-20], oka:0,  kaeshi:30000},
 };
 
@@ -1349,8 +1349,8 @@ function onSRuleChange(){
   const k=document.getElementById('s-rule').value;
   g.rule=k;
   if(k!=='custom'){g.uma=[...RULES[k].uma];g.oka=RULES[k].oka;g.kaeshi=RULES[k].kaeshi;}
-  document.getElementById('s-custom').style.display=k==='custom'?'block':'none';
   save();
+  renderSettings();
 }
 function saveCustomRule(){
   const g=curGroup; if(!g) return;
