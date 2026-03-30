@@ -193,14 +193,37 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     </div>
     <div id="page-graph" class="page">
       <div class="ltabs" id="graph-ltabs"></div>
-      <div class="card"><div class="ctitle">ポイント推移</div><div class="chart-wrap" id="gwrap-line"><canvas id="gc-line"></canvas></div></div>
-      <div class="card"><div class="ctitle">順位分布</div><div class="chart-wrap" style="height:180px" id="gwrap-rank"><canvas id="gc-rank"></canvas></div></div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="ctitle" style="margin-bottom:0">ポイント推移</div>
+          <button onclick="expandGraph('line')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">⛶ 拡大</button>
+        </div>
+        <div class="chart-wrap" id="gwrap-line"><canvas id="gc-line"></canvas></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="ctitle" style="margin-bottom:0">順位分布</div>
+          <button onclick="expandGraph('rank')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">⛶ 拡大</button>
+        </div>
+        <div class="chart-wrap" style="height:200px" id="gwrap-rank"><canvas id="gc-rank"></canvas></div>
+      </div>
     </div>
     <div id="page-settings" class="page"></div>
   </div>
 </div>
 
 <div id="toast">✓ 記録しました</div>
+
+<!-- グラフ拡大オーバーレイ -->
+<div id="graph-fullscreen" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:500;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--bd)">
+    <div id="gfs-title" style="font-size:.85rem;color:var(--gold);font-family:'Noto Sans JP',sans-serif;font-weight:700"></div>
+    <button onclick="closeExpandGraph()" style="background:rgba(255,255,255,.08);border:1px solid var(--bd);color:var(--tx);padding:6px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">✕ 閉じる</button>
+  </div>
+  <div style="flex:1;padding:16px;position:relative;min-height:0">
+    <canvas id="gc-fullscreen" style="width:100%;height:100%"></canvas>
+  </div>
+</div>
 
 <!-- パスワードモーダル -->
 <div class="ovl" id="modal-pw">
@@ -1124,38 +1147,242 @@ function makeSvg(hist) {
   return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible">${zl}<polyline points="${pts}" fill="none" stroke="${lc}" stroke-width="2" stroke-linejoin="round"/><polygon points="${PL},${PT+gH} ${pts} ${PL+gW},${PT+gH}" fill="${lc}" fill-opacity="0.12"/>${dots}${yL}${xL}</svg>`;
 }
 
+// ===== グラフ =====
+let _graphLineData = null;
+let _graphRankData = null;
+let fsChart = null;
+
+function buildGraphData() {
+  if (!curGroup) return;
+  const g = curGroup;
+  const leagues = Object.keys(g.players).filter(k => g.players[k].length > 0);
+  if (!leagues.includes(gLeague)) gLeague = leagues[0] || '_default';
+
+  const stats = getStats(gLeague);
+  const players = (gLeague === '_default' ? (g._players||[]) : (g.players[gLeague]||[])).filter(p => stats[p]?.games > 0);
+
+  // 日付順にhanzosを並べて各選手の累計推移を構築
+  const targetLeague = gLeague === '_default' ? '' : gLeague;
+  const hanzos = g.hanzos.filter(h => (h.league||'') === targetLeague)
+    .slice().sort((a,b) => a.date.localeCompare(b.date) || a.id - b.id);
+
+  const running = {};
+  players.forEach(p => { running[p] = 0; });
+  const cumData = {};
+  players.forEach(p => { cumData[p] = []; });
+  const dateLabels = [];
+
+  hanzos.forEach(h => {
+    const uma = h.uma || g.uma;
+    const oka = h.oka !== undefined ? h.oka : g.oka;
+    const kaeshi = h.kaeshi || g.kaeshi;
+    const {pts} = calcPts(h.scores, h.ky, uma, oka, kaeshi);
+    const label = h.date.slice(5).replace('-', '/'); // MM/DD
+    dateLabels.push(label);
+    players.forEach(p => {
+      const idx = h.players.indexOf(p);
+      if (idx !== -1) {
+        let delta = pts[idx];
+        if (h.penalties) h.penalties.forEach(pen => { if (pen.player === p) delta = Math.round((delta + pen.pt)*10)/10; });
+        running[p] = Math.round((running[p] + delta) * 10) / 10;
+      }
+      cumData[p].push(idx !== -1 ? running[p] : null);
+    });
+  });
+
+  const COLORS = [
+    '#d4a843','#4caf82','#e05252','#6fa8dc',
+    '#f0c96a','#81c995','#ff9a9a','#a0c4ff',
+    '#ffd166','#06d6a0','#ef476f','#118ab2'
+  ];
+
+  _graphLineData = {
+    labels: dateLabels,
+    players,
+    datasets: players.map((p, i) => ({
+      label: p,
+      data: cumData[p],
+      borderColor: COLORS[i % COLORS.length],
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: hanzos.length <= 30 ? 3 : 0,
+      pointHoverRadius: 5,
+      spanGaps: true,
+      tension: 0.3
+    }))
+  };
+
+  const RANK_COLORS = ['#d4a843','#8a9ab0','#a0622a','#e05252'];
+  const RANK_LABELS = ['1位','2位','3位','4位'];
+  _graphRankData = {
+    labels: players,
+    datasets: [0,1,2,3].map(r => ({
+      label: RANK_LABELS[r],
+      data: players.map(p => stats[p].ranks[r] || 0),
+      backgroundColor: RANK_COLORS[r] + 'cc',
+      borderColor: RANK_COLORS[r],
+      borderWidth: 1,
+      borderRadius: r === 3 ? 4 : 0
+    }))
+  };
+}
+
+function makeLineOptions(small) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { labels: { color: '#8888a0', font: { size: small?11:13 }, boxWidth: 14, padding: 10 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}  ${ctx.parsed.y > 0 ? '+' : ''}${ctx.parsed.y}` } }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#8888a0', font: { size: small?10:12 }, maxTicksLimit: small?10:20, maxRotation: 45, minRotation: 0 },
+        grid: { color: 'rgba(255,255,255,.05)' }
+      },
+      y: {
+        ticks: { color: '#8888a0', font: { size: small?10:12 }, callback: v => v > 0 ? '+'+v : v },
+        grid: { color: 'rgba(255,255,255,.07)' }
+      }
+    }
+  };
+}
+
+function makeRankOptions(small) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#8888a0', font: { size: small?11:13 }, boxWidth: 12, padding: 10 } }
+    },
+    scales: {
+      x: {
+        stacked: true,
+        ticks: { color: '#e8e8f0', font: { size: small?10:12 }, maxRotation: 90, minRotation: 90 },
+        grid: { display: false }
+      },
+      y: {
+        stacked: true,
+        ticks: { color: '#8888a0', font: { size: small?10:12 }, precision: 0 },
+        grid: { color: 'rgba(255,255,255,.05)' }
+      }
+    }
+  };
+}
+
+function renderGraph() {
+  if (!curGroup) return;
+  const g = curGroup;
+  const leagues = Object.keys(g.players).filter(k => g.players[k].length > 0);
+  if (!leagues.includes(gLeague)) gLeague = leagues[0] || '_default';
+
+  const ltabs = document.getElementById('graph-ltabs');
+  if (ltabs) {
+    ltabs.innerHTML = leagues.length > 1
+      ? leagues.map(l => `<div class="ltab ${gLeague===l?'on':''}" onclick="gLeague='${l}';renderGraph()">${l}リーグ</div>`).join('')
+      : '';
+  }
+
+  if (lChart) { lChart.destroy(); lChart = null; }
+  if (rChart) { rChart.destroy(); rChart = null; }
+
+  buildGraphData();
+
+  const lineCanvas = document.getElementById('gc-line');
+  if (lineCanvas && _graphLineData) {
+    // 順位分布の高さをプレイヤー数に応じて調整
+    const rankWrap = document.getElementById('gwrap-rank');
+    if (rankWrap && _graphRankData) {
+      const h = Math.max(200, (_graphRankData.labels.length * 32) + 60);
+      rankWrap.style.height = Math.min(h, 320) + 'px';
+    }
+    lChart = new Chart(lineCanvas, { type: 'line', data: _graphLineData, options: makeLineOptions(true) });
+  }
+
+  const rankCanvas = document.getElementById('gc-rank');
+  if (rankCanvas && _graphRankData) {
+    rChart = new Chart(rankCanvas, { type: 'bar', data: _graphRankData, options: makeRankOptions(true) });
+  }
+}
+
+function expandGraph(type) {
+  buildGraphData();
+  const overlay = document.getElementById('graph-fullscreen');
+  const titleEl = document.getElementById('gfs-title');
+  const canvas = document.getElementById('gc-fullscreen');
+  overlay.style.display = 'flex';
+  if (fsChart) { fsChart.destroy(); fsChart = null; }
+  if (type === 'line') {
+    titleEl.textContent = 'ポイント推移';
+    fsChart = new Chart(canvas, { type: 'line', data: _graphLineData, options: makeLineOptions(false) });
+  } else {
+    titleEl.textContent = '順位分布';
+    fsChart = new Chart(canvas, { type: 'bar', data: _graphRankData, options: makeRankOptions(false) });
+  }
+}
+
+function closeExpandGraph() {
+  document.getElementById('graph-fullscreen').style.display = 'none';
+  if (fsChart) { fsChart.destroy(); fsChart = null; }
+}
+
+
 // ===== 半荘一覧 =====
 function renderHanzos() {
   const el = document.getElementById('hanzo-list');
   if (!curGroup) { el.innerHTML=''; return; }
   const g = curGroup;
   if (!g.hanzos.length && !(g.deleted&&g.deleted.length)) { el.innerHTML='<div class="empty"><span class="eico">🎴</span>まだ記録がありません</div>'; return; }
-  let html = [...g.hanzos].reverse().map((h,ri) => {
-    const oi = g.hanzos.length-1-ri;
-    const {pts,ranks} = calcPts(h.scores, h.ky, h.uma||g.uma, h.oka!==undefined?h.oka:g.oka, h.kaeshi||g.kaeshi);
-    const ti = ranks.indexOf(1);
-    const wd = ['東','南','西','北'];
-    const rows = h.players.map((p,i) => ({p, i, rank:ranks[i], pt:pts[i], score:h.scores[i]}))
-      .sort((a,b) => a.rank - b.rank)
-      .map(({p,i,rank,pt,score}) => {
-        const bd = badge(rank-1);
-        const pc = pt>0?'pp':pt<0?'pm':'pz';
-        return `<div class="hi-row"><div style="display:flex;align-items:center;gap:5px"><span class="${bd}" style="width:17px;height:17px;font-size:.6rem">${rank}</span><span style="font-size:.72rem;color:var(--tx2)">${wd[i]}</span><span>${p}</span></div><div><span style="color:var(--tx2);font-size:.78rem;margin-right:6px">${score.toLocaleString()}</span><span class="${pc}" style="font-weight:700">${pt>0?'+'+pt:pt}</span></div></div>`;
-      }).join('');
-    return `<div class="hi-wrap" id="wrap-${h.id}">
-      <div class="hi-del" id="del-${h.id}">削除</div>
-      <div class="hi" id="hi-${h.id}" ontouchstart="tsStart(event,${h.id})" ontouchmove="tsMove(event,${h.id})" ontouchend="tsEnd(event,${h.id})" onclick="tsClick(event,${h.id})">
-        <div class="hi-head"><span class="hi-num">#${oi+1}</span>
-          <div style="flex:1"><div class="hi-top">${h.date}　<span style="font-size:.72rem;color:var(--tx2);font-weight:400">${new Date(h.id).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span></div></div>
-          <span style="font-size:.88rem;font-weight:700;color:var(--green)">+${pts[ti]}</span>
-          <span style="font-size:.75rem;color:var(--tx2);margin-left:2px">${h.players[ti]}</span>
-          <button onclick="event.stopPropagation();editH(${h.id})" style="background:none;border:none;color:var(--gold);font-size:.8rem;cursor:pointer;padding:2px 4px;margin-left:2px;line-height:1">✏</button>
-          <button onclick="event.stopPropagation();delH(${h.id})" style="background:none;border:none;color:var(--tx2);font-size:1.1rem;cursor:pointer;padding:2px 4px;margin-left:2px;line-height:1">×</button>
+
+  // 月別グループ化
+  const byMonth = {};
+  [...g.hanzos].reverse().forEach((h, ri) => {
+    const oi = g.hanzos.length - 1 - ri;
+    const month = h.date.slice(0, 7); // YYYY-MM
+    if (!byMonth[month]) byMonth[month] = [];
+    byMonth[month].push({h, oi});
+  });
+
+  const wd = ['東','南','西','北'];
+  let html = Object.entries(byMonth).map(([month, entries]) => {
+    const [y, m] = month.split('-');
+    const monthLabel = `${y}年${parseInt(m)}月`;
+    const items = entries.map(({h, oi}) => {
+      const {pts, ranks} = calcPts(h.scores, h.ky, h.uma||g.uma, h.oka!==undefined?h.oka:g.oka, h.kaeshi||g.kaeshi);
+      const ti = ranks.indexOf(1);
+      const rows = h.players.map((p,i) => ({p, i, rank:ranks[i], pt:pts[i], score:h.scores[i]}))
+        .sort((a,b) => a.rank - b.rank)
+        .map(({p,i,rank,pt,score}) => {
+          const bd = badge(rank-1);
+          const pc = pt>0?'pp':pt<0?'pm':'pz';
+          return `<div class="hi-row"><div style="display:flex;align-items:center;gap:5px"><span class="${bd}" style="width:17px;height:17px;font-size:.6rem">${rank}</span><span style="font-size:.72rem;color:var(--tx2)">${wd[i]}</span><span>${p}</span></div><div><span style="color:var(--tx2);font-size:.78rem;margin-right:6px">${score.toLocaleString()}</span><span class="${pc}" style="font-weight:700">${pt>0?'+'+pt:pt}</span></div></div>`;
+        }).join('');
+      return `<div class="hi-wrap" id="wrap-${h.id}">
+        <div class="hi-del" id="del-${h.id}">削除</div>
+        <div class="hi" id="hi-${h.id}" ontouchstart="tsStart(event,${h.id})" ontouchmove="tsMove(event,${h.id})" ontouchend="tsEnd(event,${h.id})" onclick="tsClick(event,${h.id})">
+          <div class="hi-head"><span class="hi-num">#${oi+1}</span>
+            <div style="flex:1"><div class="hi-top">${h.date}　<span style="font-size:.72rem;color:var(--tx2);font-weight:400">${new Date(h.id).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span></div></div>
+            <span style="font-size:.88rem;font-weight:700;color:var(--green)">+${pts[ti]}</span>
+            <span style="font-size:.75rem;color:var(--tx2);margin-left:2px">${h.players[ti]}</span>
+            <button onclick="event.stopPropagation();editH(${h.id})" style="background:none;border:none;color:var(--gold);font-size:.8rem;cursor:pointer;padding:2px 4px;margin-left:2px;line-height:1">✏</button>
+            <button onclick="event.stopPropagation();delH(${h.id})" style="background:none;border:none;color:var(--tx2);font-size:1.1rem;cursor:pointer;padding:2px 4px;margin-left:2px;line-height:1">×</button>
+          </div>
+          <div class="hi-det"><div style="font-size:.65rem;color:var(--tx2);margin-bottom:6px">${h.league}${h.ky?'　供託'+h.ky+'本':''}</div>${rows}${h.penalties&&h.penalties.length?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">${h.penalties.map(p=>`<div style="font-size:.75rem;color:var(--red);padding:2px 0">⚠ ${p.player}：${p.pt}pt（ペナルティ）</div>`).join('')}</div>`:''}</div>
         </div>
-        <div class="hi-det"><div style="font-size:.65rem;color:var(--tx2);margin-bottom:6px">${h.league}${h.ky?'　供託'+h.ky+'本':''}</div>${rows}${h.penalties&&h.penalties.length?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">${h.penalties.map(p=>`<div style="font-size:.75rem;color:var(--red);padding:2px 0">⚠ ${p.player}：${p.pt}pt（ペナルティ）</div>`).join('')}</div>`:''}</div>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.1em">${monthLabel}</div>
+        <div style="font-size:.62rem;color:var(--tx2)">${entries.length}局</div>
+        <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,168,67,.3),transparent)"></div>
       </div>
+      ${items}
     </div>`;
   }).join('');
+
   if (g.deleted && g.deleted.length) {
     html += `<div style="margin-top:16px"><div style="font-size:.68rem;color:var(--tx2);letter-spacing:.12em;margin-bottom:8px">── 削除済み ──</div>
     ${g.deleted.slice().reverse().map(h=>{
