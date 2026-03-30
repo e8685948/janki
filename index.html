@@ -978,10 +978,17 @@ function renderPlayers() {
   if (!curGroup) { el.innerHTML=''; return; }
   const g = curGroup;
   const leagues = Object.keys(g.players).filter(k=>g.players[k].length>0);
-  if (!leagues.includes(pgLeague)) pgLeague = leagues[0]||'A1';
+  // リーグ未設定グループ（_playersで管理）の場合は_defaultを使う
+  const useDefault = leagues.length === 0 && (g._players||[]).length > 0;
+  if (useDefault) {
+    pgLeague = '_default';
+  } else if (!leagues.includes(pgLeague)) {
+    pgLeague = leagues[0]||'A1';
+  }
   const stats = getStats(pgLeague, pgRuleFilter);
-  const active = (g.players[pgLeague]||[]).filter(p=>stats[p]?.games>0);
-  if (!window._selPlayer || !(g.players[pgLeague]||[]).includes(window._selPlayer)) window._selPlayer = active[0]||null;
+  const playerList = useDefault ? (g._players||[]) : (g.players[pgLeague]||[]);
+  const active = playerList.filter(p=>stats[p]?.games>0);
+  if (!window._selPlayer || !playerList.includes(window._selPlayer)) window._selPlayer = active[0]||null;
 
   // 使用ルール収集
   const usedRules = ['all'];
@@ -995,7 +1002,7 @@ function renderPlayers() {
     ${leagues.length>1 ? `<div class="ltabs">${leagues.map(l=>`<div class="ltab ${pgLeague===l?'on':''}" onclick="pgLeague='${l}';pgRuleFilter='all';window._selPlayer=null;renderPlayers()">${l}リーグ</div>`).join('')}</div>` : ''}
     ${usedRules.length>2 ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">${usedRules.map(r=>`<button onclick="pgRuleFilter='${r}';renderPlayers()" style="padding:5px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;border:1px solid ${pgRuleFilter===r?'var(--gold)':'var(--bd)'};background:${pgRuleFilter===r?'rgba(212,168,67,.2)':'rgba(255,255,255,.05)'};color:${pgRuleFilter===r?'var(--gold)':'var(--tx2)'}">${r==='all'?'全ルール':r}</button>`).join('')}</div>` : ''}
     ${active.length===0 ? '<div class="empty"><span class="eico">👤</span>まだ記録がありません</div>' : `
-    <div class="fg"><select class="fs" onchange="window._selPlayer=this.value;renderPlayers()">${(g.players[pgLeague]||[]).filter(p=>getStats(pgLeague,pgRuleFilter)[p]?.games>0).map(p=>`<option value="${p}"${p===window._selPlayer?' selected':''}>${p}</option>`).join('')}</select></div>
+    <div class="fg"><select class="fs" onchange="window._selPlayer=this.value;renderPlayers()">${playerList.filter(p=>getStats(pgLeague,pgRuleFilter)[p]?.games>0).map(p=>`<option value="${p}"${p===window._selPlayer?' selected':''}>${p}</option>`).join('')}</select></div>
     <div id="player-detail">${window._selPlayer ? renderPlayerDetail(window._selPlayer, pgLeague, pgRuleFilter) : ''}</div>`}`;
 }
 
@@ -1006,9 +1013,9 @@ function renderPlayerDetail(name, league, ruleFilter) {
   const s = stats[name];
   if (!s || s.games===0) return '<div class="empty">データなし</div>';
   const mx = getDok(league);
+  const targetLeague = league === '_default' ? '' : league;
   const myH = g.hanzos.filter(h=>{
-    if(!h.league===league||!h.players.includes(name)) return false;
-    if(h.league!==league||!h.players.includes(name)) return false;
+    if((h.league||'')!==targetLeague||!h.players.includes(name)) return false;
     if(ruleFilter!=='all'){
       const uma=h.uma||g.uma,oka=h.oka!==undefined?h.oka:g.oka,kaeshi=h.kaeshi||g.kaeshi;
       const label=Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(uma)&&v.oka===oka&&v.kaeshi===kaeshi)?.[1]?.label||'カスタム';
@@ -1026,8 +1033,12 @@ function renderPlayerDetail(name, league, ruleFilter) {
     const ruleLabel = h.uma ? (Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(h.uma)&&v.oka===h.oka&&v.kaeshi===h.kaeshi)?.[1]?.label || 'カスタム') : (RULES[g.rule]?.label || 'カスタム');
     return {date:h.date, score:h.scores[i], pt:pts[i], rank:ranks[i], ruleLabel};
   });
-  const best = allPts.length ? Math.max(...allPts.map(x=>x.pt)) : 0;
-  const worst = allPts.length ? Math.min(...allPts.map(x=>x.pt)) : 0;
+  const bestEntry = allPts.length ? allPts.reduce((a,b) => a.pt >= b.pt ? a : b) : null;
+  const worstEntry = allPts.length ? allPts.reduce((a,b) => a.pt <= b.pt ? a : b) : null;
+  const best = bestEntry ? bestEntry.pt : 0;
+  const worst = worstEntry ? worstEntry.pt : 0;
+  const bestScore = bestEntry ? bestEntry.score : 0;
+  const worstScore = worstEntry ? worstEntry.score : 0;
   const avg = s.games ? (s.rsum/s.games).toFixed(2) : '-';
   const dokList = Object.entries(mx[name]||{}).filter(([p,c])=>p!==name&&c>0).sort((a,b)=>b[1]-a[1]).slice(0,5);
   return `
@@ -1035,8 +1046,8 @@ function renderPlayerDetail(name, league, ruleFilter) {
       <div class="stat-n"><div class="stat-v ${s.pt>=0?'pp':'pm'}">${s.pt>=0?'+':''}${s.pt}</div><div class="stat-l">累計PT</div></div>
       <div class="stat-n"><div class="stat-v">${s.games}</div><div class="stat-l">試合数</div></div>
       <div class="stat-n"><div class="stat-v">${avg}</div><div class="stat-l">平均順位</div></div>
-      <div class="stat-n"><div class="stat-v" style="color:var(--green)">${best>=0?'+':''}${best}</div><div class="stat-l">最高PT</div></div>
-      <div class="stat-n"><div class="stat-v" style="color:var(--red)">${worst}</div><div class="stat-l">最低PT</div></div>
+      <div class="stat-n"><div class="stat-v" style="color:var(--green);font-size:.85rem">${bestScore.toLocaleString()}</div><div class="stat-l">最高PT(${best>=0?'+':''}${best})</div></div>
+      <div class="stat-n"><div class="stat-v" style="color:var(--red);font-size:.85rem">${worstScore.toLocaleString()}</div><div class="stat-l">最低PT(${worst})</div></div>
       <div class="stat-n"><div class="stat-v" style="font-size:.8rem">${s.ranks[0]}-${s.ranks[1]}-${s.ranks[2]}-${s.ranks[3]}</div><div class="stat-l">1-2-3-4位</div></div>
     </div>
     <div class="card" style="padding:10px 12px;margin-bottom:10px">
@@ -1208,7 +1219,7 @@ function buildGraphData() {
       pointRadius: hanzos.length <= 30 ? 3 : 0,
       pointHoverRadius: 5,
       spanGaps: true,
-      tension: 0.3
+      tension: 0
     }))
   };
 
@@ -1345,9 +1356,12 @@ function renderHanzos() {
   });
 
   const wd = ['東','南','西','北'];
-  let html = Object.entries(byMonth).map(([month, entries]) => {
+  const monthKeys = Object.keys(byMonth).sort((a,b) => b.localeCompare(a)); // 最新月順
+  let html = monthKeys.map((month, mi) => {
     const [y, m] = month.split('-');
     const monthLabel = `${y}年${parseInt(m)}月`;
+    const entries = byMonth[month];
+    const isOpen = mi === 0; // 最新月だけ最初から開く
     const items = entries.map(({h, oi}) => {
       const {pts, ranks} = calcPts(h.scores, h.ky, h.uma||g.uma, h.oka!==undefined?h.oka:g.oka, h.kaeshi||g.kaeshi);
       const ti = ranks.indexOf(1);
@@ -1373,14 +1387,17 @@ function renderHanzos() {
       </div>`;
     }).join('');
 
-    return `<div style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <div style="font-size:.72rem;font-weight:700;color:var(--gold);letter-spacing:.1em">${monthLabel}</div>
-        <div style="font-size:.62rem;color:var(--tx2)">${entries.length}局</div>
-        <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(212,168,67,.3),transparent)"></div>
+    return `<details style="margin-bottom:8px;border-radius:10px;border:1px solid var(--bd);overflow:hidden" ${isOpen?'open':''}>
+      <summary style="list-style:none;cursor:pointer;background:var(--bg3);padding:10px 14px;display:flex;align-items:center;gap:8px;user-select:none;-webkit-user-select:none">
+        <span style="font-size:.75rem;font-weight:700;color:var(--gold)">${monthLabel}</span>
+        <span style="font-size:.65rem;color:var(--tx2)">${entries.length}局</span>
+        <span style="flex:1"></span>
+        <span class="month-arrow" style="font-size:.65rem;color:var(--tx2)">▼</span>
+      </summary>
+      <div style="padding:8px 0 4px">
+        ${items}
       </div>
-      ${items}
-    </div>`;
+    </details>`;
   }).join('');
 
   if (g.deleted && g.deleted.length) {
