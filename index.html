@@ -156,6 +156,43 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .empty{text-align:center;padding:36px 16px;color:var(--tx2);font-size:.85rem;line-height:2}
 .eico{font-size:2.5rem;margin-bottom:8px;display:block}
 #toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;font-size:.82rem;font-weight:700;padding:8px 20px;border-radius:20px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;font-family:'Noto Sans JP',sans-serif}
+
+/* 条件計算 */
+.cd-player-row{display:grid;grid-template-columns:80px 1fr 1fr auto;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.cd-player-row:last-child{border-bottom:none}
+.cd-col-header{display:grid;grid-template-columns:80px 1fr 1fr auto;gap:6px;padding:4px 0}
+.cd-col-h{font-size:.65rem;color:var(--tx2);text-align:center}
+.cd-dealer-btn{width:32px;height:32px;border-radius:50%;border:2px solid var(--bd);background:transparent;color:var(--tx2);font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:inherit;transition:all .2s;flex-shrink:0}
+.cd-dealer-btn.on{border-color:var(--gold);background:rgba(212,168,67,.15);color:var(--gold)}
+.cd-calc-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),#b8893a);border:none;border-radius:12px;color:#1a1200;font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:16px;letter-spacing:.05em}
+.cd-result-card{background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:10px}
+.cd-result-card.win{border-color:rgba(76,175,130,.4)}
+.cd-result-card.possible{border-color:rgba(212,168,67,.3)}
+.cd-result-card.impossible{border-color:rgba(224,82,82,.3);opacity:.7}
+.cd-result-name{font-size:.88rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.cd-rank-badge{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.08);color:var(--tx2)}
+.cd-rank-badge.r1{background:rgba(212,168,67,.2);color:var(--gold)}
+.cd-rank-badge.r2{background:rgba(138,154,176,.2);color:#8a9ab0}
+.cd-rank-badge.r3{background:rgba(160,98,42,.2);color:#c07840}
+.cd-rank-badge.r4{background:rgba(224,82,82,.15);color:var(--red)}
+.cd-hand-row{display:flex;align-items:baseline;gap:6px;padding:3px 0;flex-wrap:wrap}
+.cd-hand-type{font-size:.7rem;color:var(--tx2);min-width:28px}
+.cd-hand-pts{font-size:.92rem;font-weight:700;color:var(--gold)}
+.cd-hand-pts.ng{color:var(--red);font-size:.78rem}
+.cd-hand-pts.ok-small{font-size:.82rem;font-weight:700;color:var(--green)}
+.cd-hand-label{font-size:.78rem;color:var(--tx);background:rgba(255,255,255,.07);padding:1px 7px;border-radius:6px}
+.cd-hand-sub{font-size:.68rem;color:var(--tx2)}
+.cd-cs-title{font-size:.7rem;font-weight:700;color:var(--tx2);margin-bottom:4px;letter-spacing:.05em}
+.cd-cs-title.ok{color:var(--green)}
+.cd-cs-title.ng{color:var(--red)}
+.cd-cs-note{font-size:.68rem;color:var(--tx2)}
+.cd-condition-section{margin-bottom:8px}
+.cd-total-row{display:flex;justify-content:space-between;font-size:.72rem;color:var(--tx2);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.05)}
+.cd-fg2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cd-sub-row{display:flex;gap:10px}
+.cd-sub-row .cd-fi-wrap{flex:1}
+.cd-fi-wrap label{display:block;font-size:.68rem;color:var(--tx2);margin-bottom:3px}
+.cd-honba-note{font-size:.65rem;color:var(--tx2);margin-top:4px}
 </style>
 </head>
 <body>
@@ -170,6 +207,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   <button class="tab" id="tab-players" onclick="showTab('players')">個人成績</button>
   <button class="tab" id="tab-hanzos" onclick="showTab('hanzos')">半荘・試合結果</button>
   <button class="tab" id="tab-graph" onclick="showTab('graph')">グラフ</button>
+  <button class="tab" id="tab-condition" onclick="showTab('condition')">条件計算</button>
   <button class="tab" id="tab-settings" onclick="showTab('settings')">設定</button>
 </div>
 
@@ -208,6 +246,53 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <div class="chart-wrap" style="height:200px" id="gwrap-rank"><canvas id="gc-rank"></canvas></div>
       </div>
       <div class="card"><div class="ctitle">同卓回数</div><div class="dok-wrap" id="graph-dok-wrap"></div></div>
+    </div>
+    <div id="page-condition" class="page">
+      <!-- ルール設定 -->
+      <div class="card">
+        <div class="ctitle">⚙️ ルール設定</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <label style="font-size:.75rem;color:var(--tx2);white-space:nowrap;min-width:60px">ルール</label>
+          <select id="cd-rule-sel" onchange="cdOnRuleChange()" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 10px;font-size:.85rem;font-family:inherit;width:100%;outline:none">
+            <option value="mleague">Mリーグ（30/10/-10/-30・オカ20）</option>
+            <option value="saikouisen">最高位戦（ウマ10-30・オカなし）</option>
+            <option value="renmei">連盟A（8/4/-4/-8・オカなし）</option>
+            <option value="tenho">天鳳（20/10/-10/-20・オカ20）</option>
+            <option value="custom">カスタム</option>
+          </select>
+        </div>
+        <div id="cd-custom-rule" style="display:none">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <label style="font-size:.75rem;color:var(--tx2);white-space:nowrap;min-width:60px">ウマ</label>
+            <input type="number" id="cd-u0" value="30" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 6px;font-size:.85rem;width:100%;text-align:center;outline:none">
+            <input type="number" id="cd-u1" value="10" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 6px;font-size:.85rem;width:100%;text-align:center;outline:none">
+            <input type="number" id="cd-u2" value="-10" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 6px;font-size:.85rem;width:100%;text-align:center;outline:none">
+            <input type="number" id="cd-u3" value="-30" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 6px;font-size:.85rem;width:100%;text-align:center;outline:none">
+          </div>
+          <div class="cd-fg2">
+            <div><label style="font-size:.68rem;color:var(--tx2);display:block;margin-bottom:3px">オカ</label><input type="number" id="cd-oka" value="20" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 10px;font-size:.85rem;width:100%;text-align:center;outline:none"></div>
+            <div><label style="font-size:.68rem;color:var(--tx2);display:block;margin-bottom:3px">返し点</label><input type="number" id="cd-kaeshi" value="30000" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 10px;font-size:.85rem;width:100%;text-align:center;outline:none"></div>
+          </div>
+        </div>
+        <div class="cd-sub-row" style="margin-top:8px">
+          <div class="cd-fi-wrap"><label>本場数</label><input type="number" id="cd-honba" value="0" min="0" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 10px;font-size:.85rem;width:100%;text-align:center;outline:none"></div>
+          <div class="cd-fi-wrap"><label>供託（リーチ棒）</label><input type="number" id="cd-riichi" value="0" min="0" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 10px;font-size:.85rem;width:100%;text-align:center;outline:none"></div>
+        </div>
+        <div class="cd-honba-note">※本場がある場合、和了点が自動で加算されます（+300点/本場）</div>
+      </div>
+      <!-- 選手入力 -->
+      <div class="card">
+        <div class="ctitle">👥 選手情報入力</div>
+        <div class="cd-col-header">
+          <div class="cd-col-h">名前</div>
+          <div class="cd-col-h">持ち点<br><span style="font-size:.58rem">（下2桁不要）</span></div>
+          <div class="cd-col-h">累計PT</div>
+          <div class="cd-col-h">親</div>
+        </div>
+        <div id="cd-players-wrap"></div>
+      </div>
+      <button class="cd-calc-btn" onclick="cdCalculate()">条件を計算する</button>
+      <div id="cd-results"></div>
     </div>
     <div id="page-settings" class="page"></div>
   </div>
@@ -787,7 +872,7 @@ function saveGroup() {
 
 // ===== タブ =====
 function showTab(t) {
-  ['ranking','players','hanzos','graph','settings'].forEach(n => {
+  ['ranking','players','hanzos','graph','condition','settings'].forEach(n => {
     document.getElementById('tab-'+n).classList.toggle('on', n===t);
     document.getElementById('page-'+n).classList.toggle('on', n===t);
   });
@@ -795,8 +880,338 @@ function showTab(t) {
   if (t==='players') renderPlayers();
   if (t==='hanzos')  renderHanzos();
   if (t==='graph')   renderGraph();
+  if (t==='condition') cdRenderPlayers();
   if (t==='settings') requireAuth(renderSettings);
 }
+
+// ===== 条件計算 =====
+const CD_RULES = {
+  mleague:    { uma:[30,10,-10,-30], oka:20, kaeshi:30000 },
+  saikouisen: { uma:[30,10,-10,-30], oka:0,  kaeshi:30000 },
+  renmei:     { uma:[8,4,-4,-8],     oka:0,  kaeshi:30000 },
+  tenho:      { uma:[20,10,-10,-20], oka:20, kaeshi:25000 },
+  custom:     { uma:[20,10,-10,-20], oka:0,  kaeshi:30000 },
+};
+const cdDefaultPlayers = [
+  { name:'', score:25000, cumpt:0, isDealer:true },
+  { name:'', score:25000, cumpt:0, isDealer:false },
+  { name:'', score:25000, cumpt:0, isDealer:false },
+  { name:'', score:25000, cumpt:0, isDealer:false },
+];
+const CD_FU_LIST = [20, 25, 30, 40, 50];
+
+function cdOnRuleChange() {
+  const v = document.getElementById('cd-rule-sel').value;
+  document.getElementById('cd-custom-rule').style.display = v === 'custom' ? 'block' : 'none';
+  cdCalcScore4();
+}
+function cdSetDealer(idx) {
+  for (let i = 0; i < 4; i++) document.getElementById('cd-dealer-'+i).classList.toggle('on', i===idx);
+}
+function cdCalcScore4() {
+  const rule = cdGetRule();
+  const total = rule.oka > 0 ? 100000 : rule.kaeshi * 4;
+  const vals = [0,1,2].map(i => (parseInt(document.getElementById('cd-p-score-'+i)?.value)||0)*100);
+  const el = document.getElementById('cd-p-score-3');
+  if (el) el.value = (total - vals.reduce((a,b)=>a+b,0)) / 100;
+}
+function cdRenderPlayers() {
+  const wrap = document.getElementById('cd-players-wrap');
+  if (!wrap) return;
+
+  // 現在のグループの選手リストを取得
+  const playerOptions = (() => {
+    if (!curGroup) return [];
+    const leagues = Object.keys(curGroup.players).filter(k => curGroup.players[k].length > 0);
+    if (leagues.length > 0) {
+      // 全リーグの選手を重複なく結合
+      const all = [...new Set(leagues.flatMap(l => curGroup.players[l]))];
+      return all;
+    }
+    return curGroup._players || [];
+  })();
+
+  const makeNameInput = (i) => {
+    if (playerOptions.length > 0) {
+      const opts = playerOptions.map(p => `<option value="${p}">${p}</option>`).join('');
+      return `<select id="cd-p-name-${i}" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 8px;font-size:.8rem;font-family:inherit;width:100%;outline:none">
+        <option value="">選手${i+1}</option>${opts}
+      </select>`;
+    }
+    return `<input type="text" id="cd-p-name-${i}" placeholder="選手${i+1}" value="" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 8px;font-size:.8rem;font-family:inherit;width:100%;outline:none">`;
+  };
+
+  wrap.innerHTML = [0,1,2,3].map((i) => `
+    <div class="cd-player-row">
+      ${makeNameInput(i)}
+      ${i < 3
+        ? `<input type="number" id="cd-p-score-${i}" value="" placeholder="250" step="1" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 8px;font-size:.85rem;text-align:right;width:100%;outline:none" oninput="cdCalcScore4()">`
+        : `<input type="number" id="cd-p-score-${i}" value="" placeholder="自動" step="1" style="background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.3);color:var(--gold);border-radius:8px;padding:7px 8px;font-size:.85rem;text-align:right;width:100%;outline:none" readonly>`
+      }
+      <input type="number" id="cd-p-cumpt-${i}" value="" placeholder="0" step="0.1" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 8px;font-size:.85rem;text-align:right;width:100%;outline:none">
+      <button class="cd-dealer-btn ${i===0?'on':''}" id="cd-dealer-${i}" onclick="cdSetDealer(${i})">親</button>
+    </div>
+  `).join('');
+}
+function cdGetRule() {
+  const sel = document.getElementById('cd-rule-sel')?.value || 'mleague';
+  if (sel !== 'custom') return CD_RULES[sel];
+  return {
+    uma: [0,1,2,3].map(i => parseFloat(document.getElementById('cd-u'+i)?.value)||0),
+    oka: parseFloat(document.getElementById('cd-oka')?.value)||0,
+    kaeshi: parseFloat(document.getElementById('cd-kaeshi')?.value)||30000,
+  };
+}
+function cdGetPlayers() {
+  return [0,1,2,3].map(i => ({
+    name: document.getElementById('cd-p-name-'+i)?.value || '選手'+(i+1),
+    score: (parseInt(document.getElementById('cd-p-score-'+i)?.value)||0)*100,
+    cumpt: parseFloat(document.getElementById('cd-p-cumpt-'+i)?.value)||0,
+    isDealer: document.getElementById('cd-dealer-'+i)?.classList.contains('on'),
+  }));
+}
+function cdCalcRon(fu, han, isDealer) {
+  if (han >= 13) return isDealer ? 48000 : 32000;
+  if (han >= 11) return isDealer ? 36000 : 24000;
+  if (han >= 8)  return isDealer ? 24000 : 16000;
+  if (han >= 6)  return isDealer ? 18000 : 12000;
+  if (han >= 5)  return isDealer ? 12000 : 8000;
+  const base = fu * Math.pow(2, han + 2);
+  const pts = isDealer ? Math.ceil(base*6/100)*100 : Math.ceil(base*4/100)*100;
+  return Math.min(pts, isDealer ? 12000 : 8000);
+}
+function cdIsValidFuHan(fu, han) {
+  if (fu === 20 && han === 1) return false;
+  if (fu === 25 && han !== 2) return false;
+  return true;
+}
+function cdCalcTsumo(fu, han, isDealer) {
+  if (han >= 13) return isDealer ? {ko:16000,dealer:16000,total:48000} : {ko:8000,dealer:16000,total:32000};
+  if (han >= 11) return isDealer ? {ko:12000,dealer:12000,total:36000} : {ko:6000,dealer:12000,total:24000};
+  if (han >= 8)  return isDealer ? {ko:8000,dealer:8000,total:24000}  : {ko:4000,dealer:8000,total:16000};
+  if (han >= 6)  return isDealer ? {ko:6000,dealer:6000,total:18000}  : {ko:3000,dealer:6000,total:12000};
+  if (han >= 5)  return isDealer ? {ko:4000,dealer:4000,total:12000}  : {ko:2000,dealer:4000,total:8000};
+  const base = fu * Math.pow(2, han + 2);
+  if (isDealer) { const ko = Math.min(Math.ceil(base*2/100)*100,4000); return {ko,dealer:ko,total:ko*3}; }
+  const ko = Math.min(Math.ceil(base/100)*100,2000);
+  const dealer = Math.min(Math.ceil(base*2/100)*100,4000);
+  return {ko,dealer,total:ko*2+dealer};
+}
+function cdHanLabel(han, fu) {
+  if (han >= 13) return '役満';
+  if (han >= 11) return '三倍満';
+  if (han >= 8)  return '倍満';
+  if (han >= 6)  return 'ハネ満';
+  if (han >= 5)  return '満貫';
+  return `${fu}符${han}飜`;
+}
+function cdFindMinRon(minPts, isDealer) {
+  if (minPts <= 0) return { pts:0, label:'どんな手でもOK' };
+  for (let han = 1; han <= 13; han++) {
+    if (han >= 5) { const pts = cdCalcRon(30,han,isDealer); if (pts >= minPts) return {pts,label:cdHanLabel(han,null)}; continue; }
+    for (const fu of CD_FU_LIST) {
+      if (!cdIsValidFuHan(fu,han)) continue;
+      const pts = cdCalcRon(fu,han,isDealer);
+      if (pts >= minPts) return {pts,fu,han,label:cdHanLabel(han,fu)};
+    }
+  }
+  return null;
+}
+function cdFindMinTsumo(pi, allPlayers, uma, oka, kaeshi, honba, riichi) {
+  const piIdx = allPlayers.findIndex(p => p === pi);
+  for (let han = 1; han <= 13; han++) {
+    const fuList = han >= 5 ? [30] : CD_FU_LIST;
+    for (const fu of fuList) {
+      if (han < 5 && !cdIsValidFuHan(fu,han)) continue;
+      const t = cdCalcTsumo(fu,han,pi.isDealer);
+      const newScores = allPlayers.map((p,j) => {
+        if (j===piIdx) return p.score + t.total + 300*honba + 1000*riichi;
+        return p.score - (p.isDealer ? t.dealer : t.ko) - 100*honba;
+      });
+      const rankOrder = newScores.map((s,i)=>({s,i})).sort((a,b)=>b.s-a.s);
+      const newRoundRanks = new Array(allPlayers.length);
+      rankOrder.forEach(({i},rank) => { newRoundRanks[i]=rank; });
+      const newTotals = allPlayers.map((p,j) => p.cumpt+(newScores[j]-kaeshi)/1000+uma[newRoundRanks[j]]+(newRoundRanks[j]===0?oka:0));
+      if (newTotals[piIdx] > Math.max(...newTotals.filter((_,j)=>j!==piIdx)))
+        return {...t, fu:han<5?fu:null, han, label:cdHanLabel(han,fu)};
+    }
+  }
+  return null;
+}
+function cdFindMin2ndRon(piIdx, payerIdx, allPlayers, uma, oka, kaeshi, honba, riichi) {
+  for (let hand = 100; hand <= 48000; hand += 100) {
+    const bonus = 300*honba + 1000*riichi;
+    const newScores = allPlayers.map((p,j) => j===piIdx ? p.score+hand+bonus : j===payerIdx ? p.score-hand-300*honba : p.score);
+    const rankOrder = newScores.map((s,j)=>({s,j})).sort((a,b)=>b.s-a.s);
+    const newRoundRanks = new Array(allPlayers.length);
+    rankOrder.forEach(({j},rank) => { newRoundRanks[j]=rank; });
+    const newTotals = allPlayers.map((p,j) => p.cumpt+(newScores[j]-kaeshi)/1000+uma[newRoundRanks[j]]+(newRoundRanks[j]===0?oka:0));
+    const sorted = [...newTotals].sort((a,b)=>b-a);
+    if (newTotals[piIdx] >= sorted[1]) return hand;
+  }
+  return null;
+}
+function cdFindMin2ndTsumo(piIdx, allPlayers, uma, oka, kaeshi, honba, riichi) {
+  const pi = allPlayers[piIdx];
+  for (let han = 1; han <= 13; han++) {
+    const fuList = han >= 5 ? [30] : CD_FU_LIST;
+    for (const fu of fuList) {
+      if (han < 5 && !cdIsValidFuHan(fu,han)) continue;
+      const t = cdCalcTsumo(fu,han,pi.isDealer);
+      const newScores = allPlayers.map((p,j) => {
+        if (j===piIdx) return p.score + t.total + 300*honba + 1000*riichi;
+        return p.score - (p.isDealer ? t.dealer : t.ko) - 100*honba;
+      });
+      const rankOrder = newScores.map((s,j)=>({s,j})).sort((a,b)=>b.s-a.s);
+      const newRoundRanks = new Array(allPlayers.length);
+      rankOrder.forEach(({j},rank) => { newRoundRanks[j]=rank; });
+      const newTotals = allPlayers.map((p,j) => p.cumpt+(newScores[j]-kaeshi)/1000+uma[newRoundRanks[j]]+(newRoundRanks[j]===0?oka:0));
+      const sorted = [...newTotals].sort((a,b)=>b-a);
+      if (newTotals[piIdx] >= sorted[1]) return {...t, fu:han<5?fu:null, han, label:cdHanLabel(han,fu)};
+    }
+  }
+  return null;
+}
+function cdFormatPt(v) { return (v>=0?'+':'')+(Math.round(v*10)/10); }
+
+function cdCalculate() {
+  const players = cdGetPlayers();
+  const rule = cdGetRule();
+  const { uma, oka, kaeshi } = rule;
+  const honba = parseInt(document.getElementById('cd-honba')?.value)||0;
+  const riichi = parseInt(document.getElementById('cd-riichi')?.value)||0;
+
+  const scores = players.map(p=>p.score);
+  const sortedIdx = [...Array(4).keys()].sort((a,b)=>scores[b]-scores[a]);
+  const roundRanks = new Array(4);
+  sortedIdx.forEach((pi,rank) => { roundRanks[pi]=rank; });
+  const currentFinals = players.map((p,i) => p.cumpt+(p.score-kaeshi)/1000+uma[roundRanks[i]]+(roundRanks[i]===0?oka:0));
+  const finalSorted = [...currentFinals].sort((a,b)=>b-a);
+  const currentOverallRanks = currentFinals.map(v => finalSorted.indexOf(v));
+
+  const results = [];
+  for (let i = 0; i < 4; i++) {
+    const pi = players[i];
+    const others = players.map((p,j)=>({...p,idx:j})).filter((_,j)=>j!==i);
+    const othersRanked = [...others].sort((a,b)=>b.score-a.score);
+    othersRanked.forEach((p,r) => { p.roundRank = r+1; });
+    const rivals = othersRanked.map(pj => {
+      const required = (pj.cumpt-pi.cumpt)*1000 + (pj.score-pi.score) + (uma[pj.roundRank]-uma[0]-oka)*1000;
+      return {...pj, required};
+    });
+    const alreadyWins = currentOverallRanks[i] === 0;
+    function simRon(hand, payerIdx) {
+      const bonus = 300*honba + 1000*riichi;
+      const newScores = players.map((p,j) => j===i ? p.score+hand+bonus : j===payerIdx ? p.score-hand-300*honba : p.score);
+      const ro = newScores.map((s,j)=>({s,j})).sort((a,b)=>b.s-a.s);
+      const nr = new Array(players.length);
+      ro.forEach(({j},rank) => { nr[j]=rank; });
+      const nt = players.map((p,j) => p.cumpt+(newScores[j]-kaeshi)/1000+uma[nr[j]]+(nr[j]===0?oka:0));
+      return nt[i] > Math.max(...nt.filter((_,j)=>j!==i));
+    }
+    const directRons = others.map(pj => {
+      let found = null;
+      for (let hand = 100; hand <= 48000; hand += 100) { if (simRon(hand,pj.idx)) { found=hand; break; } }
+      return {pj, handNeeded:found};
+    });
+    const tsumo = cdFindMinTsumo(pi, players, uma, oka, kaeshi, honba, riichi);
+    results.push({
+      name:pi.name, score:pi.score, cumpt:pi.cumpt, isDealer:pi.isDealer,
+      currentFinal:currentFinals[i], currentOverallRank:currentOverallRanks[i],
+      alreadyWins, rivals, directRons, tsumo,
+      impossible: !alreadyWins && directRons.every(d=>d.handNeeded===null) && !tsumo,
+    });
+  }
+  cdRenderResults(results, players, honba, riichi, uma, oka, kaeshi);
+}
+
+function cdRenderResults(results, players, honba, riichi, uma, oka, kaeshi) {
+  const rankLabels = ['１位','２位','３位','４位'];
+  const rankClasses = ['r1','r2','r3','r4'];
+  const sorted = [...results].sort((a,b) => a.currentOverallRank - b.currentOverallRank);
+  const html = sorted.map(r => {
+    const rankClass = rankClasses[r.currentOverallRank];
+    const dealerStr = r.isDealer ? '　<span style="font-size:.65rem;color:var(--gold)">（親）</span>' : '';
+    const cardClass = r.alreadyWins ? 'win' : r.impossible ? 'impossible' : 'possible';
+    let body = '';
+    if (r.alreadyWins) {
+      body += `<div class="cd-condition-section"><div class="cd-cs-title ok">🏆 現在の総合トップ</div><div class="cd-cs-note">このままツモ/ロンされなければ1位確定</div></div>`;
+      // 放銃上限
+      const piIdx = players.findIndex(p=>p.name===r.name);
+      let safeHtml = '';
+      for (const pj of r.rivals) {
+        let maxSafe = 0;
+        for (let hand = 100; hand <= 32000; hand += 100) {
+          const newScores = players.map((p,j) => j===piIdx ? p.score-hand-300*honba : j===pj.idx ? p.score+hand+300*honba+1000*riichi : p.score);
+          const ro = newScores.map((s,j)=>({s,j})).sort((a,b)=>b.s-a.s);
+          const nr = new Array(players.length); ro.forEach(({j},rank)=>{nr[j]=rank;});
+          const nt = players.map((p,j)=>p.cumpt+(newScores[j]-kaeshi)/1000+uma[nr[j]]+(nr[j]===0?oka:0));
+          if (nt[piIdx] > Math.max(...nt.filter((_,j)=>j!==piIdx))) maxSafe=hand; else break;
+        }
+        const diff = r.score - pj.score;
+        safeHtml += maxSafe > 0
+          ? `<div class="cd-hand-row"><span class="cd-hand-type">${pj.name}へ</span><span class="cd-hand-pts ok-small">${diff.toLocaleString()}点差（${maxSafe.toLocaleString()}点まで）</span></div>`
+          : `<div class="cd-hand-row"><span class="cd-hand-type">${pj.name}へ</span><span class="cd-hand-pts ng">放銃不可</span></div>`;
+      }
+      body += `<div class="cd-condition-section" style="margin-top:8px"><div class="cd-cs-title" style="color:var(--tx2)">🛡 放銃上限</div>${safeHtml}</div>`;
+    } else if (r.impossible) {
+      body += `<div class="cd-condition-section"><div class="cd-cs-title ng">🏆 1位逆転不可</div></div>`;
+    } else {
+      body += `<div class="cd-condition-section"><div class="cd-cs-title">🏆 1位条件</div>`;
+      if (r.tsumo) {
+        const t = r.tsumo;
+        const breakdown = r.isDealer ? `全員${t.ko.toLocaleString()}点` : `親${t.dealer.toLocaleString()} / 子${t.ko.toLocaleString()}各`;
+        body += `<div class="cd-hand-row"><span class="cd-hand-type">ツモ</span><span class="cd-hand-pts">${t.total.toLocaleString()}点</span><span class="cd-hand-label">${t.label}</span><span class="cd-hand-sub">（${breakdown}）</span></div>`;
+      } else {
+        body += `<div class="cd-hand-row"><span class="cd-hand-type">ツモ</span><span class="cd-hand-pts ng">役満でも届かない</span></div>`;
+      }
+      r.directRons.forEach(({pj, handNeeded}) => {
+        if (handNeeded === null) {
+          body += `<div class="cd-hand-row"><span class="cd-hand-type">${pj.name}直撃</span><span class="cd-hand-pts ng">届かない</span></div>`;
+        } else {
+          const h = cdFindMinRon(handNeeded, r.isDealer);
+          if (h) body += `<div class="cd-hand-row"><span class="cd-hand-type">${pj.name}直撃</span><span class="cd-hand-pts">${h.pts.toLocaleString()}点</span><span class="cd-hand-label">${h.label}</span></div>`;
+        }
+      });
+      body += `</div>`;
+      if (r.currentOverallRank >= 2) {
+        const piIdx = players.findIndex(p=>p.name===r.name);
+        const tsumo2nd = cdFindMin2ndTsumo(piIdx, players, uma, oka, kaeshi, honba, riichi);
+        body += `<div class="cd-condition-section" style="margin-top:8px"><div class="cd-cs-title" style="color:#8a9ab0">🥈 2位条件</div>`;
+        if (tsumo2nd) {
+          const breakdown = r.isDealer ? `全員${tsumo2nd.ko.toLocaleString()}点` : `親${tsumo2nd.dealer.toLocaleString()} / 子${tsumo2nd.ko.toLocaleString()}各`;
+          body += `<div class="cd-hand-row"><span class="cd-hand-type">ツモ</span><span class="cd-hand-pts" style="color:#8a9ab0">${tsumo2nd.total.toLocaleString()}点</span><span class="cd-hand-label">${tsumo2nd.label}</span><span class="cd-hand-sub">（${breakdown}）</span></div>`;
+        } else {
+          body += `<div class="cd-hand-row"><span class="cd-hand-type">ツモ</span><span class="cd-hand-pts ng">届かない</span></div>`;
+        }
+        players.map((p,j)=>j!==piIdx?{p,j}:null).filter(Boolean).forEach(({p,j}) => {
+          const needed = cdFindMin2ndRon(piIdx, j, players, uma, oka, kaeshi, honba, riichi);
+          if (needed === null) {
+            body += `<div class="cd-hand-row"><span class="cd-hand-type">${p.name}直撃</span><span class="cd-hand-pts ng">届かない</span></div>`;
+          } else {
+            const h = cdFindMinRon(needed, r.isDealer);
+            if (h) body += `<div class="cd-hand-row"><span class="cd-hand-type">${p.name}直撃</span><span class="cd-hand-pts" style="color:#8a9ab0">${h.pts.toLocaleString()}点</span><span class="cd-hand-label">${h.label}</span></div>`;
+          }
+        });
+        body += `</div>`;
+      }
+    }
+    const gapInfo = r.rivals.sort((a,b)=>b.required-a.required).map(pj =>
+      `<span>${pj.name}との必要縮め：${pj.required<=0?'済':pj.required.toLocaleString()+'点'}</span>`
+    ).join('<br>');
+    return `<div class="cd-result-card ${cardClass}">
+      <div class="cd-result-name"><span class="cd-rank-badge ${rankClass}">${rankLabels[r.currentOverallRank]}</span>${r.name}${dealerStr}</div>
+      ${body}
+      <details style="margin-top:8px">
+        <summary style="font-size:.65rem;color:var(--tx2);cursor:pointer">点差詳細</summary>
+        <div style="font-size:.65rem;color:var(--tx2);margin-top:4px;line-height:1.8">${gapInfo}</div>
+      </details>
+      <div class="cd-total-row"><span>推定トータル：${cdFormatPt(r.currentFinal)} pt</span><span>持ち点：${r.score.toLocaleString()}</span></div>
+    </div>`;
+  }).join('');
+  document.getElementById('cd-results').innerHTML = html;
+}
+
 
 // ===== レコードバナー =====
 function renderRecordsBanner(g, league, ruleFilter, activeSorted) {
