@@ -207,6 +207,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         </div>
         <div class="chart-wrap" style="height:200px" id="gwrap-rank"><canvas id="gc-rank"></canvas></div>
       </div>
+      <div class="card"><div class="ctitle">同卓回数</div><div class="dok-wrap" id="graph-dok-wrap"></div></div>
     </div>
     <div id="page-settings" class="page"></div>
   </div>
@@ -929,7 +930,6 @@ function renderRanking() {
         ${renderRankDistHtml(sorted.filter(([,s])=>s.games>0).slice(0,4))}
       </div>
     </div>
-    <div class="card"><div class="ctitle">同卓回数</div><div class="dok-wrap">${renderDok(curLeague, sorted.filter(([,s])=>s.games>0).map(([n])=>n))}</div></div>
     ${renderRecordsBanner(g, curLeague, curRuleFilter, activeSorted)}
     ` : ''}`;
 }
@@ -1372,6 +1372,14 @@ function renderGraph() {
   const rankCanvas = document.getElementById('gc-rank');
   if (rankCanvas && _graphRankData) {
     rChart = new Chart(rankCanvas, { type: 'bar', data: _graphRankData, options: makeRankOptions(true) });
+  }
+
+  // 同卓回数
+  const dokWrap = document.getElementById('graph-dok-wrap');
+  if (dokWrap) {
+    const stats = getStats(gLeague);
+    const players = (gLeague === '_default' ? (g._players||[]) : (g.players[gLeague]||[])).filter(p => stats[p]?.games > 0);
+    dokWrap.innerHTML = players.length ? renderDok(gLeague, players) : '<div style="color:var(--tx2);text-align:center;padding:12px;font-size:.8rem">データなし</div>';
   }
 }
 
