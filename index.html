@@ -323,7 +323,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 // ===== データ定義 =====
 const RULES = {
   mleague:   {label:'Mリーグ',  uma:[30,10,-10,-30], oka:20, kaeshi:30000},
-  saikouisen:{label:'最高位戦', uma:[10,5,-5,-10],   oka:10, kaeshi:30000},
+  saikouisen:{label:'最高位戦', uma:[30,10,-10,-30], oka:0,  kaeshi:30000},
   renmei:    {label:'連盟A',    uma:[8,4,-4,-8],     oka:0,  kaeshi:30000},
   tenho:     {label:'天鳳',     uma:[20,10,-10,-20], oka:20, kaeshi:25000},
   custom:    {label:'カスタム', uma:[20,10,-10,-20], oka:0,  kaeshi:30000},
@@ -1672,11 +1672,11 @@ function buildMhScores(){
 
 function onMhScoreInput(){
   const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
-  const exp=1000-ky*10; // 100点単位での期待値
+  const total100 = curGroup ? (curGroup.kaeshi / 100) * 4 - ky * 10 : 1000 - ky * 10;
   const vs=[0,1,2].map(i=>document.getElementById('mh-sc'+i)?.value);
   const ss=vs.map(v=>v!==''?parseInt(v)||0:null);
   const sc3=document.getElementById('mh-sc3');
-  if(sc3 && ss.every(s=>s!==null)) sc3.value=exp-ss[0]-ss[1]-ss[2];
+  if(sc3 && ss.every(s=>s!==null)) sc3.value=total100-ss[0]-ss[1]-ss[2];
   else if(sc3) sc3.value='';
   updateMhPreview();
 }
@@ -1695,9 +1695,9 @@ function updateMhPreview(){
     return;
   }
 
-  const scores=vals.map(v=>(parseInt(v)||0)*100); // 100倍して実際の点数に
+  const scores=vals.map(v=>(parseInt(v)||0)*100);
   const total=scores.reduce((a,b)=>a+b,0);
-  const exp=100000-ky*1000;
+  const exp=(g.kaeshi||30000)*4-ky*1000;
   if(errEl){
     if(total!==exp){ errEl.style.display='block'; errEl.innerHTML=`⚠ 合計点が合いません　現在:<b>${(total/100).toLocaleString()}</b> 期待値:<b>${exp/100}</b>`; }
     else errEl.style.display='none';
@@ -1724,7 +1724,7 @@ function saveHanzo(cont){
   }
   const scores=[0,1,2,3].map(i=>(parseInt(document.getElementById('mh-sc'+i)?.value)||0)*100);
   const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
-  if(scores.reduce((a,b)=>a+b,0)!==100000-ky*1000) return;
+  if(scores.reduce((a,b)=>a+b,0)!==(curGroup.kaeshi||30000)*4-ky*1000) return;
   const d=document.getElementById('mh-date')?.value||new Date().toISOString().split('T')[0];
   const validPenalties = penalties.filter(p => p.player && p.pt !== 0);
 
