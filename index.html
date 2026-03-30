@@ -797,6 +797,63 @@ function showTab(t) {
   if (t==='settings') requireAuth(renderSettings);
 }
 
+// ===== レコードバナー =====
+function renderRecordsBanner(g, league, ruleFilter, activeSorted) {
+  if (!activeSorted.length) return '';
+  const targetLeague = league === '_default' ? '' : league;
+
+  // 対象半荘
+  const hanzos = g.hanzos.filter(h => {
+    if ((h.league||'') !== targetLeague) return false;
+    if (ruleFilter && ruleFilter !== 'all') {
+      const uma=h.uma||g.uma, oka=h.oka!==undefined?h.oka:g.oka, kaeshi=h.kaeshi||g.kaeshi;
+      const label=Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(uma)&&v.oka===oka&&v.kaeshi===kaeshi)?.[1]?.label||'カスタム';
+      return label === ruleFilter;
+    }
+    return true;
+  });
+  if (!hanzos.length) return '';
+
+  // 最高得点
+  let bestScore = 0, bestScorePlayer = '-';
+  hanzos.forEach(h => {
+    h.scores.forEach((sc, i) => {
+      if (sc > bestScore) { bestScore = sc; bestScorePlayer = h.players[i]; }
+    });
+  });
+
+  // 4着回避率（最低5試合以上）
+  let bestAvoidPlayer = '-', bestAvoidRate = -1;
+  activeSorted.forEach(([name, s]) => {
+    if (s.games < 1) return;
+    const rate = Math.round((1 - s.ranks[3] / s.games) * 1000) / 10;
+    if (rate > bestAvoidRate) { bestAvoidRate = rate; bestAvoidPlayer = name; }
+  });
+
+  // 最多トップ
+  let mostTopPlayer = '-', mostTopCount = 0;
+  activeSorted.forEach(([name, s]) => {
+    if (s.ranks[0] > mostTopCount) { mostTopCount = s.ranks[0]; mostTopPlayer = name; }
+  });
+
+  const item = (icon, label, player, value, color) => `
+    <div style="flex:1;min-width:0;background:rgba(0,0,0,.3);border:1px solid var(--bd);border-radius:10px;padding:10px 10px 8px;text-align:center">
+      <div style="font-size:1.1rem;margin-bottom:2px">${icon}</div>
+      <div style="font-size:.58rem;color:var(--tx2);letter-spacing:.08em;margin-bottom:4px;white-space:nowrap">${label}</div>
+      <div style="font-size:.78rem;font-weight:700;color:var(--tx);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${player}</div>
+      <div style="font-size:.92rem;font-weight:700;color:${color}">${value}</div>
+    </div>`;
+
+  return `<div class="card">
+    <div class="ctitle">記録</div>
+    <div style="display:flex;gap:8px">
+      ${item('🏆','最高得点',bestScorePlayer,bestScore.toLocaleString(),'var(--gold)')}
+      ${item('🛡️','4着回避率',bestAvoidPlayer,bestAvoidRate+'%','var(--green)')}
+      ${item('👑','最多トップ',mostTopPlayer,mostTopCount+'回','#f0c96a')}
+    </div>
+  </div>`;
+}
+
 // ===== 成績 =====
 function renderRanking() {
   const el = document.getElementById('page-ranking');
@@ -873,6 +930,7 @@ function renderRanking() {
       </div>
     </div>
     <div class="card"><div class="ctitle">同卓回数</div><div class="dok-wrap">${renderDok(curLeague, sorted.filter(([,s])=>s.games>0).map(([n])=>n))}</div></div>
+    ${renderRecordsBanner(g, curLeague, curRuleFilter, activeSorted)}
     ` : ''}`;
 }
 
