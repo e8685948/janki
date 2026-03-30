@@ -199,7 +199,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
 <div id="hdr">
   <div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div>
-  <div style="font-size:1.4rem">🀄</div>
+  <button id="hdr-refresh" onclick="manualRefresh()" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:6px 12px;border-radius:8px;font-size:.75rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;display:flex;align-items:center;gap:4px">↻ 更新</button>
 </div>
 
 <div id="tabs" style="display:none">
@@ -739,7 +739,7 @@ function openGroup(id) {
   document.getElementById('hdr').innerHTML = `
     <button class="back-btn" onclick="goTop()">◀ 戻る</button>
     <div style="text-align:center"><div style="font-size:.95rem;font-weight:700;color:var(--gold)">${curGroup.name}</div><div style="font-size:.6rem;color:var(--tx2)">${RULES[curGroup.rule]?.label||'カスタム'}</div></div>
-    <div style="width:60px"></div>`;
+    <button id="hdr-refresh" onclick="manualRefresh()" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:6px 12px;border-radius:8px;font-size:.75rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;display:flex;align-items:center;gap:4px">↻ 更新</button>`;
   document.getElementById('tabs').style.display = 'flex';
   document.getElementById('screen-top').classList.remove('on');
   document.getElementById('screen-main').classList.add('on');
@@ -752,7 +752,7 @@ function openGroup(id) {
 
 function goTop() {
   curGroup = null;
-  document.getElementById('hdr').innerHTML = '<div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div><div style="font-size:1.4rem">🀄</div>';
+  document.getElementById('hdr').innerHTML = '<div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div><button id="hdr-refresh" onclick="manualRefresh()" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:6px 12px;border-radius:8px;font-size:.75rem;cursor:pointer;font-family:\'Noto Sans JP\',sans-serif;font-weight:700;display:flex;align-items:center;gap:4px">↻ 更新</button>';
   document.getElementById('tabs').style.display = 'none';
   document.getElementById('screen-main').classList.remove('on');
   document.getElementById('screen-top').classList.add('on');
@@ -2500,6 +2500,27 @@ function saveHanzo(cont){
   } else {
     closeOvl('modal-hanzo');
     showToast();
+  }
+}
+
+function manualRefresh() {
+  const btn = document.getElementById('hdr-refresh');
+  if (btn) { btn.textContent = '↻ 更新中…'; btn.disabled = true; }
+  const restore = () => { if (btn) { btn.innerHTML = '↻ 更新'; btn.disabled = false; } };
+  if (!navigator.onLine) {
+    restore();
+    const t = document.getElementById('toast');
+    if (t) { t.textContent = 'オフラインのため更新できません'; t.style.opacity='1'; setTimeout(()=>{ t.style.opacity='0'; t.textContent='✓ 記録しました'; },2000); }
+    return;
+  }
+  if (isPendingSync()) {
+    syncPendingData();
+    restore();
+  } else {
+    loadFromGas().then(ok => {
+      if (ok) refreshCurrentView();
+      restore();
+    }).catch(restore);
   }
 }
 
