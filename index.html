@@ -1128,8 +1128,7 @@ function cdCalculate() {
 function cdRenderResults(results, players, honba, riichi, uma, oka, kaeshi) {
   const rankLabels = ['１位','２位','３位','４位'];
   const rankClasses = ['r1','r2','r3','r4'];
-  const sorted = [...results].sort((a,b) => a.currentOverallRank - b.currentOverallRank);
-  const html = sorted.map(r => {
+  const html = results.map(r => {
     const rankClass = rankClasses[r.currentOverallRank];
     const dealerStr = r.isDealer ? '　<span style="font-size:.65rem;color:var(--gold)">（親）</span>' : '';
     const cardClass = r.alreadyWins ? 'win' : r.impossible ? 'impossible' : 'possible';
