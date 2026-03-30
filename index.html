@@ -977,6 +977,13 @@ function cdCalcRon(fu, han, isDealer) {
   if (han >= 6)  return isDealer ? 18000 : 12000;
   if (han >= 5)  return isDealer ? 12000 : 8000;
   const base = fu * Math.pow(2, han + 2);
+// 切り上げ満貫
+if (
+  (fu === 30 && han === 4) ||
+  (fu === 60 && han === 3)
+) {
+  return isDealer ? 12000 : 8000;
+}
   const pts = isDealer ? Math.ceil(base*6/100)*100 : Math.ceil(base*4/100)*100;
   return Math.min(pts, isDealer ? 12000 : 8000);
 }
