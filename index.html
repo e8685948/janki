@@ -10,6 +10,19 @@
 :root{--bg:#0d0d0f;--bg2:#141418;--bg3:#1c1c22;--bd:#2a2a35;--gold:#d4a843;--gold2:#f0c96a;--red:#e05252;--green:#4caf82;--tx:#e8e8f0;--tx2:#8888a0}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px}
+#cd-results {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
+}
+
+#cd-results .cd-result-card {
+  min-width: 300px;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
 input[type=number]{-moz-appearance:textfield}
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 
@@ -196,7 +209,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 </style>
 </head>
 <body>
-
+  
 <div id="hdr">
   <div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div>
   <button id="hdr-refresh" onclick="manualRefresh()" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:6px 12px;border-radius:8px;font-size:.75rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;display:flex;align-items:center;gap:4px">↻ 更新</button>
