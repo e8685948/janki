@@ -13,6 +13,26 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);
 input[type=number]{-moz-appearance:textfield}
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 
+  <style>
+
+/* 条件計算：横スクロール */
+#cd-results {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
+}
+
+/* 各プレイヤーカード */
+#cd-results .cd-result-card {
+  min-width: 300px;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
+
+</style>
+  
 /* ヘッダー */
 #hdr{background:linear-gradient(90deg,#0d0d0f,#1a1a24,#0d0d0f);border-bottom:1px solid var(--bd);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100}
 .logo{font-family:'Shippori Mincho',serif;font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
