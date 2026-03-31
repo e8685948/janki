@@ -10,6 +10,7 @@
 :root{--bg:#0d0d0f;--bg2:#141418;--bg3:#1c1c22;--bd:#2a2a35;--gold:#d4a843;--gold2:#f0c96a;--red:#e05252;--green:#4caf82;--tx:#e8e8f0;--tx2:#8888a0}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px}
+
 #cd-results {
   display: flex;
   gap: 12px;
@@ -23,6 +24,20 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);
   flex-shrink: 0;
   scroll-snap-align: start;
 }
+
+.cd-player-row{
+  display:grid;
+  grid-template-columns: 1.6fr 1fr 1fr auto;
+  gap:4px;          /* ←ここ小さく */
+  margin-bottom:4px; /* ←ここも小さく */
+}
+
+.cd-player-row input,
+.cd-player-row select{
+  padding:5px 6px;  /* ←高さ縮む */
+  font-size:.75rem; /* ←小さめ */
+}
+
 input[type=number]{-moz-appearance:textfield}
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 
