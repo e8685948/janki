@@ -437,6 +437,14 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <span style="font-size:.75rem;color:var(--tx2)">本</span>
       </div>
     </div>
+    <!-- 詳細入力トグル -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <span style="font-size:.7rem;color:var(--tx2)">各選手の詳細統計を入力する場合</span>
+      <button id="mh-detail-btn" onclick="toggleMhDetail()" style="background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2);padding:5px 12px;border-radius:6px;font-size:.72rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700">詳細入力</button>
+    </div>
+    <div id="mh-detail-wrap" style="display:none;margin-bottom:10px">
+      <div id="mh-detail-inner"></div>
+    </div>
     <!-- ペナルティ -->
     <div style="margin-bottom:10px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -711,11 +719,12 @@ function getStats(league, ruleFilter) {
 
 function getDok(league) {
   const g = curGroup;
-  const players = (g.players[league] || []);
+  const players = (league === '_default' ? (g._players||[]) : (g.players[league] || []));
   const mx = {};
   players.forEach(p => { mx[p] = {}; players.forEach(q => mx[p][q] = 0); });
+  const targetLeague = league === '_default' ? '' : league;
   const byDate = {};
-  g.hanzos.filter(h => h.league === league).forEach(h => {
+  g.hanzos.filter(h => (h.league||'') === targetLeague).forEach(h => {
     if (!byDate[h.date]) byDate[h.date] = [];
     byDate[h.date].push(h.players);
   });
@@ -741,31 +750,36 @@ function badge(i) { return ['b1','b2','b3','bx'][Math.min(i,3)]; }
 function renderTop() {
   const el = document.getElementById('group-list');
   if (!groups.length) { el.innerHTML = '<div class="empty"><span class="eico">🀄</span>大会・グループを作成してください</div>'; return; }
-  el.innerHTML = groups.map(g => `
-    <div class="gc" onclick="openGroup(${g.id})" style="${g.img?`background-image:linear-gradient(rgba(13,13,15,.75),rgba(13,13,15,.75)),url('${g.img}');background-size:cover;background-position:center;`:``}">
+  el.innerHTML = groups.map(g => {
+    const leagueKeys = Object.keys(g.players || {}).filter(k => (g.players[k]||[]).length > 0);
+    const playerInfo = leagueKeys.length > 0
+      ? leagueKeys.map(l => `<span>${l}: ${g.players[l].length}名</span>`).join('')
+      : (g._players && g._players.length > 0 ? `<span>${g._players.length}名</span>` : '');
+    const usedRules = new Set();
+    if(g.hanzos && g.hanzos.length){
+      g.hanzos.forEach(h=>{
+        const uma=h.uma||g.uma, oka=h.oka!==undefined?h.oka:g.oka, kaeshi=h.kaeshi||g.kaeshi;
+        const label=Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(uma)&&v.oka===oka&&v.kaeshi===kaeshi)?.[1]?.label||'カスタム';
+        usedRules.add(label);
+      });
+    } else {
+      usedRules.add(RULES[g.rule]?.label||'カスタム');
+    }
+    const ruleBadges = [...usedRules].map(l=>`<span class="gc-badge">${l}</span>`).join('');
+    return `<div class="gc" onclick="openGroup(${g.id})" style="${g.img?`background-image:linear-gradient(rgba(13,13,15,.75),rgba(13,13,15,.75)),url('${g.img}');background-size:cover;background-position:center;`:``}">
       <div class="gc-name">${g.name}</div>
       <div class="gc-meta">
         ${g.memo ? `<span>${g.memo}</span>` : ''}
-        ${(()=>{
-          const usedRules = new Set();
-          if(g.hanzos && g.hanzos.length){
-            g.hanzos.forEach(h=>{
-              const uma=h.uma||g.uma, oka=h.oka!==undefined?h.oka:g.oka, kaeshi=h.kaeshi||g.kaeshi;
-              const label=Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(uma)&&v.oka===oka&&v.kaeshi===kaeshi)?.[1]?.label||'カスタム';
-              usedRules.add(label);
-            });
-          } else {
-            usedRules.add(RULES[g.rule]?.label||'カスタム');
-          }
-          return [...usedRules].map(l=>`<span class="gc-badge">${l}</span>`).join('');
-        })()}
+        ${ruleBadges}
         <span>${g.hanzos.length}半荘</span>
+        ${playerInfo}
       </div>
       <div class="gc-acts" onclick="event.stopPropagation()">
         <button class="gc-btn" onclick="editGroup(${g.id})">✏ 編集</button>
         <button class="gc-btn" onclick="askDelGroup(${g.id},this)">削除</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function askDelGroup(id, btn) {
@@ -1388,8 +1402,9 @@ function renderRanking() {
   if (leagues.length > 0 && !leagues.includes(curLeague)) curLeague = leagues[0];
 
   // 使用されているルールを収集
+  const _curLeagueTarget = curLeague === '_default' ? '' : curLeague;
   const usedRules = ['all'];
-  g.hanzos.filter(h=>h.league===curLeague).forEach(h=>{
+  g.hanzos.filter(h=>(h.league||'')===_curLeagueTarget).forEach(h=>{
     const uma=h.uma||g.uma, oka=h.oka!==undefined?h.oka:g.oka, kaeshi=h.kaeshi||g.kaeshi;
     const label=Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(uma)&&v.oka===oka&&v.kaeshi===kaeshi)?.[1]?.label||'カスタム';
     if(!usedRules.includes(label)) usedRules.push(label);
@@ -1402,7 +1417,7 @@ function renderRanking() {
   const activeSorted = sorted.filter(([,s]) => s.games > 0);
   const maxAbs = Math.max(...activeSorted.map(([,s]) => Math.abs(s.pt)), 1);
   const total = g.hanzos.filter(h => {
-    if(h.league!==curLeague) return false;
+    if((h.league||'')!==_curLeagueTarget) return false;
     if(curRuleFilter!=='all'){
       const uma=h.uma||g.uma,oka=h.oka!==undefined?h.oka:g.oka,kaeshi=h.kaeshi||g.kaeshi;
       const label=Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(uma)&&v.oka===oka&&v.kaeshi===kaeshi)?.[1]?.label||'カスタム';
@@ -1470,7 +1485,7 @@ function renderRankingTableHtml(entries, maxAbs, league) {
 function renderRankingTable(val, league) {
   const el = document.getElementById('ranking-table-'+league);
   if (!el || !curGroup) return;
-  const stats = getStats(league);
+  const stats = getStats(league, curRuleFilter);
   const sorted = Object.entries(stats).sort((a,b)=>b[1].pt-a[1].pt).filter(([,s])=>s.games>0);
   // 常に全員基準でmaxAbsを計算
   const maxAbs = Math.max(...sorted.map(([,s])=>Math.abs(s.pt)), 1);
@@ -1505,7 +1520,7 @@ function renderRankDistHtml(entries) {
 function renderRankDist(val, league) {
   const el = document.getElementById('rank-dist-'+league);
   if (!el || !curGroup) return;
-  const stats = getStats(league);
+  const stats = getStats(league, curRuleFilter);
   const sorted = Object.entries(stats).sort((a,b)=>b[1].pt-a[1].pt).filter(([,s])=>s.games>0);
   const entries = val === 'top4' ? sorted.slice(0,4) : sorted;
   el.innerHTML = renderRankDistHtml(entries);
@@ -1562,8 +1577,9 @@ function renderPlayers() {
   if (!window._selPlayer || !playerList.includes(window._selPlayer)) window._selPlayer = active[0]||null;
 
   // 使用ルール収集
+  const _pgLeagueTarget = pgLeague === '_default' ? '' : pgLeague;
   const usedRules = ['all'];
-  g.hanzos.filter(h=>h.league===pgLeague).forEach(h=>{
+  g.hanzos.filter(h=>(h.league||'')===_pgLeagueTarget).forEach(h=>{
     const uma=h.uma||g.uma,oka=h.oka!==undefined?h.oka:g.oka,kaeshi=h.kaeshi||g.kaeshi;
     const label=Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(uma)&&v.oka===oka&&v.kaeshi===kaeshi)?.[1]?.label||'カスタム';
     if(!usedRules.includes(label)) usedRules.push(label);
@@ -1677,7 +1693,8 @@ function renderPlayerDetail(name, league, ruleFilter) {
     ${(() => {
       // 全対戦相手の相性を計算してランキング
       const affinityList = dokList.map(([opponent])=>{
-        const togetherH = g.hanzos.filter(h=>h.league===league&&h.players.includes(name)&&h.players.includes(opponent));
+        const _leagueTarget = league === '_default' ? '' : league;
+        const togetherH = g.hanzos.filter(h=>(h.league||'')===_leagueTarget&&h.players.includes(name)&&h.players.includes(opponent));
         if(!togetherH.length) return null;
         let rankSum=0, oppRankSum=0;
         togetherH.forEach(h=>{
@@ -2329,6 +2346,7 @@ function doEditP(league,idx){
 
 // ===== ペナルティ =====
 let penalties = [];
+let mhDetailOpen = false;
 
 function addPenalty() {
   const players = [0,1,2,3].map(i => document.getElementById('mh-s'+i)?.value || '').filter(Boolean);
@@ -2350,6 +2368,40 @@ function renderPenalties() {
       <span style="font-size:.7rem;color:var(--tx2)">pt</span>
       <button onclick="penalties.splice(${i},1);renderPenalties()" style="background:none;border:none;color:var(--tx2);cursor:pointer;font-size:1.1rem;padding:2px 4px">×</button>
     </div>`).join('');
+}
+
+function toggleMhDetail() {
+  mhDetailOpen = !mhDetailOpen;
+  const wrap = document.getElementById('mh-detail-wrap');
+  const btn = document.getElementById('mh-detail-btn');
+  if (wrap) wrap.style.display = mhDetailOpen ? 'block' : 'none';
+  if (btn) {
+    btn.style.background = mhDetailOpen ? 'rgba(212,168,67,.2)' : 'rgba(255,255,255,.05)';
+    btn.style.borderColor = mhDetailOpen ? 'var(--gold)' : 'var(--bd)';
+    btn.style.color = mhDetailOpen ? 'var(--gold)' : 'var(--tx2)';
+  }
+  if (mhDetailOpen) buildMhDetails();
+}
+
+function buildMhDetails() {
+  const inner = document.getElementById('mh-detail-inner');
+  if (!inner) return;
+  const winds = ['東','南','西','北'];
+  inner.innerHTML = [0,1,2,3].map(i => {
+    const name = document.getElementById('mh-s'+i)?.value || `選手${i+1}`;
+    const fields = [
+      ['リーチ','riichi'],['上がり(ロン)','ron'],['副露','furo'],['ツモ','tsumo'],['放銃','houchu']
+    ];
+    return `<div style="background:rgba(0,0,0,.25);border:1px solid var(--bd);border-radius:9px;padding:9px 10px;margin-bottom:8px">
+      <div style="font-size:.7rem;color:var(--gold);margin-bottom:6px">${winds[i]}家　<span style="font-weight:700">${name}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px">
+        ${fields.map(([label,key])=>`<div style="text-align:center">
+          <div style="font-size:.6rem;color:var(--tx2);margin-bottom:3px">${label}</div>
+          <input type="number" id="mh-det-${key}-${i}" value="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:5px 2px;border-radius:6px;font-size:.85rem;text-align:center">
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ===== 半荘入力モーダル =====
@@ -2389,6 +2441,27 @@ function _editH(id) {
   renderPenalties();
   updateMhPreview();
 
+  // 詳細データがあれば詳細入力モードを開く
+  mhDetailOpen = false;
+  const detWrap = document.getElementById('mh-detail-wrap');
+  const detBtn = document.getElementById('mh-detail-btn');
+  if (h.detail && h.detail.some(d => d && (d.furo||d.houchu||d.ron||d.tsumo||d.riichi))) {
+    mhDetailOpen = true;
+    if (detWrap) detWrap.style.display = 'block';
+    if (detBtn) { detBtn.style.background='rgba(212,168,67,.2)'; detBtn.style.borderColor='var(--gold)'; detBtn.style.color='var(--gold)'; }
+    buildMhDetails();
+    h.detail.forEach((d, i) => {
+      if (!d) return;
+      ['furo','houchu','ron','tsumo','riichi'].forEach(k => {
+        const el = document.getElementById(`mh-det-${k}-${i}`);
+        if (el) el.value = d[k] || 0;
+      });
+    });
+  } else {
+    if (detWrap) detWrap.style.display = 'none';
+    if (detBtn) { detBtn.style.background='rgba(255,255,255,.05)'; detBtn.style.borderColor='var(--bd)'; detBtn.style.color='var(--tx2)'; }
+  }
+
   // タイトルを「編集」に変更
   document.querySelector('#modal-hanzo .mtitle').textContent = '半荘を編集';
   document.getElementById('mh-save').textContent = '更新する';
@@ -2403,6 +2476,12 @@ function _openHanzoModal(){
   document.querySelector('#modal-hanzo .mtitle').textContent = '半荘を入力';
   document.getElementById('mh-save').textContent = '記録する';
   document.getElementById('mh-cont').style.display = '';
+  // 詳細入力リセット
+  mhDetailOpen = false;
+  const detWrap = document.getElementById('mh-detail-wrap');
+  if (detWrap) detWrap.style.display = 'none';
+  const detBtn = document.getElementById('mh-detail-btn');
+  if (detBtn) { detBtn.style.background='rgba(255,255,255,.05)'; detBtn.style.borderColor='var(--bd)'; detBtn.style.color='var(--tx2)'; }
   const g=curGroup;
   const hasLeagues = Object.keys(g.players).length > 0;
   const leagues = hasLeagues ? Object.keys(g.players).filter(k=>g.players[k].length>0) : [];
@@ -2446,7 +2525,7 @@ function buildMhSelects(){
     const isLast=i===3;
     return `<div class="mh-entry-row">
       <div class="mh-wind">${w}</div>
-      <select class="fs" id="mh-s${i}" onchange="onMhScoreInput();updateMhPreview()">${opt}</select>
+      <select class="fs" id="mh-s${i}" onchange="onMhScoreInput();updateMhPreview();if(mhDetailOpen)buildMhDetails()">${opt}</select>
       <input class="fi" type="number" id="mh-sc${i}" value="" placeholder="${isLast?'自動':'例:300'}" ${isLast?`readonly style="background:rgba(212,168,67,.08);color:var(--gold);border-color:rgba(212,168,67,.3);"`:''}  oninput="onMhScoreInput()">
     </div>`;
   }).join('');
