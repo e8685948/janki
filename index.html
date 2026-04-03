@@ -216,15 +216,12 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .cd-fi-wrap label{display:block;font-size:.68rem;color:var(--tx2);margin-bottom:3px}
 .cd-honba-note{font-size:.65rem;color:var(--tx2);margin-top:4px}
 
-/* 半荘入力詳細モード */
-.mh-players{display:block;}
-.mh-col-header{display:grid;grid-template-columns:80px 1fr auto;gap:6px;padding:4px 0;border-bottom:1px solid var(--bd);}
+/* 半荘入力グリッド */
 .mh-col-h{font-size:.65rem;color:var(--tx2);text-align:center;}
-.mh-player-item{margin-bottom:12px;}
-.mh-player-row{display:grid;grid-template-columns:80px 1fr auto;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);}
-.mh-player-name{font-size:.82rem;}
-.mh-player-score{background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:6px 8px;border-radius:6px;font-size:.85rem;text-align:right;}
-.mh-detail-btn{background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 9px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;}
+.mh-entry-hdr{display:grid;grid-template-columns:28px 1fr 80px;gap:6px;padding:4px 0;border-bottom:1px solid var(--bd);margin-bottom:2px}
+.mh-entry-row{display:grid;grid-template-columns:28px 1fr 80px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.mh-entry-row:last-child{border-bottom:none}
+.mh-wind{font-size:.78rem;font-weight:700;color:var(--gold);text-align:center}
 </style>
 </head>
 <body>
@@ -427,31 +424,12 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <label class="fl">リーグ</label>
       <div style="display:flex;gap:6px" id="mh-league-btns"></div>
     </div>
-    <div class="ltabs" id="mh-mode-tabs">
-      <div class="ltab on" onclick="setMhMode('bulk')">一括入力</div>
-      <div class="ltab" onclick="setMhMode('detail')">詳細入力</div>
+    <div class="mh-entry-hdr">
+      <div></div>
+      <div class="mh-col-h">選手</div>
+      <div class="mh-col-h">素点<br><span style="font-size:.58rem">（下2桁不要）</span></div>
     </div>
-    <div class="fg"><label class="fl">東家</label><select class="fs" id="mh-s0"></select></div>
-    <div class="fg"><label class="fl">南家</label><select class="fs" id="mh-s1"></select></div>
-    <div class="fg"><label class="fl">西家</label><select class="fs" id="mh-s2"></select></div>
-    <div class="fg"><label class="fl">北家</label><select class="fs" id="mh-s3"></select></div>
-    <div style="height:1px;background:linear-gradient(90deg,transparent,var(--bd),transparent);margin:10px 0"></div>
-    <div class="fg" id="mh-rounds-wrap">
-      <label class="fl" id="mh-rounds-label">プレイした局（東1〜南4）</label>
-      <div id="mh-rounds"></div>
-      <div id="mh-detail-wrap" style="display:none"></div>
-    </div>
-    <div id="mh-scores" style="display:none">
-      <div class="mh-row" id="mh-scores-wrap"></div>
-    </div>
-    <div id="mh-players" class="mh-players">
-      <div class="mh-col-header">
-        <div class="mh-col-h">名前</div>
-        <div class="mh-col-h">素点<br><span style="font-size:.58rem">(下2桁不要)</span></div>
-        <div class="mh-col-h">詳細</div>
-      </div>
-      <div id="mh-players-wrap"></div>
-    </div>
+    <div id="mh-entry-wrap"></div>
     <div class="ky-row">
       <span style="color:var(--gold);font-size:.8rem">供託棒</span>
       <div style="display:flex;align-items:center;gap:6px">
@@ -2397,17 +2375,14 @@ function _editH(id) {
 
   buildMhSelects();
   // 選手をセット
-  const ps = mhLeague === '_default' ? (g._players||[]) : (g.players[mhLeague]||[]);
   h.players.forEach((p, i) => {
     const sel = document.getElementById('mh-s' + i);
     if (sel) sel.value = p;
   });
-  buildMhRounds(h.rounds || []);
-  buildMhScores();
   // 素点をセット
   h.scores.forEach((s, i) => {
     const el = document.getElementById('mh-sc' + i);
-    if (el && !el.readOnly) el.value = s;
+    if (el && !el.readOnly) el.value = s / 100;
   });
   document.getElementById('mh-ky').value = h.ky || 0;
   penalties = h.penalties ? [...h.penalties] : [];
@@ -2418,7 +2393,6 @@ function _editH(id) {
   document.querySelector('#modal-hanzo .mtitle').textContent = '半荘を編集';
   document.getElementById('mh-save').textContent = '更新する';
   document.getElementById('mh-cont').style.display = 'none';
-  setMhMode('bulk');
 
   document.getElementById('modal-hanzo').classList.add('open');
 }
@@ -2441,12 +2415,11 @@ function _openHanzoModal(){
   const lb=document.getElementById('mh-league-btns');
   if(leagues.length>1){ lw.style.display=''; lb.innerHTML=leagues.map(l=>`<div class="ltab ${l===mhLeague?'on':''}" id="mlb-${l}" onclick="setMhLeague('${l}')" style="flex:1">${l}リーグ</div>`).join(''); }
   else { lw.style.display='none'; }
-  buildMhSelects(); buildMhScores();
+  buildMhSelects();
   document.getElementById('mh-ky').value='0';
   penalties = [];
   document.getElementById('penalty-list').innerHTML = '';
   updateMhPreview();
-  setMhMode('bulk');
   document.getElementById('modal-hanzo').classList.add('open');
 }
 
@@ -2455,11 +2428,7 @@ function setMhLeague(l){
   if(!curGroup) return;
   const leagues=Object.keys(curGroup.players).filter(k=>curGroup.players[k].length>0);
   leagues.forEach(ll=>{ const el=document.getElementById('mlb-'+ll); if(el) el.classList.toggle('on',ll===l); });
-  buildMhSelects(); buildMhScores(); updateMhPreview();
-  // 現在のモードを再適用
-  const activeTab = document.querySelector('#mh-mode-tabs .ltab.on');
-  const mode = activeTab && activeTab.textContent.includes('詳細') ? 'detail' : 'bulk';
-  setMhMode(mode);
+  buildMhSelects(); updateMhPreview();
 }
 
 function buildMhSelects(){
@@ -2467,125 +2436,28 @@ function buildMhSelects(){
   const g=curGroup;
   const ps = mhLeague==='_default' ? (g._players||[]) : (g.players[mhLeague]||[]);
   const opt='<option value="">-- 選択 --</option>'+ps.map(p=>`<option value="${p}">${p}</option>`).join('');
-  [0,1,2,3].forEach(i=>{
-    const sel=document.getElementById('mh-s'+i); if(!sel) return;
-    const prev=sel.value; sel.innerHTML=opt;
-    if(ps.includes(prev)) sel.value=prev; else if(ps[i]) sel.value=ps[i];
-    sel.onchange=()=>{
-      // 現在の点数を保存
-      const savedScores = [0,1,2,3].map(i => document.getElementById('mh-sc'+i)?.value || '');
-      buildMhScores();
-      // 点数を復元
-      savedScores.forEach((v, i) => {
-        const el = document.getElementById('mh-sc'+i);
-        if (el && !el.readOnly) el.value = v;
-      });
-      onMhScoreInput();
-      updateMhPreview();
-    };
-  });
-  buildMhRounds();
-}
-
-function buildMhRounds(selectedRounds) {
-  const rounds = ['東1','東2','東3','東4','南1','南2','南3','南4'];
-  const wrap = document.getElementById('mh-rounds');
-  if (!wrap) return;
-  wrap.innerHTML = rounds.map(r => {
-    const id = `mh-round-${r}`;
-    const checked = selectedRounds ? selectedRounds.includes(r) : true;
-    return `<label style="display:flex;align-items:center;gap:4px;font-size:.75rem"><input type="checkbox" id="${id}" value="${r}"${checked?' checked':''}>${r}</label>`;
-  }).join('');
-}
-
-function setMhMode(mode) {
-  const tabs = document.querySelectorAll('#mh-mode-tabs .ltab');
-  tabs.forEach(tab => tab.classList.remove('on'));
-  const activeTab = Array.from(tabs).find(tab => tab.textContent.includes(mode === 'bulk' ? '一括' : '詳細'));
-  if (activeTab) activeTab.classList.add('on');
-
-  const playersDiv = document.getElementById('mh-players');
-  const scoresDiv = document.getElementById('mh-scores');
-  const roundsWrap = document.getElementById('mh-rounds-wrap');
-
-  if (mode === 'bulk') {
-    playersDiv.style.display = 'none';
-    scoresDiv.style.display = 'block';
-    roundsWrap.style.display = 'none';
-  } else {
-    playersDiv.style.display = 'block';
-    scoresDiv.style.display = 'none';
-    roundsWrap.style.display = 'block';
-    buildMhPlayers();
-  }
-}
-
-function buildMhPlayers() {
-  const wrap = document.getElementById('mh-players-wrap');
-  if (!wrap) return;
-  const winds = ['東', '南', '西', '北'];
-  wrap.innerHTML = [0,1,2,3].map(i => {
-    const name = document.getElementById('mh-s' + i)?.value || `選手${i+1}`;
-    const score = document.getElementById('mh-ps' + i)?.value || document.getElementById('mh-sc' + i)?.value || '';
-    const details = {
-      furo: parseInt(document.getElementById(`mh-det-furo-${i}`)?.value)||0,
-      houchu: parseInt(document.getElementById(`mh-det-houchu-${i}`)?.value)||0,
-      ron: parseInt(document.getElementById(`mh-det-ron-${i}`)?.value)||0,
-      tsumo: parseInt(document.getElementById(`mh-det-tsumo-${i}`)?.value)||0,
-      riichi: parseInt(document.getElementById(`mh-det-riichi-${i}`)?.value)||0,
-    };
-    return `<div class="mh-player-item">
-      <div class="mh-player-row">
-        <div class="mh-player-name">${winds[i]} ${name}</div>
-        <input class="mh-player-score" type="number" id="mh-ps${i}" value="${score}" placeholder="例：30000" oninput="onMhPlayerScoreInput()">
-        <button class="mh-detail-btn" onclick="toggleMhDetail(${i})">詳細</button>
-      </div>
-      <div class="mh-detail-section" id="mh-detail-${i}" style="display:none;padding:8px 12px;margin-top:6px;background:rgba(0,0,0,.2);border-radius:6px;font-size:.75rem">
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
-          <div><label style="display:block;color:var(--tx2);margin-bottom:3px">副露</label><input type="number" id="mh-det-furo-${i}" min="0" max="4" value="${details.furo}" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:5px 6px;border-radius:5px;text-align:center;font-size:.75rem" oninput="if(+this.value<0)this.value=0; if(+this.value>4)this.value=4;"></div>
-          <div><label style="display:block;color:var(--tx2);margin-bottom:3px">放銃</label><input type="number" id="mh-det-houchu-${i}" min="0" max="1" value="${details.houchu}" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:5px 6px;border-radius:5px;text-align:center;font-size:.75rem" oninput="if(+this.value<0)this.value=0; if(+this.value>1)this.value=1;"></div>
-          <div><label style="display:block;color:var(--tx2);margin-bottom:3px">ロン</label><input type="number" id="mh-det-ron-${i}" min="0" max="1" value="${details.ron}" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:5px 6px;border-radius:5px;text-align:center;font-size:.75rem" oninput="if(+this.value<0)this.value=0; if(+this.value>1)this.value=1;"></div>
-          <div><label style="display:block;color:var(--tx2);margin-bottom:3px">ツモ</label><input type="number" id="mh-det-tsumo-${i}" min="0" max="1" value="${details.tsumo}" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:5px 6px;border-radius:5px;text-align:center;font-size:.75rem" oninput="if(+this.value<0)this.value=0; if(+this.value>1)this.value=1;"></div>
-          <div style="grid-column:1/-1"><label style="display:block;color:var(--tx2);margin-bottom:3px">リーチ</label><input type="number" id="mh-det-riichi-${i}" min="0" max="1" value="${details.riichi}" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:5px 6px;border-radius:5px;text-align:center;font-size:.75rem" oninput="if(+this.value<0)this.value=0; if(+this.value>1)this.value=1;"></div>
-        </div>
-      </div>
+  const wrap = document.getElementById('mh-entry-wrap');
+  if(!wrap) return;
+  // 既存の選択値と素点を保存
+  const prevSel=[0,1,2,3].map(i=>document.getElementById('mh-s'+i)?.value||'');
+  const prevSc=[0,1,2,3].map(i=>document.getElementById('mh-sc'+i)?.value||'');
+  const winds=['東','南','西','北'];
+  wrap.innerHTML=winds.map((w,i)=>{
+    const isLast=i===3;
+    return `<div class="mh-entry-row">
+      <div class="mh-wind">${w}</div>
+      <select class="fs" id="mh-s${i}" onchange="onMhScoreInput();updateMhPreview()">${opt}</select>
+      <input class="fi" type="number" id="mh-sc${i}" value="" placeholder="${isLast?'自動':'例:300'}" ${isLast?`readonly style="background:rgba(212,168,67,.08);color:var(--gold);border-color:rgba(212,168,67,.3);"`:''}  oninput="onMhScoreInput()">
     </div>`;
   }).join('');
-}
-
-function toggleMhDetail(i) {
-  const detailSec = document.getElementById(`mh-detail-${i}`);
-  if (!detailSec) return;
-  const isHidden = detailSec.style.display === 'none';
-  detailSec.style.display = isHidden ? 'block' : 'none';
-}
-
-function onMhPlayerScoreInput() {
-  [0,1,2,3].forEach(i => {
-    const psEl = document.getElementById('mh-ps' + i);
-    const scEl = document.getElementById('mh-sc' + i);
-    if (psEl && scEl && !scEl.readOnly) {
-      scEl.value = psEl.value;
-    }
+  // 選択値と素点を復元
+  [0,1,2,3].forEach(i=>{
+    const sel=document.getElementById('mh-s'+i);
+    if(sel){ if(ps.includes(prevSel[i])) sel.value=prevSel[i]; else if(ps[i]) sel.value=ps[i]; }
+    const sc=document.getElementById('mh-sc'+i);
+    if(sc && !sc.readOnly && prevSc[i]) sc.value=prevSc[i];
   });
   onMhScoreInput();
-}
-
-function buildMhDetail(i) {
-  // 詳細入力の詳細部分（未実装）
-}
-
-function buildMhScores(){
-  const el=document.getElementById('mh-scores'); if(!el) return;
-  const wrap = el.querySelector('#mh-scores-wrap') || el;
-  const winds=['東','南','西','北'];
-  wrap.innerHTML=[0,1,2,3].map(i=>{
-    const name=document.getElementById('mh-s'+i)?.value||`選手${i+1}`;
-    const isLast=i===3;
-    return `<div class="mh-card"><div class="mh-title">${winds[i]}家</div><div class="mh-name">${name}</div>
-      <input class="mh-input" type="number" id="mh-sc${i}" value="" placeholder="${isLast?'自動計算':'例：300'}" ${isLast?'readonly style="background:rgba(212,168,67,.08);color:var(--gold);border-color:rgba(212,168,67,.3);"':''} oninput="onMhScoreInput()">
-    </div>`;
-  }).join('');
 }
 
 function onMhScoreInput(){
@@ -2640,23 +2512,13 @@ function saveHanzo(cont){
     if(errEl){ errEl.style.display='block'; errEl.innerHTML='⚠ 同じ選手が複数選択されています'; }
     return;
   }
-  let scores;
-  const playersDiv = document.getElementById('mh-players');
-  const scoresDiv = document.getElementById('mh-scores');
-  
-  if (playersDiv && playersDiv.style.display !== 'none') {
-    // 詳細入力モード
-    scores=[0,1,2,3].map(i=>(parseInt(document.getElementById('mh-ps'+i)?.value)||0)*100);
-  } else {
-    // 一括入力モード
-    scores=[0,1,2,3].map(i=>(parseInt(document.getElementById('mh-sc'+i)?.value)||0)*100);
-  }
+  const scores=[0,1,2,3].map(i=>(parseInt(document.getElementById('mh-sc'+i)?.value)||0)*100);
   
   const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
   if(scores.reduce((a,b)=>a+b,0)!==(curGroup.kaeshi||30000)*4-ky*1000) return;
   const d=document.getElementById('mh-date')?.value||new Date().toISOString().split('T')[0];
   const validPenalties = penalties.filter(p => p.player && p.pt !== 0);
-  const rounds = Array.from(document.querySelectorAll('#mh-rounds input[type=checkbox]:checked')).map(el => el.value);
+  const rounds = [];
   const detail = [0,1,2,3].map(i => ({
     furo: parseInt(document.getElementById(`mh-det-furo-${i}`)?.value)||0,
     houchu: parseInt(document.getElementById(`mh-det-houchu-${i}`)?.value)||0,
@@ -2707,7 +2569,7 @@ function saveHanzo(cont){
     document.getElementById('mh-ky').value='0';
     penalties = [];
     document.getElementById('penalty-list').innerHTML = '';
-    buildMhScores();
+    buildMhSelects();
     updateMhPreview();
     showToast();
   } else {
