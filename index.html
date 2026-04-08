@@ -6,6 +6,8 @@
 <title>雀記</title>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@700;800&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{--bg:#0d0d0f;--bg2:#141418;--bg3:#1c1c22;--bd:#2a2a35;--gold:#d4a843;--gold2:#f0c96a;--red:#e05252;--green:#4caf82;--tx:#e8e8f0;--tx2:#8888a0}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -144,6 +146,22 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .rank-bar{display:flex;gap:3px;margin-top:8px}
 .rb-item{flex:1;border-radius:4px;padding:6px 4px;text-align:center;font-size:.75rem;font-weight:700}
 .pm-hrow{display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;font-size:.8rem;margin-bottom:5px}
+/* 詳細統計テーブル */
+.stat-section-hd{font-size:.68rem;font-weight:700;color:var(--tx2);margin:12px 0 4px;letter-spacing:.06em;text-transform:uppercase}
+.stat-group{background:rgba(0,0,0,.3);border-radius:8px;padding:2px 10px;margin-bottom:8px}
+.stat-tbl{width:100%;border-collapse:collapse;font-size:.8rem;table-layout:fixed}
+.stat-tbl td{padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
+.stat-tbl tr:last-child td{border-bottom:none}
+.stat-tbl td.lbl{width:52%;color:var(--tx2);font-size:.75rem;padding-right:6px}
+.stat-tbl td.val{width:28%;text-align:right;font-weight:700;white-space:nowrap;font-feature-settings:"tnum"}
+.stat-tbl td.sub{width:20%;text-align:right;color:var(--tx2);font-size:.68rem;white-space:nowrap}
+.stat-tbl td.pos{color:var(--green)}
+.stat-tbl td.neg{color:var(--red)}
+.stat-tbl td.dim{color:var(--tx2);font-weight:400}
+.stat-summary-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.stat-sum-card{background:rgba(0,0,0,.35);border-radius:9px;padding:9px 6px;text-align:center}
+.stat-sum-card .sv{font-size:1.05rem;font-weight:700;line-height:1.2;margin-bottom:2px}
+.stat-sum-card .sl{font-size:.58rem;color:var(--tx2)}
 
 /* 同卓 */
 .dok-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -256,6 +274,10 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div id="page-players" class="page"></div>
     <div id="page-hanzos" class="page">
       <button class="btn btn-g" onclick="openHanzoModal()">＋ 半荘を入力</button>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button onclick="exportHanzosExcel()" style="flex:1;padding:7px;border-radius:7px;background:rgba(92,175,92,.1);border:1px solid rgba(92,175,92,.35);color:#5caf5c;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">Excel出力</button>
+        <button onclick="exportHanzosImage()" style="flex:1;padding:7px;border-radius:7px;background:rgba(92,155,224,.1);border:1px solid rgba(92,155,224,.35);color:#5c9be0;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">画像出力</button>
+      </div>
       <div id="hanzo-list"></div>
     </div>
     <div id="page-graph" class="page">
@@ -461,7 +483,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div style="font-size:.65rem;color:var(--tx2);text-align:center;margin-top:2px">「次の半荘へ」を押すと席が回ります</div>
     </div>
     <div class="mbtns">
-      <button class="mbtn mng" onclick="window._editHanzoId=null;document.getElementById('mh-save').textContent='記録する';document.getElementById('mh-cont').style.display='';closeOvl('modal-hanzo')">キャンセル</button>
+      <button class="mbtn mng" onclick="closeHanzoModal()">キャンセル</button>
       <button class="mbtn mok" id="mh-save" onclick="saveHanzo(false)">記録する</button>
     </div>
     <button class="mbtn mok" id="mh-cont" onclick="saveHanzo(true)"
@@ -1185,6 +1207,31 @@ function cdFindMin2ndTsumo(piIdx, allPlayers, uma, oka, kaeshi, honba, riichi) {
   }
   return null;
 }
+// 1位プレイヤー(payerIdx)が payeeIdx に放銃しても1位を維持できる最大点数
+// 全選手のPT変動（順位入れ替わり含む）を正しく考慮
+function cdMaxSafeHouchu(payerIdx, payeeIdx, players, uma, oka, kaeshi) {
+  let maxSafe = 0;
+  for (let hand = 100; hand <= 48000; hand += 100) {
+    const newScores = players.map((p, j) => {
+      if (j === payerIdx) return p.score - hand;
+      if (j === payeeIdx) return p.score + hand;
+      return p.score;
+    });
+    const ro = newScores.map((s, j) => ({ s, j })).sort((a, b) => b.s - a.s);
+    const nr = new Array(players.length);
+    ro.forEach(({ j }, rank) => { nr[j] = rank; });
+    const nt = players.map((p, j) => p.cumpt + (newScores[j] - kaeshi) / 1000 + uma[nr[j]] + (nr[j] === 0 ? oka : 0));
+    const payerPt = nt[payerIdx];
+    const otherMax = Math.max(...nt.filter((_, j) => j !== payerIdx));
+    if (payerPt >= otherMax) {
+      maxSafe = hand;
+    } else {
+      break; // 点数が増えるほど不利になるので早期終了
+    }
+  }
+  return maxSafe;
+}
+
 function cdFormatPt(v) { return (v>=0?'+':'')+(Math.round(v*10)/10); }
 
 function cdCalculate() {
@@ -1206,9 +1253,11 @@ function cdCalculate() {
   for (let i = 0; i < 4; i++) {
     const pi = players[i];
     const others = players.map((p,j)=>({...p,idx:j})).filter((_,j)=>j!==i);
+    // roundRankは点数順で計算
     const othersRanked = [...others].sort((a,b)=>b.score-a.score);
     othersRanked.forEach((p,r) => { p.roundRank = r+1; });
-    const rivals = othersRanked.map(pj => {
+    // 表示は選手入力順（othersのまま）
+    const rivals = others.map(pj => {
       const diff = pj.score - pi.score;
       const half = Math.floor(diff / 2);
       const maxRon = cdMaxRonUnder(half, pj.isDealer);
@@ -1253,15 +1302,16 @@ function cdRenderResults(results, players, honba, riichi, uma, oka, kaeshi) {
     let body = '';
     if (r.alreadyWins) {
       body += `<div class="cd-condition-section"><div class="cd-cs-title ok">🏆 現在の総合トップ</div><div class="cd-cs-note">このままツモ/ロンされなければ1位確定</div></div>`;
-      // 放銃上限（差分/2 -> その以下のロン点数）
+      // 放銃上限（全員の順位変動を考慮して正確に計算）
+      const piIdx = players.findIndex(p => p.name === r.name && p.score === r.score);
       let safeHtml = '';
       for (const pj of r.rivals) {
         const diff = r.score - pj.score;
-        const half = Math.floor(diff / 2);
-        const maxRon = cdMaxRonUnder(half, pj.isDealer);
+        const maxSafe = cdMaxSafeHouchu(piIdx, pj.idx, players, uma, oka, kaeshi);
+        const maxRon = cdMaxRonUnder(maxSafe, pj.isDealer);
         safeHtml += maxRon > 0
           ? `<div class="cd-hand-row"><span class="cd-hand-type">${pj.name}へ</span><span class="cd-hand-pts ok-small">${diff.toLocaleString()}点差（最大 ${maxRon.toLocaleString()}点）</span></div>`
-          : `<div class="cd-hand-row"><span class="cd-hand-type">${pj.name}へ</span><span class="cd-hand-pts ng">放銃不可</span></div>`;
+          : `<div class="cd-hand-row"><span class="cd-hand-type">${pj.name}へ</span><span class="cd-hand-pts ng">放銃不可（順位変動リスク）</span></div>`;
       }
       body += `<div class="cd-condition-section" style="margin-top:8px"><div class="cd-cs-title" style="color:var(--tx2)">🛡 放銃上限</div>${safeHtml}</div>`;
     } else if (r.impossible) {
@@ -1429,8 +1479,14 @@ function renderRanking() {
   el.innerHTML = `
     ${leagues.length > 1 ? `<div class="ltabs">${leagues.map(l=>`<div class="ltab ${curLeague===l?'on':''}" onclick="curLeague='${l}';curRuleFilter='all';renderRanking()">${l}リーグ</div>`).join('')}</div>` : ''}
     ${usedRules.length > 1 ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">${usedRules.map(r=>`<button onclick="curRuleFilter='${r}';renderRanking()" style="padding:5px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;border:1px solid ${curRuleFilter===r?'var(--gold)':'var(--bd)'};background:${curRuleFilter===r?'rgba(212,168,67,.2)':'rgba(255,255,255,.05)'};color:${curRuleFilter===r?'var(--gold)':'var(--tx2)'}">${r==='all'?'全ルール':r}</button>`).join('')}</div>` : ''}
-    <div class="card">
-      <div class="ctitle">累計成績 <span class="rb-badge">${curRuleFilter==='all'?'全ルール':curRuleFilter}</span></div>
+    <div class="card" id="ranking-export-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="ctitle" style="margin:0">累計成績 <span class="rb-badge">${curRuleFilter==='all'?'全ルール':curRuleFilter}</span></div>
+        <div style="display:flex;gap:5px">
+          <button onclick="exportRankingExcel()" style="padding:5px 9px;border-radius:6px;background:rgba(92,175,92,.1);border:1px solid rgba(92,175,92,.35);color:#5caf5c;font-size:.68rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">Excel</button>
+          <button onclick="exportRankingImage()" style="padding:5px 9px;border-radius:6px;background:rgba(92,155,224,.1);border:1px solid rgba(92,155,224,.35);color:#5c9be0;font-size:.68rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">画像</button>
+        </div>
+      </div>
       <div class="snums">
         <div class="sn"><div class="snv">${total}</div><div class="snl">半荘数</div></div>
         <div class="sn"><div class="snv">${curLeague==='_default'?(g._players||[]).length:(g.players[curLeague]||[]).length}</div><div class="snl">選手数</div></div>
@@ -1591,7 +1647,11 @@ function renderPlayers() {
     ${leagues.length>1 ? `<div class="ltabs">${leagues.map(l=>`<div class="ltab ${pgLeague===l?'on':''}" onclick="pgLeague='${l}';pgRuleFilter='all';window._selPlayer=null;renderPlayers()">${l}リーグ</div>`).join('')}</div>` : ''}
     ${usedRules.length>1 ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">${usedRules.map(r=>`<button onclick="pgRuleFilter='${r}';renderPlayers()" style="padding:5px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;border:1px solid ${pgRuleFilter===r?'var(--gold)':'var(--bd)'};background:${pgRuleFilter===r?'rgba(212,168,67,.2)':'rgba(255,255,255,.05)'};color:${pgRuleFilter===r?'var(--gold)':'var(--tx2)'}">${r==='all'?'全ルール':r}</button>`).join('')}</div>` : ''}
     ${active.length===0 ? '<div class="empty"><span class="eico">👤</span>まだ記録がありません</div>' : `
-    <div class="fg"><select class="fs" onchange="window._selPlayer=this.value;renderPlayers()">${playerList.filter(p=>getStats(pgLeague,pgRuleFilter)[p]?.games>0).map(p=>`<option value="${p}"${p===window._selPlayer?' selected':''}>${p}</option>`).join('')}</select></div>
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+      <div class="fg" style="flex:1;margin-bottom:0"><select class="fs" onchange="window._selPlayer=this.value;renderPlayers()">${playerList.filter(p=>getStats(pgLeague,pgRuleFilter)[p]?.games>0).map(p=>`<option value="${p}"${p===window._selPlayer?' selected':''}>${p}</option>`).join('')}</select></div>
+      ${window._selPlayer?`<button onclick="exportPlayerStatsExcel()" style="padding:7px 10px;border-radius:7px;background:rgba(92,175,92,.1);border:1px solid rgba(92,175,92,.35);color:#5caf5c;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap">Excel</button>
+      <button onclick="exportPlayerStatsImage()" style="padding:7px 10px;border-radius:7px;background:rgba(92,155,224,.1);border:1px solid rgba(92,155,224,.35);color:#5c9be0;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap">画像</button>`:''}
+    </div>
     <div id="player-detail">${window._selPlayer ? renderPlayerDetail(window._selPlayer, pgLeague, pgRuleFilter) : ''}</div>`}`;
 }
 
@@ -1626,52 +1686,126 @@ function renderPlayerDetail(name, league, ruleFilter) {
   const worstEntry = allPts.length ? allPts.reduce((a,b) => a.pt <= b.pt ? a : b) : null;
   const best = bestEntry ? bestEntry.pt : 0;
   const worst = worstEntry ? worstEntry.pt : 0;
-  const bestScore = bestEntry ? bestEntry.score : 0;
-  const worstScore = worstEntry ? worstEntry.score : 0;
   const avg = s.games ? (s.rsum/s.games).toFixed(2) : '-';
   const dokList = Object.entries(mx[name]||{}).filter(([p,c])=>p!==name&&c>0).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  return `
-    <div class="stat-nums">
-      <div class="stat-n"><div class="stat-v ${s.pt>=0?'pp':'pm'}">${s.pt>=0?'+':''}${s.pt}</div><div class="stat-l">累計PT</div></div>
-      <div class="stat-n"><div class="stat-v">${s.games}</div><div class="stat-l">試合数</div></div>
-      <div class="stat-n"><div class="stat-v">${avg}</div><div class="stat-l">平均順位</div></div>
-      <div class="stat-n"><div class="stat-v" style="color:var(--green);font-size:.85rem">${bestScore.toLocaleString()}</div><div class="stat-l">最高PT(${best>=0?'+':''}${best})</div></div>
-      <div class="stat-n"><div class="stat-v" style="color:var(--red);font-size:.85rem">${worstScore.toLocaleString()}</div><div class="stat-l">最低PT(${worst})</div></div>
-      <div class="stat-n"><div class="stat-v" style="font-size:.8rem">${s.ranks[0]}-${s.ranks[1]}-${s.ranks[2]}-${s.ranks[3]}</div><div class="stat-l">1-2-3-4位</div></div>
-      <div class="stat-n"><div class="stat-v" style="font-size:.8rem">${s.games?((s.furo/s.games*100).toFixed(1)):'0'}%</div><div class="stat-l">副露率</div></div>
-      <div class="stat-n"><div class="stat-v" style="font-size:.8rem">${s.games?((s.houchu/s.games*100).toFixed(1)):'0'}%</div><div class="stat-l">放銃率</div></div>
-      <div class="stat-n"><div class="stat-v" style="font-size:.8rem">${s.games?(((s.ron+s.tsumo)/s.games*100).toFixed(1)):'0'}%</div><div class="stat-l">上がり率</div></div>
-      <div class="stat-n"><div class="stat-v" style="font-size:.8rem">${s.games?((s.riichi/s.games*100).toFixed(1)):'0'}%</div><div class="stat-l">リーチ率</div></div>
+  const topRate = s.games ? (s.ranks[0]/s.games*100).toFixed(1) : '0.0';
+  const rentaiRate = s.games ? ((s.ranks[0]+s.ranks[1])/s.games*100).toFixed(1) : '0.0';
+  const lasAvoidRate = s.games ? ((s.ranks[0]+s.ranks[1]+s.ranks[2])/s.games*100).toFixed(1) : '0.0';
+  const winCount = s.ron + s.tsumo;
+  const totalRounds = s.rounds || 0;
+  const hasRounds = totalRounds > 0;
+  const winRate = hasRounds ? (winCount/totalRounds*100).toFixed(1) : s.games ? (winCount/s.games*100).toFixed(1) : '0.0';
+  const houchuRate = hasRounds ? (s.houchu/totalRounds*100).toFixed(1) : s.games ? (s.houchu/s.games*100).toFixed(1) : '0.0';
+  const riichiRate = hasRounds ? (s.riichi/totalRounds*100).toFixed(1) : s.games ? (s.riichi/s.games*100).toFixed(1) : '0.0';
+  const furoRate = hasRounds ? (s.furo/totalRounds*100).toFixed(1) : s.games ? (s.furo/s.games*100).toFixed(1) : '0.0';
+  const rateLabel = hasRounds ? '局' : '半荘';
+
+  const ptColor = s.pt>=0?'var(--green)':'var(--red)';
+
+  // 対戦相性計算
+  const _leagueTarget = league === '_default' ? '' : league;
+  const affinityList = dokList.map(([opponent])=>{
+    const togetherH = g.hanzos.filter(h=>(h.league||'')===_leagueTarget&&h.players.includes(name)&&h.players.includes(opponent));
+    if(!togetherH.length) return null;
+    let rankSum=0, oppRankSum=0;
+    togetherH.forEach(h=>{
+      const ni=h.players.indexOf(name), oi=h.players.indexOf(opponent);
+      const {ranks}=calcPts(h.scores,h.ky,h.uma||g.uma,h.oka!==undefined?h.oka:g.oka,h.kaeshi||g.kaeshi);
+      rankSum+=ranks[ni]; oppRankSum+=ranks[oi];
+    });
+    return { opponent, games: togetherH.length, rankSum, oppRankSum, diff: rankSum-oppRankSum };
+  }).filter(Boolean);
+  const advantaged = [...affinityList].sort((a,b)=>a.diff-b.diff).slice(0,3).filter(a=>a.diff<0);
+  const disadvantaged = [...affinityList].sort((a,b)=>b.diff-a.diff).slice(0,3).filter(a=>a.diff>0);
+
+  const bestScore = bestEntry ? bestEntry.score : 0;
+  const worstScore = worstEntry ? worstEntry.score : 0;
+
+  return `<div id="player-stats-export">
+    <!-- サマリーカード -->
+    <div class="stat-nums" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">
+      <div class="stat-n"><div class="stat-v" style="color:${ptColor};font-size:1.1rem">${s.pt>=0?'+':''}${s.pt}</div><div class="stat-l">累計PT</div></div>
+      <div class="stat-n"><div class="stat-v">${s.games}</div><div class="stat-l">打荘数</div></div>
+      <div class="stat-n"><div class="stat-v">${avg}</div><div class="stat-l">平均着順</div></div>
     </div>
+
+    <!-- 順位分布バー -->
     <div class="card" style="padding:10px 12px;margin-bottom:10px">
       <div class="ctitle">順位分布</div>
-      <div class="rank-bar">${[['1位',s.ranks[0],'#d4a843'],['2位',s.ranks[1],'#8a9ab0'],['3位',s.ranks[2],'#a0622a'],['4位',s.ranks[3],'var(--red)']].map(([l,c,col])=>`
+      <div class="rank-bar" style="margin-top:8px">
+        ${[['1位',s.ranks[0],'#d4a843'],['2位',s.ranks[1],'#8a9ab0'],['3位',s.ranks[2],'#a0622a'],['4位',s.ranks[3],'var(--red)']].map(([l,c,col])=>`
         <div class="rb-item" style="background:${col}22;border:1px solid ${col}55;color:${col}">
-          <div style="font-size:.65rem;margin-bottom:2px">${l}</div><div style="font-size:1rem">${c}</div>
+          <div style="font-size:.65rem;margin-bottom:2px">${l}</div>
+          <div style="font-size:1rem;font-weight:700">${c}</div>
           <div style="font-size:.6rem;color:var(--tx2)">${s.games?Math.round(c/s.games*100):0}%</div>
-        </div>`).join('')}</div>
+        </div>`).join('')}
+      </div>
+      <!-- 率バッジ -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <span style="font-size:.68rem;background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:3px 8px;border-radius:10px">トップ率 ${topRate}%</span>
+        <span style="font-size:.68rem;background:rgba(255,255,255,.06);border:1px solid var(--bd);color:var(--tx2);padding:3px 8px;border-radius:10px">連対率 ${rentaiRate}%</span>
+        <span style="font-size:.68rem;background:rgba(255,255,255,.06);border:1px solid var(--bd);color:var(--tx2);padding:3px 8px;border-radius:10px">ラス回避 ${lasAvoidRate}%</span>
+      </div>
     </div>
-    ${s.games>0?`<div class="card" style="padding:10px 12px;margin-bottom:10px"><div class="ctitle">ポイント推移</div>${makeSvg(s.hist)}</div>`:''}
+
+    <!-- 最高/最低得点（順位分布と同スタイル） -->
+    <div class="card" style="padding:10px 12px;margin-bottom:10px">
+      <div class="ctitle">得点記録</div>
+      <div class="rank-bar" style="margin-top:8px">
+        <div class="rb-item" style="background:rgba(76,175,130,.15);border:1px solid rgba(76,175,130,.4);color:var(--green)">
+          <div style="font-size:.65rem;margin-bottom:2px">最高得点</div>
+          <div style="font-size:.9rem;font-weight:700">${bestScore.toLocaleString()}</div>
+          <div style="font-size:.6rem;color:var(--tx2)">${best>=0?'+':''}${best}pt</div>
+        </div>
+        <div class="rb-item" style="background:rgba(224,82,82,.15);border:1px solid rgba(224,82,82,.4);color:var(--red)">
+          <div style="font-size:.65rem;margin-bottom:2px">最低得点</div>
+          <div style="font-size:.9rem;font-weight:700">${worstScore.toLocaleString()}</div>
+          <div style="font-size:.6rem;color:var(--tx2)">${worst}pt</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 詳細統計グリッド -->
+    ${hasRounds ? `<div class="card" style="padding:10px 12px;margin-bottom:10px">
+      <div class="ctitle">詳細統計（${rateLabel}単位）</div>
+      <div class="stat-nums" style="grid-template-columns:repeat(4,1fr);margin-top:8px;gap:5px">
+        <div class="stat-n"><div class="stat-v" style="color:var(--green);font-size:.9rem">${winRate}%</div><div class="stat-l">和了率</div></div>
+        <div class="stat-n"><div class="stat-v" style="color:var(--red);font-size:.9rem">${houchuRate}%</div><div class="stat-l">放銃率</div></div>
+        <div class="stat-n"><div class="stat-v" style="color:var(--gold);font-size:.9rem">${riichiRate}%</div><div class="stat-l">立直率</div></div>
+        <div class="stat-n"><div class="stat-v" style="color:#5c9be0;font-size:.9rem">${furoRate}%</div><div class="stat-l">副露率</div></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);font-size:.72rem;color:var(--tx2)">
+        <span>和了 <b style="color:var(--tx)">${winCount}回</b>（ロン${s.ron}/ツモ${s.tsumo}）</span>
+        <span>放銃 <b style="color:var(--tx)">${s.houchu}回</b></span>
+        <span>立直 <b style="color:var(--tx)">${s.riichi}回</b></span>
+        <span>副露 <b style="color:var(--tx)">${s.furo}回</b></span>
+      </div>
+    </div>` : ''}
+
+    <!-- ポイント推移 -->
+    ${s.games>0?`<div class="card" style="padding:10px 12px;margin-bottom:10px">
+      <div class="ctitle">ポイント推移</div>
+      ${makeSvg(s.hist)}
+    </div>`:''}
+
+    <!-- 半荘成績 -->
     <div class="card" style="padding:10px 12px;margin-bottom:10px">
       <div class="ctitle">半荘成績（新→旧）</div>
       ${(() => {
         const sorted = [...allPts].reverse();
         if (!sorted.length) return '<div style="color:var(--tx2);text-align:center;padding:12px;font-size:.8rem">記録なし</div>';
-        // 月別にグループ化
         const byMonth = {};
-        sorted.forEach((x, i) => {
-          const m = x.date.slice(0, 7); // YYYY-MM
-          if (!byMonth[m]) byMonth[m] = [];
-          byMonth[m].push({ x, i });
-        });
+        sorted.forEach(x => { const m=x.date.slice(0,7); if(!byMonth[m])byMonth[m]=[]; byMonth[m].push(x); });
         return Object.entries(byMonth).map(([month, items]) => {
-          const rows = items.map(({ x }) => {
-            const ri = allPts.length - 1 - allPts.slice().reverse().indexOf(x);
-            const cum = s.hist[allPts.length - 1 - [...allPts].reverse().indexOf(x)];
+          const rows = items.map(x => {
             const bd = badge(x.rank-1);
             const pc = x.pt>0?'var(--green)':x.pt<0?'var(--red)':'var(--tx2)';
             return `<div class="pm-hrow">
-              <div style="display:flex;align-items:center;gap:6px"><span class="${bd}" style="width:18px;height:18px;font-size:.6rem">${x.rank}</span><span style="color:var(--tx2);font-size:.72rem">${x.date}</span><span style="font-size:.6rem;background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.25);color:var(--gold);padding:1px 5px;border-radius:3px">${x.ruleLabel}</span></div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="${bd}" style="width:18px;height:18px;font-size:.6rem">${x.rank}</span>
+                <span style="color:var(--tx2);font-size:.72rem">${x.date}</span>
+                <span style="font-size:.6rem;background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.25);color:var(--gold);padding:1px 5px;border-radius:3px">${x.ruleLabel}</span>
+              </div>
               <div style="display:flex;gap:8px;align-items:center">
                 <span style="color:var(--tx2);font-size:.75rem">${x.score.toLocaleString()}</span>
                 <span style="color:${pc};font-weight:700;min-width:38px;text-align:right">${x.pt>=0?'+':''}${x.pt}</span>
@@ -1679,62 +1813,303 @@ function renderPlayerDetail(name, league, ruleFilter) {
             </div>`;
           }).join('');
           const [y, mo] = month.split('-');
-          const label = `${y}年${parseInt(mo)}月（${items.length}半荘）`;
           return `<details style="border-bottom:1px solid rgba(255,255,255,.05)">
             <summary style="padding:8px 4px;font-size:.78rem;font-weight:700;color:var(--tx2);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center">
-              <span>${label}</span><span style="font-size:.65rem">▼</span>
-            </summary>
-            ${rows}
-          </details>`;
+              <span>${y}年${parseInt(mo)}月（${items.length}半荘）</span><span style="font-size:.65rem">▼</span>
+            </summary>${rows}</details>`;
         }).join('');
       })()}
     </div>
-    ${dokList.length?`<div class="card" style="padding:10px 12px;margin-bottom:10px"><div class="ctitle">対戦相性</div>
-    ${(() => {
-      // 全対戦相手の相性を計算してランキング
-      const affinityList = dokList.map(([opponent])=>{
-        const _leagueTarget = league === '_default' ? '' : league;
-        const togetherH = g.hanzos.filter(h=>(h.league||'')===_leagueTarget&&h.players.includes(name)&&h.players.includes(opponent));
-        if(!togetherH.length) return null;
-        let rankSum=0, oppRankSum=0;
-        togetherH.forEach(h=>{
-          const ni=h.players.indexOf(name), oi=h.players.indexOf(opponent);
-          const {ranks}=calcPts(h.scores,h.ky,h.uma||g.uma,h.oka!==undefined?h.oka:g.oka,h.kaeshi||g.kaeshi);
-          rankSum+=ranks[ni]; oppRankSum+=ranks[oi];
-        });
-        const diff = rankSum - oppRankSum;
-        return { opponent, games: togetherH.length, rankSum, oppRankSum, diff };
-      }).filter(Boolean);
 
-      // 有利上位3・不利上位3
-      const advantaged = [...affinityList].sort((a,b)=>a.diff-b.diff).slice(0,3).filter(a=>a.diff<0);
-      const disadvantaged = [...affinityList].sort((a,b)=>b.diff-a.diff).slice(0,3).filter(a=>a.diff>0);
-
-      const renderRow = (a, type) => {
-        const avgRank = (a.rankSum/a.games).toFixed(2);
-        const oppAvgRank = (a.oppRankSum/a.games).toFixed(2);
-        const col = type==='adv' ? 'var(--green)' : 'var(--red)';
-        const label = type==='adv' ? '有利' : '不利';
-        return `<div style="padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <span style="font-size:.85rem;font-weight:700">${a.opponent}</span>
-            <span style="font-size:.75rem;color:${col};font-weight:700">${label}</span>
+    <!-- 対戦相性 -->
+    ${(advantaged.length||disadvantaged.length)?`<div class="card" style="padding:10px 12px;margin-bottom:10px">
+      <div class="ctitle">対戦相性</div>
+      ${advantaged.length?`<div style="font-size:.68rem;color:var(--green);margin:8px 0 4px;font-weight:700">▲ 有利な相手</div>`+advantaged.map(a=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+          <div>
+            <div style="font-size:.85rem;font-weight:700;margin-bottom:3px">${a.opponent}</div>
+            <div style="font-size:.68rem;color:var(--tx2)">同卓 ${a.games}回　自分 <b style="color:var(--tx)">${(a.rankSum/a.games).toFixed(2)}</b>　相手 <b style="color:var(--tx)">${(a.oppRankSum/a.games).toFixed(2)}</b></div>
           </div>
-          <div style="display:flex;gap:12px;font-size:.72rem;color:var(--tx2)">
-            <span>同卓 <b style="color:var(--tx)">${a.games}回</b></span>
-            <span>自分 <b style="color:var(--tx)">${avgRank}</b></span>
-            <span>相手 <b style="color:var(--tx)">${oppAvgRank}</b></span>
+          <span style="font-size:.72rem;background:rgba(76,175,130,.15);border:1px solid rgba(76,175,130,.3);color:var(--green);padding:3px 8px;border-radius:10px;white-space:nowrap">有利</span>
+        </div>`).join(''):''}
+      ${disadvantaged.length?`<div style="font-size:.68rem;color:var(--red);margin:8px 0 4px;font-weight:700">▼ 不利な相手</div>`+disadvantaged.map(a=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+          <div>
+            <div style="font-size:.85rem;font-weight:700;margin-bottom:3px">${a.opponent}</div>
+            <div style="font-size:.68rem;color:var(--tx2)">同卓 ${a.games}回　自分 <b style="color:var(--tx)">${(a.rankSum/a.games).toFixed(2)}</b>　相手 <b style="color:var(--tx)">${(a.oppRankSum/a.games).toFixed(2)}</b></div>
           </div>
-        </div>`;
-      };
+          <span style="font-size:.72rem;background:rgba(224,82,82,.15);border:1px solid rgba(224,82,82,.3);color:var(--red);padding:3px 8px;border-radius:10px;white-space:nowrap">不利</span>
+        </div>`).join(''):''}
+    </div>`:''}
+  </div>`;
+}
 
-      let html = '';
-      if (advantaged.length) html += `<div style="font-size:.68rem;color:var(--green);margin:6px 0 2px;font-weight:700">▲ 有利な相手</div>` + advantaged.map(a=>renderRow(a,'adv')).join('');
-      if (disadvantaged.length) html += `<div style="font-size:.68rem;color:var(--red);margin:8px 0 2px;font-weight:700">▼ 不利な相手</div>` + disadvantaged.map(a=>renderRow(a,'dis')).join('');
-      if (!html) html = '<div style="color:var(--tx2);text-align:center;padding:8px;font-size:.8rem">データ不足</div>';
-      return html;
-    })()}
-    </div>`:''}`;
+function togglePlayerDetail(btn) {
+  const sec = btn.nextElementSibling;
+  const open = sec.style.display === 'none';
+  sec.style.display = open ? 'block' : 'none';
+  const arrow = btn.querySelector('span:last-child');
+  if (arrow) arrow.textContent = open ? '▲' : '▼';
+  btn.style.borderColor = open ? 'var(--gold)' : 'var(--bd)';
+  btn.style.color = open ? 'var(--gold)' : 'var(--tx2)';
+}
+
+// ===== 個人成績エクスポート =====
+function exportPlayerStatsExcel() {
+  if (!window._selPlayer || !curGroup) return;
+  if (typeof XLSX === 'undefined') { alert('XLSXライブラリの読み込み中です。少し待ってから再度お試しください。'); return; }
+  const name = window._selPlayer;
+  const g = curGroup;
+  const stats = getStats(pgLeague, pgRuleFilter);
+  const s = stats[name];
+  if (!s || !s.games) return;
+
+  const totalRounds = s.rounds || 0;
+  const hasRounds = totalRounds > 0;
+  const winCount = s.ron + s.tsumo;
+  const avg = s.games ? parseFloat((s.rsum/s.games).toFixed(2)) : 0;
+  const topRate = s.games ? parseFloat((s.ranks[0]/s.games*100).toFixed(1)) : 0;
+  const rentaiRate = s.games ? parseFloat(((s.ranks[0]+s.ranks[1])/s.games*100).toFixed(1)) : 0;
+  const lasAvoidRate = s.games ? parseFloat(((s.ranks[0]+s.ranks[1]+s.ranks[2])/s.games*100).toFixed(1)) : 0;
+  const winRate = hasRounds ? parseFloat((winCount/totalRounds*100).toFixed(1)) : s.games ? parseFloat((winCount/s.games*100).toFixed(1)) : 0;
+  const houchuRate = hasRounds ? parseFloat((s.houchu/totalRounds*100).toFixed(1)) : s.games ? parseFloat((s.houchu/s.games*100).toFixed(1)) : 0;
+  const riichiRate = hasRounds ? parseFloat((s.riichi/totalRounds*100).toFixed(1)) : s.games ? parseFloat((s.riichi/s.games*100).toFixed(1)) : 0;
+  const furoRate = hasRounds ? parseFloat((s.furo/totalRounds*100).toFixed(1)) : s.games ? parseFloat((s.furo/s.games*100).toFixed(1)) : 0;
+
+  // Sheet1: 統計サマリー（横並び）
+  const summary = [
+    ['累計PT','打荘数','平均着順','１着','２着','３着','４着','トップ率','連対率','ラス回避率','和了回数','ロン','ツモ','和了率','放銃回数','放銃率','立直回数','立直率','副露回数','副露率'],
+    [
+      s.pt, s.games, avg,
+      s.ranks[0], s.ranks[1], s.ranks[2], s.ranks[3],
+      `${topRate}%`, `${rentaiRate}%`, `${lasAvoidRate}%`,
+      winCount, s.ron, s.tsumo, `${winRate}%`,
+      s.houchu, `${houchuRate}%`,
+      s.riichi, `${riichiRate}%`,
+      s.furo, `${furoRate}%`,
+    ],
+  ];
+
+  // Sheet2: 対局結果
+  const _leagueTarget = pgLeague === '_default' ? '' : pgLeague;
+  const myH = g.hanzos.filter(h=>{
+    if((h.league||'')!==_leagueTarget||!h.players.includes(name)) return false;
+    if(pgRuleFilter&&pgRuleFilter!=='all'){
+      const uma=h.uma||g.uma,oka=h.oka!==undefined?h.oka:g.oka,kaeshi=h.kaeshi||g.kaeshi;
+      const label=Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(uma)&&v.oka===oka&&v.kaeshi===kaeshi)?.[1]?.label||'カスタム';
+      return label===pgRuleFilter;
+    }
+    return true;
+  });
+  const results = [['日付', '着順', '得点', 'PT', 'ルール']];
+  myH.slice().reverse().forEach(h=>{
+    const i=h.players.indexOf(name);
+    const uma=h.uma||g.uma,oka=h.oka!==undefined?h.oka:g.oka,kaeshi=h.kaeshi||g.kaeshi;
+    const {pts,ranks}=calcPts(h.scores,h.ky,uma,oka,kaeshi);
+    const ruleLabel=h.uma?(Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(uma)&&v.oka===oka&&v.kaeshi===kaeshi)?.[1]?.label||'カスタム'):(RULES[g.rule]?.label||'カスタム');
+    results.push([h.date,ranks[i],h.scores[i],pts[i],ruleLabel]);
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summary), '統計');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(results), '対局結果');
+  const dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  XLSX.writeFile(wb, `${name}_成績_${dt}.xlsx`);
+}
+
+function exportPlayerStatsImage() {
+  if (!window._selPlayer) return;
+  if (typeof html2canvas === 'undefined') { alert('html2canvasライブラリの読み込み中です。少し待ってから再度お試しください。'); return; }
+  const target = document.getElementById('player-stats-export');
+  if (!target) return;
+  const name = window._selPlayer;
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;background:#0d0d0f;padding:32px 20px 40px;box-sizing:border-box;font-family:Noto Sans JP,sans-serif';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'font-size:18px;font-weight:700;color:#d4a843;margin-bottom:16px;text-align:center';
+  header.textContent = `${name} の成績`;
+  wrapper.appendChild(header);
+
+  const clone = target.cloneNode(true);
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  html2canvas(wrapper, { backgroundColor:'#0d0d0f', scale:2, useCORS:true, logging:false, width:390, windowWidth:390 }).then(canvas => {
+    document.body.removeChild(wrapper);
+    const targetH = Math.max(canvas.height, canvas.width * 16/9);
+    const out = document.createElement('canvas');
+    out.width = canvas.width; out.height = targetH;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#0d0d0f'; ctx.fillRect(0,0,out.width,out.height);
+    ctx.drawImage(canvas, 0, 0);
+    const a = document.createElement('a');
+    const dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    a.download = `${name}_成績_${dt}.png`;
+    a.href = out.toDataURL('image/png');
+    a.click();
+  }).catch(()=>{ document.body.removeChild(wrapper); alert('画像出力に失敗しました'); });
+}
+
+// ===== 累計成績エクスポート =====
+function exportRankingExcel() {
+  if (!curGroup) return;
+  if (typeof XLSX === 'undefined') { alert('XLSXライブラリの読み込み中です。少し待ってから再度お試しください。'); return; }
+  const g = curGroup;
+  const stats = getStats(curLeague, curRuleFilter);
+  const sorted = Object.entries(stats).sort((a,b)=>b[1].pt-a[1].pt).filter(([,s])=>s.games>0);
+
+  // Sheet1: 選手別サマリー（横並び：行=選手、列=項目）
+  const header = ['順位','選手','累計PT','打荘数','平均着順','１着','２着','３着','４着','トップ率','連対率','ラス回避率','和了回数','ロン','ツモ','和了率','放銃回数','放銃率','立直回数','立直率','副露回数','副露率'];
+  const rows = sorted.map(([name, s], idx) => {
+    const totalR = s.rounds || 0; const hasR = totalR > 0;
+    const wins = s.ron + s.tsumo;
+    const winRate = hasR ? (wins/totalR*100).toFixed(1) : s.games ? (wins/s.games*100).toFixed(1) : '0.0';
+    const hRate = hasR ? (s.houchu/totalR*100).toFixed(1) : s.games ? (s.houchu/s.games*100).toFixed(1) : '0.0';
+    const rRate = hasR ? (s.riichi/totalR*100).toFixed(1) : s.games ? (s.riichi/s.games*100).toFixed(1) : '0.0';
+    const fRate = hasR ? (s.furo/totalR*100).toFixed(1) : s.games ? (s.furo/s.games*100).toFixed(1) : '0.0';
+    const topR = s.games ? (s.ranks[0]/s.games*100).toFixed(1) : '0.0';
+    const rentai = s.games ? ((s.ranks[0]+s.ranks[1])/s.games*100).toFixed(1) : '0.0';
+    const lasAvoid = s.games ? ((s.ranks[0]+s.ranks[1]+s.ranks[2])/s.games*100).toFixed(1) : '0.0';
+    return [
+      idx+1, name, s.pt, s.games, parseFloat((s.rsum/s.games).toFixed(2)),
+      s.ranks[0], s.ranks[1], s.ranks[2], s.ranks[3],
+      `${topR}%`, `${rentai}%`, `${lasAvoid}%`,
+      wins, s.ron, s.tsumo, `${winRate}%`,
+      s.houchu, `${hRate}%`,
+      s.riichi, `${rRate}%`,
+      s.furo, `${fRate}%`,
+    ];
+  });
+  const summarySheet = [header, ...rows];
+
+  // Sheet2: 対局結果（横並び）
+  const resultHeader = ['日付', ...sorted.map(([name])=>name+' 点'), ...sorted.map(([name])=>name+' PT'), ...sorted.map(([name])=>name+' 順位')];
+  const _lt = curLeague === '_default' ? '' : curLeague;
+  const filteredH = g.hanzos.filter(h=>{
+    if((h.league||'')!==_lt) return false;
+    if(curRuleFilter&&curRuleFilter!=='all'){
+      const uma=h.uma||g.uma,oka=h.oka!==undefined?h.oka:g.oka,kaeshi=h.kaeshi||g.kaeshi;
+      const label=Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(uma)&&v.oka===oka&&v.kaeshi===kaeshi)?.[1]?.label||'カスタム';
+      return label===curRuleFilter;
+    }
+    return true;
+  });
+  const playerNames = sorted.map(([name])=>name);
+  const resultRows = filteredH.slice().reverse().map(h=>{
+    const uma=h.uma||g.uma,oka=h.oka!==undefined?h.oka:g.oka,kaeshi=h.kaeshi||g.kaeshi;
+    const {pts,ranks}=calcPts(h.scores,h.ky,uma,oka,kaeshi);
+    const scores = playerNames.map(p=>{ const i=h.players.indexOf(p); return i>=0?h.scores[i]:'-'; });
+    const ptsArr = playerNames.map(p=>{ const i=h.players.indexOf(p); return i>=0?pts[i]:'-'; });
+    const rankArr = playerNames.map(p=>{ const i=h.players.indexOf(p); return i>=0?ranks[i]:'-'; });
+    return [h.date, ...scores, ...ptsArr, ...rankArr];
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summarySheet), '選手別成績');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([resultHeader,...resultRows]), '対局結果');
+  const dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  XLSX.writeFile(wb, `${g.name||'雀記'}_成績_${dt}.xlsx`);
+}
+
+function exportRankingImage() {
+  if (!curGroup) return;
+  if (typeof html2canvas === 'undefined') { alert('html2canvasライブラリの読み込み中です。少し待ってから再度お試しください。'); return; }
+  const target = document.getElementById('ranking-export-card');
+  if (!target) return;
+  const g = curGroup;
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;background:#0d0d0f;padding:28px 20px 36px;box-sizing:border-box;font-family:Noto Sans JP,sans-serif';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'font-size:16px;font-weight:700;color:#d4a843;margin-bottom:12px;text-align:center';
+  header.textContent = `${g.name||'グループ'} 累計成績`;
+  wrapper.appendChild(header);
+
+  const clone = target.cloneNode(true);
+  // エクスポートボタン自体を非表示
+  const btns = clone.querySelector('[style*="gap:5px"]');
+  if (btns) btns.style.display = 'none';
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  html2canvas(wrapper, { backgroundColor:'#0d0d0f', scale:2, useCORS:true, logging:false, width:390, windowWidth:390 }).then(canvas => {
+    document.body.removeChild(wrapper);
+    const targetH = Math.max(canvas.height, canvas.width * 16/9);
+    const out = document.createElement('canvas');
+    out.width = canvas.width; out.height = targetH;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#0d0d0f'; ctx.fillRect(0,0,out.width,out.height);
+    ctx.drawImage(canvas, 0, 0);
+    const a = document.createElement('a');
+    const dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    a.download = `${g.name||'雀記'}_成績_${dt}.png`;
+    a.href = out.toDataURL('image/png');
+    a.click();
+  }).catch(()=>{ document.body.removeChild(wrapper); alert('画像出力に失敗しました'); });
+}
+
+// ===== 半荘結果エクスポート =====
+function exportHanzosExcel() {
+  if (!curGroup) return;
+  if (typeof XLSX === 'undefined') { alert('XLSXライブラリの読み込み中です。少し待ってから再度お試しください。'); return; }
+  const g = curGroup;
+  if (!g.hanzos.length) { alert('記録がありません'); return; }
+
+  // ヘッダー：日付 | 1位選手 点数 PT | 2位... | 3位... | 4位...
+  const header = ['#','日付','ルール','1位','1位得点','1位PT','2位','2位得点','2位PT','3位','3位得点','3位PT','4位','4位得点','4位PT','供託'];
+  const rows = [...g.hanzos].reverse().map((h, idx) => {
+    const uma=h.uma||g.uma, oka=h.oka!==undefined?h.oka:g.oka, kaeshi=h.kaeshi||g.kaeshi;
+    const {pts, ranks} = calcPts(h.scores, h.ky, uma, oka, kaeshi);
+    const ruleLabel = h.uma ? (Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(uma)&&v.oka===oka&&v.kaeshi===kaeshi)?.[1]?.label||'カスタム') : (RULES[g.rule]?.label||'カスタム');
+    const sorted = h.players.map((p,i)=>({p, score:h.scores[i], pt:pts[i], rank:ranks[i]})).sort((a,b)=>a.rank-b.rank);
+    return [
+      g.hanzos.length - idx, h.date, ruleLabel,
+      sorted[0].p, sorted[0].score, sorted[0].pt,
+      sorted[1].p, sorted[1].score, sorted[1].pt,
+      sorted[2].p, sorted[2].score, sorted[2].pt,
+      sorted[3].p, sorted[3].score, sorted[3].pt,
+      h.ky || 0,
+    ];
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([header, ...rows]), '半荘結果');
+  const dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  XLSX.writeFile(wb, `${g.name||'雀記'}_半荘結果_${dt}.xlsx`);
+}
+
+function exportHanzosImage() {
+  if (!curGroup) return;
+  if (typeof html2canvas === 'undefined') { alert('html2canvasライブラリの読み込み中です。少し待ってから再度お試しください。'); return; }
+  const target = document.getElementById('hanzo-list');
+  if (!target || !target.children.length) { alert('記録がありません'); return; }
+  const g = curGroup;
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;background:#0d0d0f;padding:28px 20px 36px;box-sizing:border-box;font-family:Noto Sans JP,sans-serif';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'font-size:16px;font-weight:700;color:#d4a843;margin-bottom:12px;text-align:center';
+  header.textContent = `${g.name||'グループ'} 半荘・試合結果`;
+  wrapper.appendChild(header);
+
+  // detailsを全部開いた状態でクローン
+  const clone = target.cloneNode(true);
+  clone.querySelectorAll('details').forEach(d => d.setAttribute('open', ''));
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
+
+  html2canvas(wrapper, { backgroundColor:'#0d0d0f', scale:2, useCORS:true, logging:false, width:390, windowWidth:390 }).then(canvas => {
+    document.body.removeChild(wrapper);
+    const a = document.createElement('a');
+    const dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    a.download = `${g.name||'雀記'}_半荘結果_${dt}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  }).catch(()=>{ document.body.removeChild(wrapper); alert('画像出力に失敗しました'); });
 }
 
 function makeSvg(hist) {
@@ -2347,6 +2722,8 @@ function doEditP(league,idx){
 // ===== ペナルティ =====
 let penalties = [];
 let mhDetailOpen = false;
+let mhDetailMode = 'manual'; // 'manual' | 'round'
+let mhRoundState = null;
 
 function addPenalty() {
   const players = [0,1,2,3].map(i => document.getElementById('mh-s'+i)?.value || '').filter(Boolean);
@@ -2374,37 +2751,357 @@ function toggleMhDetail() {
   mhDetailOpen = !mhDetailOpen;
   const wrap = document.getElementById('mh-detail-wrap');
   const btn = document.getElementById('mh-detail-btn');
+  mhDetailMode = 'round';
   if (wrap) wrap.style.display = mhDetailOpen ? 'block' : 'none';
   if (btn) {
     btn.style.background = mhDetailOpen ? 'rgba(212,168,67,.2)' : 'rgba(255,255,255,.05)';
     btn.style.borderColor = mhDetailOpen ? 'var(--gold)' : 'var(--bd)';
     btn.style.color = mhDetailOpen ? 'var(--gold)' : 'var(--tx2)';
   }
-  if (mhDetailOpen) buildMhDetails();
+  if (mhDetailOpen) {
+    mhDetailMode = 'round';
+    mhRoundState = null;
+    buildMhDetails();
+  }
 }
 
 function buildMhDetails() {
   const inner = document.getElementById('mh-detail-inner');
   if (!inner) return;
-  const winds = ['東','南','西','北'];
-  inner.innerHTML = [0,1,2,3].map(i => {
-    const name = document.getElementById('mh-s'+i)?.value || `選手${i+1}`;
-    const fields = [
-      ['リーチ','riichi'],['上がり(ロン)','ron'],['副露','furo'],['ツモ','tsumo'],['放銃','houchu']
-    ];
-    return `<div style="background:rgba(0,0,0,.25);border:1px solid var(--bd);border-radius:9px;padding:9px 10px;margin-bottom:8px">
-      <div style="font-size:.7rem;color:var(--gold);margin-bottom:6px">${winds[i]}家　<span style="font-weight:700">${name}</span></div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px">
-        ${fields.map(([label,key])=>`<div style="text-align:center">
-          <div style="font-size:.6rem;color:var(--tx2);margin-bottom:3px">${label}</div>
-          <input type="number" id="mh-det-${key}-${i}" value="0" min="0" style="width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:5px 2px;border-radius:6px;font-size:.85rem;text-align:center">
-        </div>`).join('')}
-      </div>
+  inner.innerHTML = '<div id="mhd-content"></div>';
+  if (!mhRoundState) initMhRoundState();
+  renderMhRoundUI();
+}
+
+// ===== ラウンド記録機能（mahjong_score_28.html 統合） =====
+const MH_KYOKU = ['東1局','東2局','東3局','東4局','南1局','南2局','南3局','南4局'];
+const MH_WINDS = ['東','南','西','北'];
+
+function initMhRoundState() {
+  if (!curGroup) return;
+  const players = [0,1,2,3].map(i => document.getElementById('mh-s'+i)?.value || `選手${i+1}`);
+  const kaeshi = curGroup.kaeshi || 30000;
+  const oka = curGroup.oka !== undefined ? curGroup.oka : 0;
+  // 初期点 = 返し点 - オカ相当（Mリーグは25000、返し点30000/オカ20→5000差）
+  const startingScore = Math.round(kaeshi - oka * 1000 / 4);
+  mhRoundState = {
+    players, kaeshi, startingScore,
+    kyoku: 0, honba: 0, riichiPool: 0,
+    scores: [startingScore, startingScore, startingScore, startingScore],
+    riichiFlags: [false,false,false,false],
+    fuuroFlags: [false,false,false,false],
+    kyokuDone: Array(8).fill(false),
+    history: [], snapshots: [],
+    inputPhase: 'main', // 'main'|'agari-ron'|'agari-tsumo'|'ryukyoku'
+    selWinner: -1, selLoser: -1,
+    tenpaiFlags: [false,false,false,false],
+  };
+}
+
+function renderMhRoundUI() {
+  const content = document.getElementById('mhd-content');
+  if (!content || !mhRoundState) return;
+  const s = mhRoundState;
+  const oyaIdx = s.kyoku % 4;
+
+  // ラウンドピル
+  const pills = MH_KYOKU.map((n,i) => {
+    const active = i===s.kyoku, done = s.kyokuDone[i];
+    return `<button onclick="mhJumpKyoku(${i})" style="padding:3px 7px;border-radius:10px;border:1px solid ${active?'var(--gold)':done?'rgba(255,255,255,.1)':'var(--bd)'};background:${active?'rgba(212,168,67,.2)':'transparent'};color:${active?'var(--gold)':'var(--tx2)'};font-size:.62rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:${active?'700':'400'};text-decoration:${done?'line-through':''}">${n.slice(0,-1)}</button>`;
+  }).join('');
+
+  // 選手スコア
+  const playerRows = s.players.map((p,i) => {
+    const diff = s.scores[i] - s.startingScore;
+    const ds = diff===0?'':diff>0?`<span style="font-size:.6rem;color:var(--green)">+${(diff/100)|0}</span>`:`<span style="font-size:.6rem;color:var(--red)">${(diff/100)|0}</span>`;
+    const rMark = s.riichiFlags[i] ? ' 🎯' : '';
+    const oyaMark = i===oyaIdx ? '<span style="font-size:.58rem;background:rgba(212,168,67,.2);color:var(--gold);padding:1px 4px;border-radius:3px;margin-left:3px">親</span>' : '';
+    return `<div style="display:flex;align-items:center;gap:5px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+      <span style="font-size:.6rem;background:var(--bg3);border:1px solid var(--bd);border-radius:3px;padding:1px 4px;color:var(--tx2);min-width:20px;text-align:center">${MH_WINDS[i]}</span>
+      <span style="flex:1;font-size:.73rem;font-weight:700">${p}${rMark}${oyaMark}</span>
+      ${ds}
+      <span style="font-size:.8rem;font-weight:700;min-width:42px;text-align:right;color:${s.scores[i]<s.kaeshi?'var(--red)':s.scores[i]>s.kaeshi?'var(--green)':'var(--tx)'}">${(s.scores[i]/100)}</span>
     </div>`;
   }).join('');
+
+  // リーチボタン
+  const rBtns = s.players.map((p,i) =>
+    `<button onclick="mhToggleRiichi(${i})" style="padding:3px 8px;border-radius:10px;border:1px solid ${s.riichiFlags[i]?'var(--gold)':'var(--bd)'};background:${s.riichiFlags[i]?'rgba(212,168,67,.2)':'transparent'};color:${s.riichiFlags[i]?'var(--gold)':'var(--tx2)'};font-size:.65rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:${s.riichiFlags[i]?'700':'400'}">${p}${s.riichiFlags[i]?'✓':''}</button>`
+  ).join('');
+
+  // 副露ボタン
+  const fBtns = s.players.map((p,i) =>
+    `<button onclick="mhToggleFuuro(${i})" style="padding:3px 8px;border-radius:10px;border:1px solid ${s.fuuroFlags[i]?'#5c9be0':'var(--bd)'};background:${s.fuuroFlags[i]?'rgba(92,155,224,.2)':'transparent'};color:${s.fuuroFlags[i]?'#5c9be0':'var(--tx2)'};font-size:.65rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:${s.fuuroFlags[i]?'700':'400'}">${p}${s.fuuroFlags[i]?'✓':''}</button>`
+  ).join('');
+
+  // アクションUI
+  let phase = '';
+  if (s.inputPhase === 'main') {
+    phase = `<div style="display:flex;gap:5px">
+      <button onclick="mhStartAgari('ron')" style="flex:1;padding:8px 0;border-radius:7px;background:rgba(76,175,130,.15);border:1px solid rgba(76,175,130,.4);color:var(--green);font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">ロン</button>
+      <button onclick="mhStartAgari('tsumo')" style="flex:1;padding:8px 0;border-radius:7px;background:rgba(76,175,130,.1);border:1px solid rgba(76,175,130,.3);color:var(--green);font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">ツモ</button>
+      <button onclick="mhStartRyukyoku()" style="flex:1;padding:8px 0;border-radius:7px;background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.25);color:var(--gold);font-size:.8rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">流局</button>
+      <button onclick="mhRoundUndo()" style="padding:8px 10px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2);font-size:.8rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif" title="元に戻す">↩</button>
+    </div>`;
+  } else if (s.inputPhase === 'agari-ron' || s.inputPhase === 'agari-tsumo') {
+    const isRon = s.inputPhase === 'agari-ron';
+    const wBtns = s.players.map((p,i) =>
+      `<button onclick="mhSelWinner(${i})" style="padding:4px 8px;border-radius:10px;border:1px solid ${s.selWinner===i?'var(--green)':'var(--bd)'};background:${s.selWinner===i?'rgba(76,175,130,.2)':'transparent'};color:${s.selWinner===i?'var(--green)':'var(--tx2)'};font-size:.68rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:${s.selWinner===i?'700':'400'}">${p}</button>`
+    ).join('');
+    const lBtns = isRon ? s.players.map((p,i) => i===s.selWinner?'' :
+      `<button onclick="mhSelLoser(${i})" style="padding:4px 8px;border-radius:10px;border:1px solid ${s.selLoser===i?'var(--red)':'var(--bd)'};background:${s.selLoser===i?'rgba(224,82,82,.2)':'transparent'};color:${s.selLoser===i?'var(--red)':'var(--tx2)'};font-size:.68rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:${s.selLoser===i?'700':'400'}">${p}</button>`
+    ).join('') : '';
+    const oyaWins = s.selWinner >= 0 && s.selWinner === oyaIdx && !isRon;
+    phase = `<div style="background:rgba(76,175,130,.07);border:1px solid rgba(76,175,130,.25);border-radius:8px;padding:9px">
+      <div style="font-size:.65rem;color:var(--green);font-weight:700;margin-bottom:5px">${isRon?'ロン':'ツモ'} 和了者</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px">${wBtns}</div>
+      ${isRon?`<div style="font-size:.65rem;color:var(--red);font-weight:700;margin-bottom:5px">放銃者</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px">${lBtns}</div>`:''}
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:7px">
+        <span style="font-size:.68rem;color:var(--tx2);min-width:${isRon?'28':'28'}px">点数</span>
+        <input type="number" id="mhr-pts" step="100" placeholder="${isRon?'例: 3900':'子 例: 2000'}" style="flex:1;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:6px 8px;border-radius:6px;font-size:.82rem">
+        ${!isRon&&!oyaWins?`<span style="font-size:.68rem;color:var(--tx2)">親</span>
+        <input type="number" id="mhr-pts-oya" step="100" placeholder="例: 4000" style="flex:1;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:6px 8px;border-radius:6px;font-size:.82rem">`:''}
+        ${oyaWins?`<span style="font-size:.65rem;color:var(--tx2)">（親ツモ：全員同点）</span>`:''}
+      </div>
+      <div style="display:flex;gap:5px">
+        <button onclick="mhConfirmAgari()" style="flex:1;padding:7px;border-radius:7px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;color:#1a1200;font-size:.78rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">確定</button>
+        <button onclick="mhCancelInput()" style="padding:7px 10px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2);font-size:.78rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">取消</button>
+      </div>
+    </div>`;
+  } else if (s.inputPhase === 'ryukyoku') {
+    const tBtns = s.players.map((p,i) => {
+      const on = s.tenpaiFlags[i];
+      return `<button onclick="mhToggleTenpai(${i})" style="padding:4px 10px;border-radius:10px;border:1px solid ${on?'var(--green)':'var(--bd)'};background:${on?'rgba(76,175,130,.2)':'transparent'};color:${on?'var(--green)':'var(--tx2)'};font-size:.68rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:${on?'700':'400'}">${p} ${on?'聴':'不'}</button>`;
+    }).join('');
+    phase = `<div style="background:rgba(212,168,67,.07);border:1px solid rgba(212,168,67,.25);border-radius:8px;padding:9px">
+      <div style="font-size:.65rem;color:var(--gold);font-weight:700;margin-bottom:5px">流局 聴牌者</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${tBtns}</div>
+      <div style="display:flex;gap:5px">
+        <button onclick="mhConfirmRyukyoku()" style="flex:1;padding:7px;border-radius:7px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;color:#1a1200;font-size:.78rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">確定</button>
+        <button onclick="mhCancelInput()" style="padding:7px 10px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2);font-size:.78rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">取消</button>
+      </div>
+    </div>`;
+  }
+
+  // 履歴
+  const hist = s.history.length ? s.history.slice().reverse().map(h => {
+    const col = h.type==='流局'?'var(--gold)':h.type==='チョンボ'?'var(--red)':'var(--green)';
+    let txt = h.type;
+    if (h.winner) txt += ' '+h.winner;
+    if (h.loser) txt += '←'+h.loser;
+    if (h.pts) txt += ' '+(h.pts/100);
+    if (h.tenpai && h.tenpai.length) txt += ' 聴:'+h.tenpai.join('・');
+    return `<div style="font-size:.63rem;color:var(--tx2);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;gap:5px">
+      <span style="min-width:32px;color:var(--tx2)">${h.kyoku}${h.honba?h.honba+'本':''}</span>
+      <span style="color:${col}">${txt}</span>
+    </div>`;
+  }).join('') : `<div style="font-size:.63rem;color:var(--tx2);text-align:center;padding:6px">まだ記録なし</div>`;
+
+  // 反映ボタン
+  const applyBtn = s.history.length ? `<button onclick="mhApplyRoundStats()" style="width:100%;padding:9px;border-radius:8px;background:rgba(212,168,67,.15);border:1px solid var(--gold);color:var(--gold);font-size:.77rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;margin-top:8px">↑ 素点に反映する</button>` : '';
+
+  content.innerHTML = `
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">${pills}</div>
+    <div style="background:rgba(0,0,0,.25);border:1px solid var(--bd);border-radius:8px;padding:8px;margin-bottom:8px">
+      <div style="font-size:.6rem;color:var(--tx2);margin-bottom:4px">${MH_KYOKU[s.kyoku]}${s.honba>0?` ${s.honba}本場`:''}${s.riichiPool>0?` 供託${s.riichiPool}本`:''}</div>
+      ${playerRows}
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <div style="flex:1">
+        <div style="font-size:.6rem;color:var(--gold);margin-bottom:4px">立直（タップで切替）</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">${rBtns}</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:.6rem;color:#5c9be0;margin-bottom:4px">副露（タップで切替）</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">${fBtns}</div>
+      </div>
+    </div>
+    ${phase}
+    <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:8px;max-height:120px;overflow-y:auto;margin-top:8px">
+      <div style="font-size:.6rem;color:var(--tx2);margin-bottom:3px">記録履歴</div>
+      ${hist}
+    </div>
+    ${applyBtn}`;
+}
+
+function mhJumpKyoku(i) {
+  if (!mhRoundState) return;
+  mhRoundState.kyoku = i; mhRoundState.inputPhase = 'main';
+  mhRoundState.selWinner = -1; mhRoundState.selLoser = -1;
+  renderMhRoundUI();
+}
+function mhSaveSnap() {
+  const s = mhRoundState;
+  s.snapshots.push(JSON.parse(JSON.stringify({
+    kyoku:s.kyoku,honba:s.honba,riichiPool:s.riichiPool,
+    scores:s.scores,riichiFlags:s.riichiFlags,kyokuDone:s.kyokuDone,history:s.history
+  })));
+  if (s.snapshots.length > 20) s.snapshots.shift();
+}
+function mhRoundUndo() {
+  const s = mhRoundState; if (!s||!s.snapshots.length) return;
+  const snap = s.snapshots.pop();
+  Object.assign(s, snap);
+  s.inputPhase='main'; s.selWinner=-1; s.selLoser=-1;
+  renderMhRoundUI();
+}
+function mhToggleFuuro(i) {
+  if (!mhRoundState) return;
+  const s = mhRoundState;
+  s.fuuroFlags[i] = !s.fuuroFlags[i];
+  // 副露ONにしたらリーチを解除（点数も戻す）
+  if (s.fuuroFlags[i] && s.riichiFlags[i]) {
+    s.riichiFlags[i] = false;
+    s.riichiPool = Math.max(0, s.riichiPool - 1);
+    s.scores[i] += 1000;
+  }
+  renderMhRoundUI();
+}
+function mhToggleRiichi(i) {
+  if (!mhRoundState) return; mhSaveSnap();
+  const s = mhRoundState;
+  if (s.riichiFlags[i]) {
+    s.riichiFlags[i]=false; s.riichiPool=Math.max(0,s.riichiPool-1); s.scores[i]+=1000;
+  } else {
+    s.riichiFlags[i]=true; s.riichiPool++; s.scores[i]-=1000;
+    // リーチONにしたら副露を解除
+    s.fuuroFlags[i] = false;
+  }
+  renderMhRoundUI();
+}
+function mhStartAgari(type) {
+  if (!mhRoundState) return;
+  mhRoundState.inputPhase = type==='ron'?'agari-ron':'agari-tsumo';
+  mhRoundState.selWinner=-1; mhRoundState.selLoser=-1;
+  renderMhRoundUI();
+  setTimeout(()=>document.getElementById('mhr-pts')?.focus(),50);
+}
+function mhStartRyukyoku() {
+  if (!mhRoundState) return;
+  mhRoundState.inputPhase='ryukyoku';
+  mhRoundState.tenpaiFlags=[false,false,false,false];
+  renderMhRoundUI();
+}
+function mhSelWinner(i) {
+  if (!mhRoundState) return;
+  mhRoundState.selWinner=i; if(mhRoundState.selLoser===i) mhRoundState.selLoser=-1;
+  renderMhRoundUI();
+}
+function mhSelLoser(i) {
+  if (!mhRoundState||i===mhRoundState.selWinner) return;
+  mhRoundState.selLoser=i; renderMhRoundUI();
+}
+function mhToggleTenpai(i) {
+  if (!mhRoundState) return;
+  mhRoundState.tenpaiFlags[i]=!mhRoundState.tenpaiFlags[i]; renderMhRoundUI();
+}
+function mhCancelInput() {
+  if (!mhRoundState) return;
+  mhRoundState.inputPhase='main'; mhRoundState.selWinner=-1; mhRoundState.selLoser=-1;
+  renderMhRoundUI();
+}
+function mhConfirmAgari() {
+  const s = mhRoundState; if (!s) return;
+  if (s.selWinner<0) { alert('和了者を選択してください'); return; }
+  const isRon = s.inputPhase==='agari-ron';
+  if (isRon && s.selLoser<0) { alert('放銃者を選択してください'); return; }
+  const pts = parseInt(document.getElementById('mhr-pts')?.value)||0;
+  if (pts<=0) { alert('点数を入力してください'); return; }
+  mhSaveSnap();
+  const oyaIdx = s.kyoku%4;
+  const riichiBonus = s.riichiPool*1000;
+  const honbaBonus = s.honba * 300;
+  const riichiPlayers = s.players.filter((_,i)=>s.riichiFlags[i]);
+  if (isRon) {
+    // ロン：放銃者が本場分も払う
+    s.scores[s.selWinner] += pts + riichiBonus + honbaBonus;
+    s.scores[s.selLoser]  -= pts + honbaBonus;
+  } else {
+    const oyaTsumo = s.selWinner===oyaIdx;
+    const ptsOya = parseInt(document.getElementById('mhr-pts-oya')?.value)||0;
+    let total=0;
+    s.players.forEach((_,i)=>{
+      if(i===s.selWinner) return;
+      const base = oyaTsumo ? pts : (i===oyaIdx?(ptsOya||pts*2):pts);
+      const pay = base + 100*s.honba; // ツモ：各自100点/本場
+      s.scores[i]-=pay; total+=pay;
+    });
+    s.scores[s.selWinner]+=total+riichiBonus;
+  }
+  const fuuroPlayers = s.players.filter((_,i)=>s.fuuroFlags[i]);
+  s.history.push({
+    kyoku: MH_KYOKU[s.kyoku].slice(0,-1), honba:s.honba,
+    type: isRon?'ロン':'ツモ',
+    winner:s.players[s.selWinner], loser:isRon?s.players[s.selLoser]:null,
+    pts, riichiPlayers, fuuroPlayers, scores:[...s.scores]
+  });
+  s.riichiFlags=[false,false,false,false]; s.fuuroFlags=[false,false,false,false]; s.riichiPool=0; s.kyokuDone[s.kyoku]=true;
+  if (s.selWinner===oyaIdx) { s.honba++; }
+  else { s.honba=0; if(s.kyoku<7) s.kyoku++; }
+  s.inputPhase='main'; s.selWinner=-1; s.selLoser=-1;
+  renderMhRoundUI();
+}
+function mhConfirmRyukyoku() {
+  const s = mhRoundState; if (!s) return;
+  mhSaveSnap();
+  const oyaIdx=s.kyoku%4, oyaTenpai=s.tenpaiFlags[oyaIdx];
+  const tc=s.tenpaiFlags.filter(Boolean).length, nc=4-tc;
+  const riichiPlayers=s.players.filter((_,i)=>s.riichiFlags[i]);
+  const fuuroPlayers=s.players.filter((_,i)=>s.fuuroFlags[i]);
+  if(tc>0&&nc>0){const g=Math.floor(3000/tc),l=Math.floor(3000/nc);s.players.forEach((_,i)=>{s.scores[i]+=s.tenpaiFlags[i]?g:-l;});}
+  s.history.push({
+    kyoku:MH_KYOKU[s.kyoku].slice(0,-1),honba:s.honba,type:'流局',
+    winner:null,loser:null,pts:0,
+    tenpai:s.players.filter((_,i)=>s.tenpaiFlags[i]),
+    riichiPlayers,fuuroPlayers,scores:[...s.scores]
+  });
+  s.honba++; s.riichiFlags=[false,false,false,false]; s.fuuroFlags=[false,false,false,false]; s.riichiPool=0;
+  if(!oyaTenpai){s.kyokuDone[s.kyoku]=true;if(s.kyoku<7)s.kyoku++;}
+  s.tenpaiFlags=[false,false,false,false]; s.inputPhase='main';
+  renderMhRoundUI();
+}
+function mhCalcRoundStats() {
+  const s = mhRoundState;
+  const stats = s.players.map(()=>({riichi:0,ron:0,furo:0,tsumo:0,houchu:0}));
+  s.history.forEach(h=>{
+    (h.riichiPlayers||[]).forEach(p=>{const i=s.players.indexOf(p);if(i>=0)stats[i].riichi++;});
+    (h.fuuroPlayers||[]).forEach(p=>{const i=s.players.indexOf(p);if(i>=0)stats[i].furo++;});
+    if(h.type==='ロン'){
+      const wi=s.players.indexOf(h.winner),li=s.players.indexOf(h.loser);
+      if(wi>=0)stats[wi].ron++; if(li>=0)stats[li].houchu++;
+    } else if(h.type==='ツモ'){
+      const wi=s.players.indexOf(h.winner); if(wi>=0)stats[wi].tsumo++;
+    }
+  });
+  return stats;
+}
+function mhApplyRoundStats() {
+  const s = mhRoundState; if (!s||!s.history.length) return;
+  // ラウンド記録の最終点数を素点欄に直接反映（4人目は自動計算のためスキップ）
+  [0,1,2].forEach(i=>{
+    const el=document.getElementById('mh-sc'+i);
+    if(el) el.value=s.scores[i]/100;
+  });
+  onMhScoreInput();
+  showToast();
 }
 
 // ===== 半荘入力モーダル =====
+function closeHanzoModal() {
+  window._editHanzoId = null;
+  document.getElementById('mh-save').textContent = '記録する';
+  document.getElementById('mh-cont').style.display = '';
+  // 素点入力欄をリセット
+  [0,1,2,3].forEach(i => {
+    const el = document.getElementById('mh-sc'+i);
+    if (el) el.value = '';
+  });
+  document.getElementById('mh-ky').value = '0';
+  const pg = document.getElementById('mh-prev');
+  if (pg) pg.innerHTML = '<div style="color:var(--tx2);font-size:.65rem;grid-column:span 2;text-align:center;padding:4px 0">3人分の素点を入力すると自動計算されます</div>';
+  closeOvl('modal-hanzo');
+}
 function openHanzoModal() { requireAuth(_openHanzoModal); }
 function editH(id) { requireAuth(() => _editH(id)); }
 function _editH(id) {
@@ -2447,16 +3144,10 @@ function _editH(id) {
   const detBtn = document.getElementById('mh-detail-btn');
   if (h.detail && h.detail.some(d => d && (d.furo||d.houchu||d.ron||d.tsumo||d.riichi))) {
     mhDetailOpen = true;
+    mhDetailMode = 'round';
     if (detWrap) detWrap.style.display = 'block';
     if (detBtn) { detBtn.style.background='rgba(212,168,67,.2)'; detBtn.style.borderColor='var(--gold)'; detBtn.style.color='var(--gold)'; }
     buildMhDetails();
-    h.detail.forEach((d, i) => {
-      if (!d) return;
-      ['furo','houchu','ron','tsumo','riichi'].forEach(k => {
-        const el = document.getElementById(`mh-det-${k}-${i}`);
-        if (el) el.value = d[k] || 0;
-      });
-    });
   } else {
     if (detWrap) detWrap.style.display = 'none';
     if (detBtn) { detBtn.style.background='rgba(255,255,255,.05)'; detBtn.style.borderColor='var(--bd)'; detBtn.style.color='var(--tx2)'; }
@@ -2478,6 +3169,8 @@ function _openHanzoModal(){
   document.getElementById('mh-cont').style.display = '';
   // 詳細入力リセット
   mhDetailOpen = false;
+  mhDetailMode = 'manual';
+  mhRoundState = null;
   const detWrap = document.getElementById('mh-detail-wrap');
   if (detWrap) detWrap.style.display = 'none';
   const detBtn = document.getElementById('mh-detail-btn');
@@ -2597,14 +3290,15 @@ function saveHanzo(cont){
   if(scores.reduce((a,b)=>a+b,0)!==(curGroup.kaeshi||30000)*4-ky*1000) return;
   const d=document.getElementById('mh-date')?.value||new Date().toISOString().split('T')[0];
   const validPenalties = penalties.filter(p => p.player && p.pt !== 0);
-  const rounds = [];
-  const detail = [0,1,2,3].map(i => ({
-    furo: parseInt(document.getElementById(`mh-det-furo-${i}`)?.value)||0,
-    houchu: parseInt(document.getElementById(`mh-det-houchu-${i}`)?.value)||0,
-    ron: parseInt(document.getElementById(`mh-det-ron-${i}`)?.value)||0,
-    tsumo: parseInt(document.getElementById(`mh-det-tsumo-${i}`)?.value)||0,
-    riichi: parseInt(document.getElementById(`mh-det-riichi-${i}`)?.value)||0,
-  }));
+  let rounds, detail;
+  if (mhDetailOpen && mhRoundState && mhRoundState.history.length) {
+    const stats = mhCalcRoundStats();
+    detail = [0,1,2,3].map(i => stats[i]);
+    rounds = mhRoundState.history;
+  } else {
+    detail = [0,1,2,3].map(()=>({furo:0,houchu:0,ron:0,tsumo:0,riichi:0}));
+    rounds = [];
+  }
 
   // 編集モード
   if (window._editHanzoId) {
@@ -2639,15 +3333,22 @@ function saveHanzo(cont){
   if(cont){
     const rotated = [players[1], players[2], players[3], players[0]];
     const ps = curGroup.players[mhLeague]||[];
-    buildMhSelects(); // まずリセット
-    // ローテーション後の選手をセット
+    buildMhSelects();
     [0,1,2,3].forEach(i=>{
       const sel=document.getElementById('mh-s'+i);
       if(sel && ps.includes(rotated[i])) sel.value=rotated[i];
     });
+    // 素点リセット
+    [0,1,2,3].forEach(i=>{ const el=document.getElementById('mh-sc'+i); if(el) el.value=''; });
     document.getElementById('mh-ky').value='0';
     penalties = [];
     document.getElementById('penalty-list').innerHTML = '';
+    // 詳細入力もリセット
+    mhDetailOpen=false; mhDetailMode='round'; mhRoundState=null;
+    const detWrap=document.getElementById('mh-detail-wrap');
+    const detBtn=document.getElementById('mh-detail-btn');
+    if(detWrap) detWrap.style.display='none';
+    if(detBtn){ detBtn.style.background='rgba(255,255,255,.05)'; detBtn.style.borderColor='var(--bd)'; detBtn.style.color='var(--tx2)'; }
     buildMhSelects();
     updateMhPreview();
     showToast();
