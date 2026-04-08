@@ -478,7 +478,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div class="serr" id="mh-err"></div>
     <div class="prev">
       <div class="prev-title">── ポイントプレビュー ──</div>
-      <div class="prev-grid" id="mh-prev"><div style="color:var(--tx2);font-size:.65rem;grid-column:span 2;text-align:center;padding:4px 0">3人分の素点を入力すると自動計算されます</div></div>
+      <div class="prev-grid" id="mh-prev"><div style="color:var(--tx2);font-size:.65rem;grid-column:span 2;text-align:center;padding:4px 0">3人分の素点を入力すると残り1人が自動計算されます</div></div>
       <div style="font-size:.65rem;color:var(--tx2);text-align:center;margin-top:6px">点数の下2桁（00）は入力不要です</div>
       <div style="font-size:.65rem;color:var(--tx2);text-align:center;margin-top:2px">「次の半荘へ」を押すと席が回ります</div>
     </div>
@@ -2724,6 +2724,7 @@ let penalties = [];
 let mhDetailOpen = false;
 let mhDetailMode = 'manual'; // 'manual' | 'round'
 let mhRoundState = null;
+let mhAutoCalcIdx = -1;
 
 function addPenalty() {
   const players = [0,1,2,3].map(i => document.getElementById('mh-s'+i)?.value || '').filter(Boolean);
@@ -3079,11 +3080,17 @@ function mhCalcRoundStats() {
 function mhApplyRoundStats() {
   const s = mhRoundState; if (!s||!s.history.length) return;
   // ラウンド記録の最終点数を素点欄に直接反映（4人目は自動計算のためスキップ）
-  [0,1,2].forEach(i=>{
+  // Reset all fields and styles first
+  mhAutoCalcIdx=-1;
+  [0,1,2,3].forEach(i=>{
+    const el=document.getElementById('mh-sc'+i);
+    if(el){ el.value=''; el.style.background=''; el.style.color=''; el.style.borderColor=''; }
+  });
+  [0,1,2,3].forEach(i=>{
     const el=document.getElementById('mh-sc'+i);
     if(el) el.value=s.scores[i]/100;
   });
-  onMhScoreInput();
+  onMhScoreInput(-1);
   showToast();
 }
 
@@ -3093,13 +3100,14 @@ function closeHanzoModal() {
   document.getElementById('mh-save').textContent = '記録する';
   document.getElementById('mh-cont').style.display = '';
   // 素点入力欄をリセット
+  mhAutoCalcIdx = -1;
   [0,1,2,3].forEach(i => {
     const el = document.getElementById('mh-sc'+i);
-    if (el) el.value = '';
+    if (el) { el.value = ''; el.style.background=''; el.style.color=''; el.style.borderColor=''; }
   });
   document.getElementById('mh-ky').value = '0';
   const pg = document.getElementById('mh-prev');
-  if (pg) pg.innerHTML = '<div style="color:var(--tx2);font-size:.65rem;grid-column:span 2;text-align:center;padding:4px 0">3人分の素点を入力すると自動計算されます</div>';
+  if (pg) pg.innerHTML = '<div style="color:var(--tx2);font-size:.65rem;grid-column:span 2;text-align:center;padding:4px 0">3人分の素点を入力すると残り1人が自動計算されます</div>';
   closeOvl('modal-hanzo');
 }
 function openHanzoModal() { requireAuth(_openHanzoModal); }
@@ -3129,9 +3137,14 @@ function _editH(id) {
     if (sel) sel.value = p;
   });
   // 素点をセット
+  mhAutoCalcIdx = -1;
+  [0,1,2,3].forEach(i => {
+    const el = document.getElementById('mh-sc'+i);
+    if (el) { el.style.background=''; el.style.color=''; el.style.borderColor=''; }
+  });
   h.scores.forEach((s, i) => {
     const el = document.getElementById('mh-sc' + i);
-    if (el && !el.readOnly) el.value = s / 100;
+    if (el) el.value = s / 100;
   });
   document.getElementById('mh-ky').value = h.ky || 0;
   penalties = h.penalties ? [...h.penalties] : [];
@@ -3214,12 +3227,12 @@ function buildMhSelects(){
   const prevSel=[0,1,2,3].map(i=>document.getElementById('mh-s'+i)?.value||'');
   const prevSc=[0,1,2,3].map(i=>document.getElementById('mh-sc'+i)?.value||'');
   const winds=['東','南','西','北'];
+  mhAutoCalcIdx = -1;
   wrap.innerHTML=winds.map((w,i)=>{
-    const isLast=i===3;
     return `<div class="mh-entry-row">
       <div class="mh-wind">${w}</div>
-      <select class="fs" id="mh-s${i}" onchange="onMhScoreInput();updateMhPreview();if(mhDetailOpen)buildMhDetails()">${opt}</select>
-      <input class="fi" type="number" id="mh-sc${i}" value="" placeholder="${isLast?'自動':'例:300'}" ${isLast?`readonly style="background:rgba(212,168,67,.08);color:var(--gold);border-color:rgba(212,168,67,.3);"`:''}  oninput="onMhScoreInput()">
+      <select class="fs" id="mh-s${i}" onchange="onMhScoreInput(${i});updateMhPreview();if(mhDetailOpen)buildMhDetails()">${opt}</select>
+      <input class="fi" type="number" id="mh-sc${i}" value="" placeholder="例:300" oninput="onMhScoreInput(${i})">
     </div>`;
   }).join('');
   // 選択値と素点を復元
@@ -3227,19 +3240,57 @@ function buildMhSelects(){
     const sel=document.getElementById('mh-s'+i);
     if(sel){ if(ps.includes(prevSel[i])) sel.value=prevSel[i]; else if(ps[i]) sel.value=ps[i]; }
     const sc=document.getElementById('mh-sc'+i);
-    if(sc && !sc.readOnly && prevSc[i]) sc.value=prevSc[i];
+    if(sc && prevSc[i]) sc.value=prevSc[i];
   });
-  onMhScoreInput();
+  onMhScoreInput(-1);
 }
 
-function onMhScoreInput(){
+function onMhScoreInput(changedIdx){
   const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
-  const total100 = curGroup ? (curGroup.kaeshi / 100) * 4 - ky * 10 : 1000 - ky * 10;
-  const vs=[0,1,2].map(i=>document.getElementById('mh-sc'+i)?.value);
-  const ss=vs.map(v=>v!==''?parseInt(v)||0:null);
-  const sc3=document.getElementById('mh-sc3');
-  if(sc3 && ss.every(s=>s!==null)) sc3.value=total100-ss[0]-ss[1]-ss[2];
-  else if(sc3) sc3.value='';
+  const total100 = curGroup ? ((curGroup.kaeshi * 4 - (curGroup.oka||0) * 1000) / 100) - ky * 10 : 1000 - ky * 10;
+
+  // If user typed into the auto-calc field, clear auto-calc
+  if(changedIdx !== undefined && changedIdx === mhAutoCalcIdx) {
+    mhAutoCalcIdx = -1;
+  }
+
+  // Clear old auto field styling
+  [0,1,2,3].forEach(i=>{
+    if(i !== mhAutoCalcIdx) {
+      const el=document.getElementById('mh-sc'+i);
+      if(el) { el.style.background=''; el.style.color=''; el.style.borderColor=''; }
+    }
+  });
+
+  // Get all values
+  const vs=[0,1,2,3].map(i=>document.getElementById('mh-sc'+i)?.value);
+  const empty=vs.map((v,i)=>i===mhAutoCalcIdx||v===''||v===undefined);
+  const emptyIdxs=[0,1,2,3].filter(i=>empty[i] && i!==mhAutoCalcIdx);
+  const autoTarget = mhAutoCalcIdx>=0 ? mhAutoCalcIdx : (emptyIdxs.length===1 ? emptyIdxs[0] : -1);
+
+  // Clear previous auto field if it changed
+  if(mhAutoCalcIdx>=0 && mhAutoCalcIdx!==autoTarget) {
+    const old=document.getElementById('mh-sc'+mhAutoCalcIdx);
+    if(old){ old.value=''; old.style.background=''; old.style.color=''; old.style.borderColor=''; }
+    mhAutoCalcIdx=-1;
+  }
+
+  if(autoTarget>=0) {
+    // Sum the other 3
+    const sum=[0,1,2,3].filter(i=>i!==autoTarget).reduce((acc,i)=>{
+      const v=document.getElementById('mh-sc'+i)?.value;
+      return acc+(v!==''&&v!==undefined?parseInt(v)||0:0);
+    },0);
+    const el=document.getElementById('mh-sc'+autoTarget);
+    if(el){
+      el.value=total100-sum;
+      el.style.background='rgba(212,168,67,.08)';
+      el.style.color='var(--gold)';
+      el.style.borderColor='rgba(212,168,67,.3)';
+    }
+    mhAutoCalcIdx=autoTarget;
+  }
+
   updateMhPreview();
 }
 
@@ -3253,13 +3304,13 @@ function updateMhPreview(){
 
   if(vals.some(v=>v==='')){
     if(errEl) errEl.style.display='none';
-    if(pg) pg.innerHTML='<div style="color:var(--tx2);font-size:.65rem;grid-column:span 2;text-align:center;padding:4px 0">3人分の素点を入力すると自動計算されます</div>';
+    if(pg) pg.innerHTML='<div style="color:var(--tx2);font-size:.65rem;grid-column:span 2;text-align:center;padding:4px 0">3人分の素点を入力すると残り1人が自動計算されます</div>';
     return;
   }
 
   const scores=vals.map(v=>(parseInt(v)||0)*100);
   const total=scores.reduce((a,b)=>a+b,0);
-  const exp=(g.kaeshi||30000)*4-ky*1000;
+  const exp=(g.kaeshi||30000)*4-(g.oka||0)*1000-ky*1000;
   if(errEl){
     if(total!==exp){ errEl.style.display='block'; errEl.innerHTML=`⚠ 合計点が合いません　現在:<b>${(total/100).toLocaleString()}</b> 期待値:<b>${exp/100}</b>`; }
     else errEl.style.display='none';
@@ -3287,7 +3338,7 @@ function saveHanzo(cont){
   const scores=[0,1,2,3].map(i=>(parseInt(document.getElementById('mh-sc'+i)?.value)||0)*100);
   
   const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
-  if(scores.reduce((a,b)=>a+b,0)!==(curGroup.kaeshi||30000)*4-ky*1000) return;
+  if(scores.reduce((a,b)=>a+b,0)!==(curGroup.kaeshi||30000)*4-(curGroup.oka||0)*1000-ky*1000) return;
   const d=document.getElementById('mh-date')?.value||new Date().toISOString().split('T')[0];
   const validPenalties = penalties.filter(p => p.player && p.pt !== 0);
   let rounds, detail;
