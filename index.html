@@ -171,7 +171,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .rule-row{display:flex;justify-content:space-between;padding:3px 0}
 .rule-key{color:var(--tx2)}.rule-val{color:var(--gold);font-weight:700}
 .uma-row{display:flex;gap:6px}
-.uma-inp{flex:1;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:8px 6px;border-radius:7px;font-size:.85rem;text-align:center}
+.uma-inp{flex:1;min-width:0;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:8px 4px;border-radius:7px;font-size:.82rem;text-align:center}
 .uma-inp:focus{outline:none;border-color:var(--gold)}
 
 /* トップ */
@@ -421,14 +421,14 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div id="mg-custom" style="display:none">
       <div class="fg"><label class="fl">ウマ（1位/2位/3位/4位）</label>
         <div class="uma-row">
-          <input class="uma-inp" type="number" id="mg-u0" value="30">
-          <input class="uma-inp" type="number" id="mg-u1" value="10">
-          <input class="uma-inp" type="number" id="mg-u2" value="-10">
-          <input class="uma-inp" type="number" id="mg-u3" value="-30">
+          <input class="uma-inp" type="number" id="mg-u0" value="30" oninput="onMgUmaOkaChange()">
+          <input class="uma-inp" type="number" id="mg-u1" value="10" oninput="onMgUmaOkaChange()">
+          <input class="uma-inp" type="number" id="mg-u2" value="-10" oninput="onMgUmaOkaChange()">
+          <input class="uma-inp" type="number" id="mg-u3" value="-30" oninput="onMgUmaOkaChange()">
         </div>
       </div>
-      <div class="fg"><label class="fl">オカ</label><input class="fi" type="number" id="mg-oka" value="0" style="text-align:center"></div>
-      <div class="fg"><label class="fl">返し点</label><input class="fi" type="number" id="mg-kaeshi" value="30000" style="text-align:center"></div>
+      <div class="fg"><label class="fl">オカ</label><input class="fi" type="number" id="mg-oka" value="0" style="text-align:center" oninput="onMgUmaOkaChange()"></div>
+      <div class="fg"><label class="fl">返し点</label><input class="fi" type="number" id="mg-kaeshi" value="30000" style="text-align:center" oninput="this.style.color=''"></div>
     </div>
     <div class="mbtns">
       <button class="mbtn mng" onclick="closeOvl('modal-group')">キャンセル</button>
@@ -442,6 +442,15 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   <div class="modal">
     <div class="mtitle">半荘を入力</div>
     <div class="fg"><label class="fl">試合日</label><input class="fi" type="date" id="mh-date"></div>
+    <div class="fg"><label class="fl">ルール</label>
+      <select class="fs" id="mh-rule" onchange="onMhRuleChange()">
+        <option value="mleague">Mリーグ</option>
+        <option value="saikouisen">最高位戦</option>
+        <option value="renmei">連盟A</option>
+        <option value="tenho">天鳳</option>
+        <option value="custom">カスタム</option>
+      </select>
+    </div>
     <div class="fg" id="mh-league-wrap">
       <label class="fl">リーグ</label>
       <div style="display:flex;gap:6px" id="mh-league-btns"></div>
@@ -500,7 +509,7 @@ const RULES = {
   mleague:   {label:'Mリーグ',  uma:[30,10,-10,-30], oka:20, kaeshi:30000},
   saikouisen:{label:'最高位戦', uma:[30,10,-10,-30], oka:0,  kaeshi:30000},
   renmei:    {label:'連盟A',    uma:[8,4,-4,-8],     oka:0,  kaeshi:30000},
-  tenho:     {label:'天鳳',     uma:[20,10,-10,-20], oka:20, kaeshi:25000},
+  tenho:     {label:'天鳳',     uma:[20,10,-10,-20], oka:20, kaeshi:30000},
   custom:    {label:'カスタム', uma:[20,10,-10,-20], oka:0,  kaeshi:30000},
 };
 
@@ -931,6 +940,15 @@ function onMgRuleChange() {
   const r = document.getElementById('mg-rule').value;
   document.getElementById('mg-custom').style.display = r === 'custom' ? 'block' : 'none';
 }
+function calcMgKaeshi(prefix) {
+  const oka = parseFloat(document.getElementById(prefix+'-oka')?.value) || 0;
+  // 返し点 = 30000 (標準) - オカ分を初期点から差し引いた場合でも返し点は常に30000
+  // 初期点 = 返し点 - オカ×250 なので、返し点から逆算: 30000
+  const kaeshi = 30000;
+  const kaeshiEl = document.getElementById(prefix+'-kaeshi');
+  if (kaeshiEl) { kaeshiEl.value = kaeshi; kaeshiEl.style.color = 'var(--gold)'; }
+}
+function onMgUmaOkaChange() { calcMgKaeshi('mg'); }
 function saveGroup() {
   const name = document.getElementById('mg-name').value.trim();
   if (!name) return;
@@ -2510,11 +2528,11 @@ function renderSettings() {
     <div id="s-custom" style="display:${g.rule==='custom'?'block':'none'}">
       <div class="fg"><label class="fl">ウマ（1位/2位/3位/4位）</label>
         <div class="uma-row">
-          ${[0,1,2,3].map(i=>`<input class="uma-inp" type="number" id="s-u${i}" value="${g.uma[i]}" oninput="saveCustomRule()">`).join('')}
+          ${[0,1,2,3].map(i=>`<input class="uma-inp" type="number" id="s-u${i}" value="${g.uma[i]}" oninput="onSUmaOkaChange()">`).join('')}
         </div>
       </div>
-      <div class="fg"><label class="fl">オカ</label><input class="fi" type="number" id="s-oka" value="${g.oka}" style="text-align:center" oninput="saveCustomRule()"></div>
-      <div class="fg"><label class="fl">返し点</label><input class="fi" type="number" id="s-kaeshi" value="${g.kaeshi}" style="text-align:center" oninput="saveCustomRule()"></div>
+      <div class="fg"><label class="fl">オカ</label><input class="fi" type="number" id="s-oka" value="${g.oka}" style="text-align:center" oninput="onSUmaOkaChange()"></div>
+      <div class="fg"><label class="fl">返し点</label><input class="fi" type="number" id="s-kaeshi" value="${g.kaeshi}" style="text-align:center" oninput="this.style.color='';saveCustomRule()"></div>
     </div>
   </div>
   ${Object.keys(g.players).length > 0 ?
@@ -2571,6 +2589,10 @@ function onSRuleChange(){
   if(k!=='custom'){g.uma=[...RULES[k].uma];g.oka=RULES[k].oka;g.kaeshi=RULES[k].kaeshi;}
   save();
   renderSettings();
+}
+function onSUmaOkaChange(){
+  calcMgKaeshi('s');
+  saveCustomRule();
 }
 function saveCustomRule(){
   const g=curGroup; if(!g) return;
@@ -2781,8 +2803,9 @@ const MH_WINDS = ['東','南','西','北'];
 function initMhRoundState() {
   if (!curGroup) return;
   const players = [0,1,2,3].map(i => document.getElementById('mh-s'+i)?.value || `選手${i+1}`);
-  const kaeshi = curGroup.kaeshi || 30000;
-  const oka = curGroup.oka !== undefined ? curGroup.oka : 0;
+  const rule = getMhRule();
+  const kaeshi = rule.kaeshi;
+  const oka = rule.oka !== undefined ? rule.oka : 0;
   // 初期点 = 返し点 - オカ相当（Mリーグは25000、返し点30000/オカ20→5000差）
   const startingScore = Math.round(kaeshi - oka * 1000 / 4);
   mhRoundState = {
@@ -3130,6 +3153,14 @@ function _editH(id) {
     lb.innerHTML = leagues.map(l => `<div class="ltab ${l===mhLeague?'on':''}" id="mlb-${l}" onclick="setMhLeague('${l}')" style="flex:1">${l}リーグ</div>`).join('');
   } else { lw.style.display = 'none'; }
 
+  // ルールをセット（保存済みルールからreverse lookup、なければカスタム）
+  const ruleEl=document.getElementById('mh-rule');
+  if(ruleEl){
+    const matchedRule=Object.keys(RULES).find(k=>
+      h.uma && h.uma.join(',')===RULES[k].uma.join(',') && h.oka===RULES[k].oka && h.kaeshi===RULES[k].kaeshi
+    );
+    ruleEl.value=matchedRule||'custom';
+  }
   buildMhSelects();
   // 選手をセット
   h.players.forEach((p, i) => {
@@ -3196,6 +3227,8 @@ function _openHanzoModal(){
   mhLeague = leagues[0] || (hasSimplePlayers ? '_default' : '_default');
   const today=new Date();
   document.getElementById('mh-date').value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const ruleEl=document.getElementById('mh-rule');
+  if(ruleEl) ruleEl.value=g.rule||'custom';
   const lw=document.getElementById('mh-league-wrap');
   const lb=document.getElementById('mh-league-btns');
   if(leagues.length>1){ lw.style.display=''; lb.innerHTML=leagues.map(l=>`<div class="ltab ${l===mhLeague?'on':''}" id="mlb-${l}" onclick="setMhLeague('${l}')" style="flex:1">${l}リーグ</div>`).join(''); }
@@ -3214,6 +3247,20 @@ function setMhLeague(l){
   const leagues=Object.keys(curGroup.players).filter(k=>curGroup.players[k].length>0);
   leagues.forEach(ll=>{ const el=document.getElementById('mlb-'+ll); if(el) el.classList.toggle('on',ll===l); });
   buildMhSelects(); updateMhPreview();
+}
+
+function getMhRule(){
+  const sel=document.getElementById('mh-rule');
+  const key=sel?sel.value:(curGroup?.rule||'custom');
+  if(key!=='custom' && RULES[key]) return RULES[key];
+  // custom: use curGroup values
+  return {uma:curGroup?.uma||[30,10,-10,-30], oka:curGroup?.oka||0, kaeshi:curGroup?.kaeshi||30000};
+}
+function onMhRuleChange(){
+  // re-init round state if detail is open
+  if(mhDetailOpen){ initMhRoundState(); renderMhRoundUI(); }
+  onMhScoreInput(-1);
+  updateMhPreview();
 }
 
 function buildMhSelects(){
@@ -3247,7 +3294,8 @@ function buildMhSelects(){
 
 function onMhScoreInput(changedIdx){
   const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
-  const total100 = curGroup ? ((curGroup.kaeshi * 4 - (curGroup.oka||0) * 1000) / 100) - ky * 10 : 1000 - ky * 10;
+  const r=getMhRule();
+  const total100 = curGroup ? ((r.kaeshi * 4 - (r.oka||0) * 1000) / 100) - ky * 10 : 1000 - ky * 10;
 
   // If user typed into the auto-calc field, clear auto-calc
   if(changedIdx !== undefined && changedIdx === mhAutoCalcIdx) {
@@ -3296,7 +3344,7 @@ function onMhScoreInput(changedIdx){
 
 function updateMhPreview(){
   if(!curGroup) return;
-  const g=curGroup;
+  const r=getMhRule();
   const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
   const vals=[0,1,2,3].map(i=>{ const el=document.getElementById('mh-sc'+i); return el?el.value:''; });
   const pg=document.getElementById('mh-prev');
@@ -3310,7 +3358,7 @@ function updateMhPreview(){
 
   const scores=vals.map(v=>(parseInt(v)||0)*100);
   const total=scores.reduce((a,b)=>a+b,0);
-  const exp=(g.kaeshi||30000)*4-(g.oka||0)*1000-ky*1000;
+  const exp=r.kaeshi*4-(r.oka||0)*1000-ky*1000;
   if(errEl){
     if(total!==exp){ errEl.style.display='block'; errEl.innerHTML=`⚠ 合計点が合いません　現在:<b>${(total/100).toLocaleString()}</b> 期待値:<b>${exp/100}</b>`; }
     else errEl.style.display='none';
@@ -3318,7 +3366,7 @@ function updateMhPreview(){
   if(total!==exp) return;
 
   const players=[0,1,2,3].map(i=>document.getElementById('mh-s'+i)?.value||`選手${i+1}`);
-  const {pts,ranks}=calcPts(scores,ky,g.uma,g.oka,g.kaeshi);
+  const {pts,ranks}=calcPts(scores,ky,r.uma,r.oka,r.kaeshi);
   const sorted=players.map((p,i)=>({p,pt:pts[i],r:ranks[i]})).sort((a,b)=>a.r-b.r);
   if(pg) pg.innerHTML=sorted.map(s=>{
     const c=s.pt>0?'var(--green)':s.pt<0?'var(--red)':'var(--tx2)';
@@ -3338,7 +3386,8 @@ function saveHanzo(cont){
   const scores=[0,1,2,3].map(i=>(parseInt(document.getElementById('mh-sc'+i)?.value)||0)*100);
   
   const ky=parseInt(document.getElementById('mh-ky')?.value)||0;
-  if(scores.reduce((a,b)=>a+b,0)!==(curGroup.kaeshi||30000)*4-(curGroup.oka||0)*1000-ky*1000) return;
+  const r=getMhRule();
+  if(scores.reduce((a,b)=>a+b,0)!==r.kaeshi*4-(r.oka||0)*1000-ky*1000) return;
   const d=document.getElementById('mh-date')?.value||new Date().toISOString().split('T')[0];
   const validPenalties = penalties.filter(p => p.player && p.pt !== 0);
   let rounds, detail;
@@ -3363,7 +3412,7 @@ function saveHanzo(cont){
         players, scores, ky,
         rounds, detail,
         penalties: validPenalties,
-        uma: [...curGroup.uma], oka: curGroup.oka, kaeshi: curGroup.kaeshi
+        uma: [...r.uma], oka: r.oka, kaeshi: r.kaeshi
       };
       addLog('編集', `${d} ${players.join('・')}`);
     }
@@ -3378,7 +3427,7 @@ function saveHanzo(cont){
   }
   curGroup.hanzos.push({id:Date.now(), date:d, league:mhLeague==='_default'?'':mhLeague, players, scores, ky, rounds, detail,
     penalties: validPenalties,
-    uma:[...curGroup.uma], oka:curGroup.oka, kaeshi:curGroup.kaeshi});
+    uma:[...r.uma], oka:r.oka, kaeshi:r.kaeshi});
   addLog('記録', `${d} ${players.join('・')}`);
   save();
   if(cont){
