@@ -584,12 +584,14 @@ function isPendingSync() { return localStorage.getItem('janki_pending') === '1';
 function setPendingSync(v) { localStorage.setItem('janki_pending', v ? '1' : '0'); }
 
 function save() {
+  const saveTs = Date.now();
+  localStorage.setItem('janki_save_ts', String(saveTs));
   try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
   if (navigator.onLine) {
     fetch(GAS_URL, {
       method: 'POST',
       headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({data: JSON.stringify(groups)})
+      body: JSON.stringify({data: JSON.stringify(groups), ts: saveTs})
     }).then(() => {
       setPendingSync(false);
       hideOfflineBadge();
@@ -661,7 +663,16 @@ async function loadFromGas() {
     if (json.ok && json.data) {
       const loaded = JSON.parse(json.data);
       if (Array.isArray(loaded) && loaded.length > 0) {
+        // ローカルの保存タイムスタンプとGASのタイムスタンプを比較し、
+        // GASデータが古い場合は上書きしない
+        const localTs = parseInt(localStorage.getItem('janki_save_ts') || '0', 10);
+        const gasTs = parseInt(json.ts || '0', 10);
+        if (gasTs > 0 && localTs > gasTs) {
+          console.info('GASデータはローカルより古いため上書きをスキップ (local:', localTs, '> gas:', gasTs, ')');
+          return false;
+        }
         groups = loaded;
+        if (gasTs > 0) localStorage.setItem('janki_save_ts', String(gasTs));
         try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
         return true;
       }
@@ -698,7 +709,7 @@ function getStats(league, ruleFilter) {
   const g = curGroup;
   const players = league === '_default' ? (g._players||[]) : (g.players[league] || []);
   const stats = {};
-  players.forEach(p => { stats[p] = {pt:0, games:0, rsum:0, ranks:[0,0,0,0], hist:[], furo:0, houchu:0, ron:0, tsumo:0, riichi:0, rounds:0}; });
+  players.forEach(p => { stats[p] = {pt:0, games:0, rsum:0, ranks:[0,0,0,0], hist:[], furo:0, houchu:0, ron:0, tsumo:0, riichi:0, rounds:0, penalty:0}; });
   g.hanzos.filter(h => {
     const hLeague = h.league || '';
     const targetLeague = league === '_default' ? '' : league;
@@ -723,7 +734,10 @@ function getStats(league, ruleFilter) {
       // ペナルティ加算
       if (h.penalties) {
         h.penalties.forEach(pen => {
-          if (pen.player === p) stats[p].pt = Math.round((stats[p].pt + pen.pt) * 10) / 10;
+          if (pen.player === p) {
+            stats[p].pt = Math.round((stats[p].pt + pen.pt) * 10) / 10;
+            stats[p].penalty++;
+          }
         });
       }
       stats[p].games++;
@@ -1797,8 +1811,14 @@ function renderPlayerDetail(name, league, ruleFilter) {
         <span>放銃 <b style="color:var(--tx)">${s.houchu}回</b></span>
         <span>立直 <b style="color:var(--tx)">${s.riichi}回</b></span>
         <span>副露 <b style="color:var(--tx)">${s.furo}回</b></span>
+        ${s.penalty > 0 ? `<span>チョンボ/ペナルティ <b style="color:var(--red)">${s.penalty}回</b></span>` : ''}
       </div>
-    </div>` : ''}
+    </div>` : (s.penalty > 0 ? `<div class="card" style="padding:10px 12px;margin-bottom:10px">
+      <div class="ctitle">詳細統計</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:.72rem;color:var(--tx2)">
+        <span>チョンボ/ペナルティ <b style="color:var(--red)">${s.penalty}回</b></span>
+      </div>
+    </div>` : '')}
 
     <!-- ポイント推移 -->
     ${s.games>0?`<div class="card" style="padding:10px 12px;margin-bottom:10px">
@@ -2374,7 +2394,7 @@ function renderHanzos() {
     const [y, m] = month.split('-');
     const monthLabel = `${y}年${parseInt(m)}月`;
     const entries = byMonth[month];
-    const isOpen = mi === 0; // 最新月だけ最初から開く
+    const isOpen = false; // デフォルトは全月収納
     const items = entries.map(({h, oi}) => {
       const {pts, ranks} = calcPts(h.scores, h.ky, h.uma||g.uma, h.oka!==undefined?h.oka:g.oka, h.kaeshi||g.kaeshi);
       const ti = ranks.indexOf(1);
