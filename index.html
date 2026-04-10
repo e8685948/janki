@@ -430,6 +430,15 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div class="fg"><label class="fl">オカ</label><input class="fi" type="number" id="mg-oka" value="0" style="text-align:center" oninput="onMgUmaOkaChange()"></div>
       <div class="fg"><label class="fl">返し点</label><input class="fi" type="number" id="mg-kaeshi" value="30000" style="text-align:center" oninput="this.style.color=''"></div>
     </div>
+    <div class="fg">
+      <label class="fl">リーグ（任意）</label>
+      <div id="mg-league-list" style="margin-bottom:8px"></div>
+      <div style="display:flex;gap:6px">
+        <input class="fi" id="mg-league-inp" placeholder="例：A1、B1、オープン…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();mgAddLeague();}">
+        <button onclick="mgAddLeague()" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:9px 14px;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap">＋ 追加</button>
+      </div>
+      <div style="font-size:.65rem;color:var(--tx2);margin-top:5px">リーグを複数追加すると選手・成績をリーグ別に管理できます</div>
+    </div>
     <div class="mbtns">
       <button class="mbtn mng" onclick="closeOvl('modal-group')">キャンセル</button>
       <button class="mbtn mok" id="mg-save" onclick="saveGroup()">作成</button>
@@ -867,9 +876,41 @@ function goTop() {
 }
 
 // ===== グループ モーダル =====
+// モーダル内のリーグ一時リスト（作成/編集中）
+window._mgLeagues = [];
+
+function mgRenderLeagueList() {
+  const el = document.getElementById('mg-league-list');
+  if (!el) return;
+  if (window._mgLeagues.length === 0) {
+    el.innerHTML = '<div style="font-size:.75rem;color:var(--tx2);padding:4px 0">（リーグなし ＝ 全選手共通で管理）</div>';
+    return;
+  }
+  el.innerHTML = window._mgLeagues.map((l, i) => `
+    <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--bd)">
+      <span style="font-size:.85rem;font-weight:700;color:var(--gold);flex:1">${l}</span>
+      <button onclick="mgRemoveLeague(${i})" style="background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);color:var(--red);padding:3px 9px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">削除</button>
+    </div>`).join('');
+}
+
+function mgAddLeague() {
+  const inp = document.getElementById('mg-league-inp');
+  const name = inp.value.trim();
+  if (!name || window._mgLeagues.includes(name)) { inp.value = ''; return; }
+  window._mgLeagues.push(name);
+  inp.value = '';
+  mgRenderLeagueList();
+}
+
+function mgRemoveLeague(i) {
+  window._mgLeagues.splice(i, 1);
+  mgRenderLeagueList();
+}
+
 function openGroupModal() { requireAuth(_openGroupModal); }
 function _openGroupModal() {
   editGroupId = null;
+  window._mgLeagues = [];
   document.getElementById('mg-title').textContent = '大会・グループを作成';
   document.getElementById('mg-save').textContent = '作成';
   document.getElementById('mg-name').value = '';
@@ -879,8 +920,10 @@ function _openGroupModal() {
   document.getElementById('mg-img-preview').style.display = 'none';
   document.getElementById('mg-img-input').value = '';
   document.getElementById('mg-pw').value = '';
+  document.getElementById('mg-league-inp').value = '';
   setMgPwMode('none');
   window._mgImgData = null;
+  mgRenderLeagueList();
   document.getElementById('modal-group').classList.add('open');
 }
 function editGroup(id) {
@@ -892,12 +935,15 @@ function _editGroup(id) {
   const g = groups.find(x => x.id === id);
   if (!g) return;
   editGroupId = id;
+  // 既存リーグをモーダル用リストに反映
+  window._mgLeagues = Object.keys(g.players || {}).filter(k => (g.players[k]||[]).length >= 0);
   document.getElementById('mg-title').textContent = 'グループを編集';
   document.getElementById('mg-save').textContent = '保存';
   document.getElementById('mg-name').value = g.name;
   document.getElementById('mg-memo').value = g.memo || '';
   document.getElementById('mg-rule').value = g.rule;
   document.getElementById('mg-custom').style.display = g.rule === 'custom' ? 'block' : 'none';
+  document.getElementById('mg-league-inp').value = '';
   // 画像
   window._mgImgData = g.img || null;
   document.getElementById('mg-pw').value = g.pw || '';
@@ -914,6 +960,7 @@ function _editGroup(id) {
     document.getElementById('mg-oka').value = g.oka;
     document.getElementById('mg-kaeshi').value = g.kaeshi;
   }
+  mgRenderLeagueList();
   document.getElementById('modal-group').classList.add('open');
 }
 
@@ -974,12 +1021,20 @@ function saveGroup() {
   const memo = document.getElementById('mg-memo').value.trim();
   const pwWrap = document.getElementById('mg-pw-wrap');
   const pw = pwWrap?.style.display !== 'none' ? (document.getElementById('mg-pw').value.trim() || null) : null;
+  const newLeagues = window._mgLeagues || [];
   if (editGroupId) {
     const g = groups.find(x => x.id === editGroupId);
-    if (g) { g.name=name; g.memo=memo; g.rule=rule; g.uma=uma; g.oka=oka; g.kaeshi=kaeshi; g.img=window._mgImgData||g.img||null; g.pw=pw||null; }
+    if (g) {
+      g.name=name; g.memo=memo; g.rule=rule; g.uma=uma; g.oka=oka; g.kaeshi=kaeshi;
+      g.img=window._mgImgData||g.img||null; g.pw=pw||null;
+      // リーグの追加のみ行う（削除・選手データは保持）
+      newLeagues.forEach(l => { if (!g.players[l]) g.players[l] = []; });
+    }
   } else {
+    const players = {};
+    newLeagues.forEach(l => { players[l] = []; });
     groups.push({id:Date.now(), name, memo, rule, uma, oka, kaeshi, img: window._mgImgData||null, pw: pw||null,
-      players:{}, hanzos:[], deleted:[]});
+      players, hanzos:[], deleted:[]});
   }
   save();
   closeOvl('modal-group');
@@ -1800,23 +1855,26 @@ function renderPlayerDetail(name, league, ruleFilter) {
     <!-- 詳細統計グリッド -->
     ${hasRounds ? `<div class="card" style="padding:10px 12px;margin-bottom:10px">
       <div class="ctitle">詳細統計（${rateLabel}単位）</div>
-      <div class="stat-nums" style="grid-template-columns:repeat(4,1fr);margin-top:8px;gap:5px">
-        <div class="stat-n"><div class="stat-v" style="color:var(--green);font-size:.9rem">${winRate}%</div><div class="stat-l">和了率</div></div>
-        <div class="stat-n"><div class="stat-v" style="color:var(--red);font-size:.9rem">${houchuRate}%</div><div class="stat-l">放銃率</div></div>
-        <div class="stat-n"><div class="stat-v" style="color:var(--gold);font-size:.9rem">${riichiRate}%</div><div class="stat-l">立直率</div></div>
-        <div class="stat-n"><div class="stat-v" style="color:#5c9be0;font-size:.9rem">${furoRate}%</div><div class="stat-l">副露率</div></div>
+      <div class="stat-summary-cards" style="margin-top:8px">
+        <div class="stat-sum-card"><div class="sv" style="color:var(--green)">${winRate}%</div><div class="sl">和了率</div></div>
+        <div class="stat-sum-card"><div class="sv" style="color:var(--red)">${houchuRate}%</div><div class="sl">放銃率</div></div>
+        <div class="stat-sum-card"><div class="sv" style="color:var(--gold)">${riichiRate}%</div><div class="sl">立直率</div></div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);font-size:.72rem;color:var(--tx2)">
-        <span>和了 <b style="color:var(--tx)">${winCount}回</b>（ロン${s.ron}/ツモ${s.tsumo}）</span>
-        <span>放銃 <b style="color:var(--tx)">${s.houchu}回</b></span>
-        <span>立直 <b style="color:var(--tx)">${s.riichi}回</b></span>
-        <span>副露 <b style="color:var(--tx)">${s.furo}回</b></span>
-        ${s.penalty > 0 ? `<span>チョンボ/ペナルティ <b style="color:var(--red)">${s.penalty}回</b></span>` : ''}
+      <div class="stat-group">
+        <table class="stat-tbl">
+          <tr><td class="lbl">和了</td><td class="val pos">${winCount}回</td><td class="sub">ロン${s.ron}/ツモ${s.tsumo}</td></tr>
+          <tr><td class="lbl">放銃</td><td class="val neg">${s.houchu}回</td><td class="sub">${totalRounds}局中</td></tr>
+          <tr><td class="lbl">立直</td><td class="val">${s.riichi}回</td><td class="sub">${totalRounds}局中</td></tr>
+          <tr><td class="lbl">副露</td><td class="val" style="color:#5c9be0">${s.furo}回</td><td class="sub">${furoRate}%</td></tr>
+          ${s.penalty > 0 ? `<tr><td class="lbl">チョンボ/ペナルティ</td><td class="val neg">${s.penalty}回</td><td class="sub"></td></tr>` : ''}
+        </table>
       </div>
     </div>` : (s.penalty > 0 ? `<div class="card" style="padding:10px 12px;margin-bottom:10px">
       <div class="ctitle">詳細統計</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:.72rem;color:var(--tx2)">
-        <span>チョンボ/ペナルティ <b style="color:var(--red)">${s.penalty}回</b></span>
+      <div class="stat-group" style="margin-top:6px">
+        <table class="stat-tbl">
+          <tr><td class="lbl">チョンボ/ペナルティ</td><td class="val neg">${s.penalty}回</td><td class="sub"></td></tr>
+        </table>
       </div>
     </div>` : '')}
 
@@ -2096,15 +2154,28 @@ function exportHanzosExcel() {
   const g = curGroup;
   if (!g.hanzos.length) { alert('記録がありません'); return; }
 
-  // ヘッダー：日付 | 1位選手 点数 PT | 2位... | 3位... | 4位...
-  const header = ['#','日付','ルール','1位','1位得点','1位PT','2位','2位得点','2位PT','3位','3位得点','3位PT','4位','4位得点','4位PT','供託'];
+  const wb = XLSX.utils.book_new();
+  const dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
+
+  // 共通ヘルパー
+  const getRuleLabel = (h) => h.uma
+    ? (Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(h.uma)&&v.oka===h.oka&&v.kaeshi===h.kaeshi)?.[1]?.label||'カスタム')
+    : (RULES[g.rule]?.label||'カスタム');
+
+  // ===== シート1: 半荘結果一覧（横表形式）=====
+  const titleRow  = [`${g.name||'グループ'} 半荘・試合結果`];
+  const exportRow = [`出力日: ${new Date().toLocaleDateString('ja-JP')}`, '', `総試合数: ${g.hanzos.length}戦`];
+  const emptyRow  = [];
+  // 2段ヘッダー（1位〜4位でグループ化）
+  const header1   = ['', '', '', '1位', '', '', '2位', '', '', '3位', '', '', '4位', '', '', ''];
+  const header2   = ['#', '日付', 'ルール', '選手', '得点', 'PT', '選手', '得点', 'PT', '選手', '得点', 'PT', '選手', '得点', 'PT', '供託'];
+
   const rows = [...g.hanzos].reverse().map((h, idx) => {
     const uma=h.uma||g.uma, oka=h.oka!==undefined?h.oka:g.oka, kaeshi=h.kaeshi||g.kaeshi;
     const {pts, ranks} = calcPts(h.scores, h.ky, uma, oka, kaeshi);
-    const ruleLabel = h.uma ? (Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(uma)&&v.oka===oka&&v.kaeshi===kaeshi)?.[1]?.label||'カスタム') : (RULES[g.rule]?.label||'カスタム');
     const sorted = h.players.map((p,i)=>({p, score:h.scores[i], pt:pts[i], rank:ranks[i]})).sort((a,b)=>a.rank-b.rank);
     return [
-      g.hanzos.length - idx, h.date, ruleLabel,
+      g.hanzos.length - idx, h.date, getRuleLabel(h),
       sorted[0].p, sorted[0].score, sorted[0].pt,
       sorted[1].p, sorted[1].score, sorted[1].pt,
       sorted[2].p, sorted[2].score, sorted[2].pt,
@@ -2113,9 +2184,67 @@ function exportHanzosExcel() {
     ];
   });
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([header, ...rows]), '半荘結果');
-  const dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const ws1 = XLSX.utils.aoa_to_sheet([titleRow, exportRow, emptyRow, header1, header2, ...rows]);
+
+  // セル結合
+  ws1['!merges'] = [
+    {s:{r:0,c:0}, e:{r:0,c:15}}, // タイトル行
+    {s:{r:1,c:0}, e:{r:1,c:15}}, // 出力日行
+    {s:{r:3,c:0}, e:{r:4,c:0}},  // #（縦結合）
+    {s:{r:3,c:1}, e:{r:4,c:1}},  // 日付
+    {s:{r:3,c:2}, e:{r:4,c:2}},  // ルール
+    {s:{r:3,c:3}, e:{r:3,c:5}},  // 1位グループ
+    {s:{r:3,c:6}, e:{r:3,c:8}},  // 2位グループ
+    {s:{r:3,c:9}, e:{r:3,c:11}}, // 3位グループ
+    {s:{r:3,c:12}, e:{r:3,c:14}},// 4位グループ
+    {s:{r:3,c:15}, e:{r:4,c:15}},// 供託
+  ];
+
+  // 列幅
+  ws1['!cols'] = [
+    {wch:5},  {wch:12}, {wch:12},
+    {wch:10}, {wch:8},  {wch:8},
+    {wch:10}, {wch:8},  {wch:8},
+    {wch:10}, {wch:8},  {wch:8},
+    {wch:10}, {wch:8},  {wch:8},
+    {wch:6},
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws1, '半荘結果');
+
+  // ===== シート2: 試合詳細（縦ブロック形式）=====
+  const detailRows = [];
+  detailRows.push([`${g.name||'グループ'} 試合詳細`]);
+  detailRows.push([`出力日: ${new Date().toLocaleDateString('ja-JP')}`]);
+  detailRows.push([]);
+
+  const reversedHanzos = [...g.hanzos].reverse();
+  reversedHanzos.forEach((h, idx) => {
+    const uma=h.uma||g.uma, oka=h.oka!==undefined?h.oka:g.oka, kaeshi=h.kaeshi||g.kaeshi;
+    const {pts, ranks} = calcPts(h.scores, h.ky, uma, oka, kaeshi);
+    const sorted = h.players.map((p,i)=>({p, score:h.scores[i], pt:pts[i], rank:ranks[i]})).sort((a,b)=>a.rank-b.rank);
+    const gameNum = g.hanzos.length - idx;
+
+    // 試合タイトル行
+    detailRows.push([`第${gameNum}戦`, h.date, getRuleLabel(h), h.ky ? `供託 ${h.ky}本棒` : '']);
+    // ヘッダー
+    detailRows.push(['順位', '選手', '得点', 'PT']);
+    // 各プレイヤー
+    sorted.forEach((p, i) => {
+      detailRows.push([`${i+1}位`, p.p, p.score, p.pt]);
+    });
+    detailRows.push([]); // 試合間の区切り
+  });
+
+  const ws2 = XLSX.utils.aoa_to_sheet(detailRows);
+  ws2['!merges'] = [
+    {s:{r:0,c:0}, e:{r:0,c:3}}, // タイトル
+    {s:{r:1,c:0}, e:{r:1,c:3}}, // 出力日
+  ];
+  ws2['!cols'] = [{wch:8}, {wch:12}, {wch:10}, {wch:10}];
+
+  XLSX.utils.book_append_sheet(wb, ws2, '試合詳細');
+
   XLSX.writeFile(wb, `${g.name||'雀記'}_半荘結果_${dt}.xlsx`);
 }
 
