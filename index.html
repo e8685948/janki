@@ -1693,9 +1693,9 @@ function setCdMode(m) {
   const offStyle = 'background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2)';
   document.getElementById('cd-mode-cumpt').style.cssText += m === 'cumpt' ? ';'+onStyle : ';'+offStyle;
   document.getElementById('cd-mode-score').style.cssText += m === 'score' ? ';'+onStyle : ';'+offStyle;
-  // 累計PT列の表示切替
+  // 累計PT列の表示切替（累計PTのinputのみ）
   document.querySelectorAll('[id^="cd-p-cumpt-"]').forEach(el => {
-    el.parentElement.style.opacity = m === 'cumpt' ? '1' : '0.35';
+    el.style.opacity = m === 'cumpt' ? '1' : '0.35';
     el.disabled = m === 'score';
   });
   cdCalculate();
