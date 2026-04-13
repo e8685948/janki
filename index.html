@@ -3175,7 +3175,7 @@ function buildGraphData() {
 
   // 出欠回数グラフデータ
   const totalHanzos = hanzos.length;
-  const leagueMax = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 28 : null;
+  const leagueMax = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : null;
   const attendSorted = [...allPlayers].sort((a, b) => (stats[b]?.games || 0) - (stats[a]?.games || 0));
   _graphAttendData = {
     labels: attendSorted,
@@ -3327,7 +3327,7 @@ function renderGraph() {
       const h = Math.max(200, (_graphAttendData.labels.length * 28) + 60);
       attendWrap.style.height = Math.min(h, 320) + 'px';
     }
-    const _aMax = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 28 : undefined;
+    const _aMax = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : undefined;
     aChart = new Chart(attendCanvas, { type: 'bar', data: _graphAttendData, options: makeAttendOptions(true, _aMax) });
   }
 
@@ -3363,7 +3363,7 @@ function expandGraph(type) {
     titleEl.textContent = '出欠回数';
     canvas.style.display = 'block';
     htmlBox.style.display = 'none';
-    const _aMaxFs = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 28 : undefined;
+    const _aMaxFs = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : undefined;
     fsChart = new Chart(canvas, { type: 'bar', data: _graphAttendData, options: makeAttendOptions(false, _aMaxFs) });
   } else if (type === 'dok') {
     titleEl.textContent = '同卓回数';
