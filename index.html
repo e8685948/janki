@@ -199,6 +199,15 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .stream-tbl tr:last-child td{border-bottom:none}
 .stream-nav-btn{background:rgba(255,255,255,.07);border:1px solid var(--bd);color:var(--tx2);padding:7px 18px;border-radius:8px;font-size:.82rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700}
 .stream-nav-btn:active{background:rgba(255,255,255,.14)}
+#stream-ctrl{position:fixed;top:0;left:0;right:0;background:rgba(10,10,12,.95);border-bottom:1px solid rgba(255,255,255,.08);z-index:10;padding:8px 12px;display:flex;flex-direction:column;gap:6px}
+.stream-ctrl-row{display:flex;align-items:center;gap:6px}
+#stream-date-select{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 10px;border-radius:8px;font-size:.82rem;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;flex:1;min-width:0}
+@media(max-width:480px){
+  .stream-nav-btn{padding:6px 10px;font-size:.72rem}
+  #stream-date-select{font-size:.75rem;padding:5px 8px}
+  .stream-tbl th,.stream-tbl td{padding:8px 6px;font-size:.78rem}
+  .stream-tbl td:first-child{font-size:.8rem}
+}
 
 /* misc */
 .snums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
@@ -522,23 +531,22 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <!-- 配信オーバーレイ（全画面） -->
 <div id="stream-overlay">
   <!-- 上部コントロールバー -->
-  <div style="position:fixed;top:0;left:0;right:0;height:52px;background:rgba(10,10,12,.95);border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;padding:0 14px;z-index:10;gap:8px">
-    <!-- モードタブ -->
-    <div style="display:flex;gap:6px">
-      <button id="smode-daily" onclick="setBroadcastMode('daily')" class="stream-nav-btn" style="font-size:.78rem">日別配信</button>
-      <button id="smode-total" onclick="setBroadcastMode('total')" class="stream-nav-btn" style="font-size:.78rem">トータル配信</button>
-    </div>
-    <!-- 日付選択プルダウン -->
-    <div id="stream-daily-nav">
-      <select id="stream-date-select" onchange="dailySelectDate(this.value)" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 10px;border-radius:8px;font-size:.82rem;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;min-width:130px"></select>
-    </div>
-    <!-- 右側アクション -->
-    <div style="display:flex;gap:6px;margin-left:auto">
-      <button id="stream-export-btn" onclick="exportBroadcastImage()" class="stream-nav-btn" style="color:#5c9be0;border-color:rgba(92,155,224,.35)">📷 画像</button>
+  <div id="stream-ctrl">
+    <!-- 1行目：モードタブ＋閉じるボタン -->
+    <div class="stream-ctrl-row" style="justify-content:space-between">
+      <div style="display:flex;gap:6px">
+        <button id="smode-daily" onclick="setBroadcastMode('daily')" class="stream-nav-btn">日別配信</button>
+        <button id="smode-total" onclick="setBroadcastMode('total')" class="stream-nav-btn">トータル配信</button>
+      </div>
       <button onclick="closeStreamMode()" style="background:rgba(224,82,82,.15);border:1px solid rgba(224,82,82,.3);color:var(--red);padding:7px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700">✕ 閉じる</button>
     </div>
+    <!-- 2行目：日付選択＋画像ボタン -->
+    <div class="stream-ctrl-row" id="stream-daily-nav">
+      <select id="stream-date-select" onchange="dailySelectDate(this.value)"></select>
+      <button id="stream-export-btn" onclick="exportBroadcastImage()" class="stream-nav-btn" style="color:#5c9be0;border-color:rgba(92,155,224,.35);white-space:nowrap">📷 画像</button>
+    </div>
   </div>
-  <div id="stream-inner" style="width:100%;max-width:800px;padding-top:68px;padding-bottom:24px"></div>
+  <div id="stream-inner" style="width:100%;max-width:800px;padding-top:100px;padding-bottom:24px"></div>
 </div>
 
 <!-- 半荘入力モーダル -->
