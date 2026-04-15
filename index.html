@@ -305,33 +305,65 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     </div>
     <div id="page-graph" class="page">
       <div class="ltabs" id="graph-ltabs"></div>
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="ctitle" style="margin-bottom:0">ポイント推移</div>
-          <button onclick="expandGraph('line')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">⛶ 拡大</button>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div onclick="toggleGraphCard('line')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer">
+          <div class="ctitle" style="margin:0">ポイント推移</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="event.stopPropagation();expandGraph('line')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">全画面</button>
+            <span id="garrow-line" style="color:var(--tx2);font-size:.8rem">▶</span>
+          </div>
         </div>
-        <div class="chart-wrap" id="gwrap-line"><canvas id="gc-line"></canvas></div>
+        <div id="gbody-line" style="display:none;padding:0 14px 14px">
+          <div class="chart-wrap" id="gwrap-line"><canvas id="gc-line"></canvas></div>
+        </div>
       </div>
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="ctitle" style="margin-bottom:0">順位分布</div>
-          <button onclick="expandGraph('rank')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">⛶ 拡大</button>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div onclick="toggleGraphCard('rank')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer">
+          <div class="ctitle" style="margin:0">順位分布</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="event.stopPropagation();expandGraph('rank')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">全画面</button>
+            <span id="garrow-rank" style="color:var(--tx2);font-size:.8rem">▶</span>
+          </div>
         </div>
-        <div class="chart-wrap" style="height:200px" id="gwrap-rank"><canvas id="gc-rank"></canvas></div>
+        <div id="gbody-rank" style="display:none;padding:0 14px 14px">
+          <div class="chart-wrap" style="height:200px" id="gwrap-rank"><canvas id="gc-rank"></canvas></div>
+        </div>
       </div>
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="ctitle" style="margin-bottom:0">出欠回数</div>
-          <button onclick="expandGraph('attend')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">⛶ 拡大</button>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div onclick="toggleGraphCard('attend')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer">
+          <div class="ctitle" style="margin:0">出欠回数</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="event.stopPropagation();expandGraph('attend')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">全画面</button>
+            <span id="garrow-attend" style="color:var(--tx2);font-size:.8rem">▶</span>
+          </div>
         </div>
-        <div class="chart-wrap" style="height:200px" id="gwrap-attend"><canvas id="gc-attend"></canvas></div>
+        <div id="gbody-attend" style="display:none;padding:0 14px 14px">
+          <div class="chart-wrap" style="height:200px" id="gwrap-attend"><canvas id="gc-attend"></canvas></div>
+        </div>
       </div>
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="ctitle" style="margin-bottom:0">同卓回数</div>
-          <button onclick="expandGraph('dok')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">⛶ 拡大</button>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div onclick="toggleGraphCard('wind')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer">
+          <div class="ctitle" style="margin:0">スタート席順集計</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="event.stopPropagation();expandGraph('wind')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">全画面</button>
+            <span id="garrow-wind" style="color:var(--tx2);font-size:.8rem">▶</span>
+          </div>
         </div>
-        <div class="dok-wrap" id="graph-dok-wrap"></div>
+        <div id="gbody-wind" style="display:none;padding:0 14px 14px">
+          <div class="dok-wrap" id="graph-wind-wrap"></div>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div onclick="toggleGraphCard('dok')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer">
+          <div class="ctitle" style="margin:0">同卓回数</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="event.stopPropagation();expandGraph('dok')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">全画面</button>
+            <span id="garrow-dok" style="color:var(--tx2);font-size:.8rem">▶</span>
+          </div>
+        </div>
+        <div id="gbody-dok" style="display:none;padding:0 14px 14px">
+          <div class="dok-wrap" id="graph-dok-wrap"></div>
+        </div>
       </div>
     </div>
     <div id="page-condition" class="page">
@@ -477,6 +509,11 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <button onclick="mgAddLeague()" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:9px 14px;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap">＋ 追加</button>
       </div>
       <div style="font-size:.65rem;color:var(--tx2);margin-top:5px">リーグを複数追加すると選手・成績をリーグ別に管理できます</div>
+    </div>
+    <div class="fg">
+      <label class="fl">Google スプレッドシートID（任意）</label>
+      <input class="fi" id="mg-sid" placeholder="スプレッドシートのURLの /d/〜/edit の〜部分を貼り付け">
+      <div style="font-size:.63rem;color:var(--tx2);margin-top:4px">半荘を記録するたびにこのグループのデータを指定のスプレッドシートに自動送信します</div>
     </div>
     <div class="fg">
       <label class="fl">配信画像（任意）</label>
@@ -732,10 +769,15 @@ function save() {
   localStorage.setItem('janki_save_ts', String(saveTs));
   try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
   if (navigator.onLine) {
+    // 専用スプレッドシートを持つグループはメインGASに送らない
+    const mainGroups = groups.filter(g => !g.spreadsheetId);
+    const perGroups  = groups.filter(g =>  g.spreadsheetId);
+    perGroups.forEach(g => syncGroupToSpreadsheet(g));
+    if (!mainGroups.length) { setPendingSync(false); hideOfflineBadge(); return; }
     fetch(GAS_URL, {
       method: 'POST',
       headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({data: JSON.stringify(groups), ts: saveTs})
+      body: JSON.stringify({data: JSON.stringify(mainGroups), ts: saveTs})
     }).then(() => {
       setPendingSync(false);
       hideOfflineBadge();
@@ -747,6 +789,19 @@ function save() {
     setPendingSync(true);
     showOfflineBadge();
   }
+}
+
+function syncGroupToSpreadsheet(g) {
+  if (!g.spreadsheetId) return;
+  const url = localStorage.getItem('janki_gas') || GAS_URL;
+  if (!url || !navigator.onLine) return;
+  // 画像データを除いた軽量コピーを送信
+  const payload = Object.assign({}, g, { img: null, streamBg: null, streamLogo: null });
+  fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain'},
+    body: JSON.stringify({ data: JSON.stringify(payload), sid: g.spreadsheetId })
+  }).catch(e => console.warn('グループ別スプレッドシート同期失敗:', g.name, e));
 }
 
 function showOfflineBadge() {
@@ -768,10 +823,13 @@ function hideOfflineBadge() {
 function syncPendingData() {
   if (!navigator.onLine || !isPendingSync()) return;
   showOfflineBadge();
+  const mainGroups = groups.filter(g => !g.spreadsheetId);
+  groups.filter(g => g.spreadsheetId).forEach(g => syncGroupToSpreadsheet(g));
+  if (!mainGroups.length) { setPendingSync(false); hideOfflineBadge(); return; }
   fetch(GAS_URL, {
     method: 'POST',
     headers: {'Content-Type': 'text/plain'},
-    body: JSON.stringify({data: JSON.stringify(groups)})
+    body: JSON.stringify({data: JSON.stringify(mainGroups)})
   }).then(() => {
     setPendingSync(false);
     hideOfflineBadge();
@@ -1107,46 +1165,68 @@ function exportDailyImage() {
   if (!daily || !daily.games.length) { alert('この日の試合データがありません'); return; }
   const { players, games, data } = daily;
   const sorted = [...players].sort((a, b) => (data[b]?.total || 0) - (data[a]?.total || 0));
-  const leagueLbl = dailyViewLeague === '_default' ? '' : ` ${dailyViewLeague}リーグ`;
+  const leagueLbl = dailyViewLeague === '_default' ? '' : `${dailyViewLeague}リーグ`;
   const dateStr = dailyViewDate.replace(/-/g, '/');
 
-  const W = 480;
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;background:#0a0a0c;padding:28px 24px 36px;box-sizing:border-box;font-family:'Noto Sans JP',sans-serif`;
+  const W = 1280, H = 720;
+  const PAD = 28, TITLE_H = 90, ROW_GAP = 14;
+  const gridH = H - TITLE_H - PAD * 2;
+  const perCol = sorted.length;
+  const rowH = Math.floor((gridH - (perCol - 1) * ROW_GAP) / perCol);
+  const fontSize = Math.max(12, Math.min(20, Math.floor(rowH * .4)));
+  const badgeW = Math.max(44, Math.min(60, Math.floor(rowH * .95)));
 
-  const gameHeaders = games.map((_, i) => `<th style="font-size:11px;color:#8888a0;padding:8px 6px;text-align:center;font-weight:400;white-space:nowrap">${i+1}試合目</th>`).join('');
-  const rows = sorted.map((p, pi) => {
+  const _bgStyle = g.streamBg
+    ? `background-image:url('${g.streamBg}');background-size:cover;background-position:center;`
+    : 'background:linear-gradient(150deg,#0e0e0c 0%,#080808 55%,#0c0e0c 100%);';
+
+  const rowsHtml = sorted.map((p, idx) => {
+    const rank = idx + 1;
     const d = data[p] || { games: Array(games.length).fill(null), total: 0 };
-    const totC = d.total > 0 ? '#4caf82' : d.total < 0 ? '#e05252' : '#8888a0';
-    const totS = d.total > 0 ? `+${d.total}` : String(d.total);
-    const cells = d.games.map(v => {
-      const c = v === null ? '#333' : v > 0 ? '#4caf82' : v < 0 ? '#e05252' : '#8888a0';
+    const z = _zoneInfo(dailyViewLeague, rank, sorted.length);
+    const totalC = d.total > 0 ? '#1e6fd9' : d.total < 0 ? '#d42020' : '#555';
+    const totalS = d.total > 0 ? `+ ${d.total} pt` : d.total < 0 ? `- ${Math.abs(d.total)} pt` : `0 pt`;
+    const gameCells = d.games.map((v, i) => {
+      const c = v === null ? '#aaa' : v > 0 ? '#1e6fd9' : v < 0 ? '#d42020' : '#555';
       const s = v === null ? '—' : v > 0 ? `+${v}` : String(v);
-      const fw = (v !== null && v !== 0) ? '700' : '400';
-      return `<td style="font-size:14px;color:${c};font-weight:${fw};padding:11px 6px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05)">${s}</td>`;
+      return `<div style="text-align:center;flex:1;${i>0?'border-left:1px solid #e0e0e0;':''}"
+      >
+        <div style="font-size:${Math.round(fontSize*.82)}px;color:#888;margin-bottom:4px;font-weight:600">${i+1}試合目</div>
+        <div style="font-size:${Math.round(fontSize*1.2)}px;font-weight:800;color:${c}">${s}</div>
+      </div>`;
     }).join('');
-    return `<tr style="background:${pi%2===0?'rgba(255,255,255,.03)':'transparent'}">
-      <td style="font-size:14px;font-weight:700;color:#e8e8f0;padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.05)">${p}</td>
-      ${cells}
-      <td style="font-size:18px;font-weight:700;color:${totC};padding:11px 12px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05)">${totS}</td>
-    </tr>`;
+    return `<div style="display:flex;align-items:stretch;gap:8px;height:${rowH}px">
+      <div style="min-width:${badgeW}px;flex-shrink:0;transform:skewX(-10deg);background:${z.badge};display:flex;align-items:center;justify-content:center;font-size:${Math.round(badgeW*.5)}px;font-weight:800;color:#fff;letter-spacing:-.02em">${rank}</div>
+      <div style="flex:1;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden">
+        <div style="transform:skewX(10deg);display:flex;align-items:center;height:100%;padding:0 16px;gap:14px;overflow:hidden">
+          <div style="min-width:${Math.round(fontSize*5)}px;display:flex;align-items:center;font-size:${fontSize}px;font-weight:700;color:#1a1a2e;white-space:nowrap"><span style="overflow:hidden;text-overflow:ellipsis">${p}</span></div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:space-evenly">${gameCells}</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;border-left:1px solid #e0e0e0;padding-left:14px;min-width:${Math.round(fontSize*7)}px">
+            <div style="font-size:${Math.round(fontSize*.62)}px;color:#999;margin-bottom:2px">トータル</div>
+            <div style="font-size:${Math.round(fontSize*1.2)}px;font-weight:800;color:${totalC};white-space:nowrap">${totalS}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
   }).join('');
 
+  const _seasonLbl = `第${g.season||1}期`;
+  const _fullName = (g.org||'')+g.name;
+  const _logoHtml = g.streamLogo
+    ? `<img src="${g.streamLogo}" style="height:${Math.round(TITLE_H*.75)}px;max-width:160px;object-fit:contain;display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))">`
+    : '';
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;${_bgStyle}padding:${PAD}px;box-sizing:border-box;font-family:'Noto Sans JP',sans-serif;overflow:hidden`;
   wrapper.innerHTML = `
-    <div style="font-size:20px;font-weight:800;color:#d4a843;text-align:center;margin-bottom:4px;letter-spacing:.03em">${g.name || ''}</div>
-    <div style="font-size:13px;color:#8888a0;text-align:center;margin-bottom:22px;letter-spacing:.12em">${dateStr}${leagueLbl}</div>
-    <table style="width:100%;border-collapse:collapse">
-      <thead><tr style="border-bottom:1px solid rgba(212,168,67,.3)">
-        <th style="font-size:11px;color:#d4a843;padding:8px 12px;text-align:left;font-weight:400">選手</th>
-        ${gameHeaders}
-        <th style="font-size:11px;color:#d4a843;padding:8px 12px;text-align:center;font-weight:700">トータル</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div style="margin-top:18px;text-align:right;font-size:10px;color:#333">雀記</div>`;
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:14px">
+      <div style="font-size:1.4rem;font-weight:800;color:#ffffff;letter-spacing:.05em;line-height:1.4;text-shadow:0 2px 6px rgba(0,0,0,.9)">${_seasonLbl}　${_fullName}${leagueLbl ? '　'+leagueLbl : ''}　${dateStr}</div>
+      ${_logoHtml}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:${ROW_GAP}px;overflow:hidden">${rowsHtml}</div>`;
 
   document.body.appendChild(wrapper);
-  html2canvas(wrapper, { backgroundColor:'#0a0a0c', scale:2, useCORS:true, logging:false, width:W, windowWidth:W }).then(canvas => {
+  html2canvas(wrapper, { backgroundColor: null, scale:2, useCORS:true, logging:false, width:W, height:H, windowWidth:W }).then(canvas => {
     document.body.removeChild(wrapper);
     const a = document.createElement('a');
     const dt = dailyViewDate.replace(/-/g, '');
@@ -1166,37 +1246,57 @@ function _renderDailyStream() {
   const ls = _getDailyLeagues();
   const daily = _getDailyData(dailyViewDate, dailyViewLeague);
   const dateStr = dailyViewDate ? dailyViewDate.replace(/-/g, '/') : '';
-  const leagueLbl = dailyViewLeague === '_default' ? '' : ` ${dailyViewLeague}リーグ`;
+  const leagueLbl = dailyViewLeague === '_default' ? '' : `${dailyViewLeague}リーグ`;
+  const _seasonLbl = `第${g.season||1}期`;
+  const _fullName = (g.org||'')+g.name;
+  const _streamLogoHtml = g.streamLogo
+    ? `<img src="${g.streamLogo}" style="height:44px;max-width:120px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.8))">`
+    : '';
 
   let cardsHtml = '<div style="color:var(--tx2);text-align:center;padding:40px 0;font-size:.9rem">この日の試合はありません</div>';
   if (daily && daily.games.length) {
     const { players, games, data } = daily;
     const sorted = [...players].sort((a, b) => (data[b]?.total || 0) - (data[a]?.total || 0));
-    const gameLabels = games.map((_, i) => `${i+1}試合目`);
-    cardsHtml = sorted.map(p => {
+    const ROW_H = 52;
+    const BADGE_W = 38;
+    const FS = 13;
+    cardsHtml = sorted.map((p, idx) => {
+      const rank = idx + 1;
       const d = data[p] || { games: Array(games.length).fill(null), total: 0 };
-      const gameCells = d.games.map((v, i) => `
-        <div style="flex:1;min-width:56px;text-align:center">
-          <div style="font-size:.62rem;color:#666;margin-bottom:3px">${gameLabels[i]}</div>
-          <div style="font-size:.95rem;font-weight:700;${v===null?'color:#aaa':v>0?'color:#1e6fd9':v<0?'color:#d42020':'color:#555'}">${_ptStr(v)}</div>
-        </div>`).join('');
+      const z = _zoneInfo(dailyViewLeague, rank, sorted.length);
       const totalC = d.total > 0 ? '#1e6fd9' : d.total < 0 ? '#d42020' : '#555';
-      return `<div style="background:#ffffff;border:2px solid #1a1a2e;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;overflow:hidden">
-        <div style="min-width:80px;font-size:1rem;font-weight:800;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p}</div>
-        <div style="display:flex;flex:1;gap:4px;align-items:center;justify-content:center">${gameCells}</div>
-        <div style="text-align:right;min-width:72px;border-left:1px solid #e0e0e0;padding-left:10px">
-          <div style="font-size:.62rem;color:#666;margin-bottom:3px">トータル</div>
-          <div style="font-size:1.25rem;font-weight:800;color:${totalC}">${_ptStr(d.total)}</div>
+      const totalS = d.total > 0 ? `+ ${d.total} pt` : d.total < 0 ? `- ${Math.abs(d.total)} pt` : `0 pt`;
+      const gameCells = d.games.map((v, i) => {
+        const c = v === null ? '#aaa' : v > 0 ? '#1e6fd9' : v < 0 ? '#d42020' : '#555';
+        const s = _ptStr(v);
+        return `<div style="flex:1;text-align:center;${i>0?'border-left:1px solid #e0e0e0;':''}">
+          <div style="font-size:${Math.round(FS*.8)}px;color:#888;margin-bottom:2px;font-weight:600">${i+1}試合目</div>
+          <div style="font-size:${FS}px;font-weight:800;color:${c}">${s}</div>
+        </div>`;
+      }).join('');
+      return `<div style="display:flex;align-items:stretch;gap:6px;height:${ROW_H}px">
+        <div style="min-width:${BADGE_W}px;flex-shrink:0;transform:skewX(-10deg);background:${z.badge};display:flex;align-items:center;justify-content:center;font-size:${Math.round(BADGE_W*.5)}px;font-weight:800;color:#fff;letter-spacing:-.02em">${rank}</div>
+        <div style="flex:1;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden">
+          <div style="transform:skewX(10deg);display:flex;align-items:center;height:100%;padding:0 12px;gap:10px;overflow:hidden">
+            <div style="min-width:80px;display:flex;align-items:center;font-size:${FS}px;font-weight:700;color:#1a1a2e;white-space:nowrap"><span style="overflow:hidden;text-overflow:ellipsis">${p}</span></div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:space-evenly">${gameCells}</div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;border-left:1px solid #e0e0e0;padding-left:10px;min-width:80px">
+              <div style="font-size:${Math.round(FS*.75)}px;color:#999;margin-bottom:1px">トータル</div>
+              <div style="font-size:${Math.round(FS*1.2)}px;font-weight:800;color:${totalC};white-space:nowrap">${totalS}</div>
+            </div>
+          </div>
         </div>
       </div>`;
     }).join('');
   }
 
   inner.innerHTML = `
-    <div class="stream-title">${g.name || ''}</div>
-    <div class="stream-date">${dateStr}${leagueLbl}</div>
-    ${ls.length > 1 ? `<div class="ltabs" style="justify-content:center;margin-bottom:16px">${ls.map(l => `<div class="ltab ${l===dailyViewLeague?'on':''}" onclick="dailySetLeague('${l}')" style="flex:none;padding:7px 20px">${l==='_default'?'全体':l+'リーグ'}</div>`).join('')}</div>` : ''}
-    <div style="display:flex;flex-direction:column;gap:8px">${cardsHtml}</div>`;
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:10px">
+      <div style="font-size:1.1rem;font-weight:800;color:#ffffff;letter-spacing:.05em;text-shadow:0 2px 6px rgba(0,0,0,.9)">${_seasonLbl}　${_fullName}${leagueLbl ? '　'+leagueLbl : ''}　${dateStr}</div>
+      ${_streamLogoHtml}
+    </div>
+    ${ls.length > 1 ? `<div class="ltabs" style="justify-content:center;margin-bottom:12px">${ls.map(l => `<div class="ltab ${l===dailyViewLeague?'on':''}" onclick="dailySetLeague('${l}')" style="flex:none;padding:7px 20px">${l==='_default'?'全体':l+'リーグ'}</div>`).join('')}</div>` : ''}
+    <div style="display:flex;flex-direction:column;gap:10px">${cardsHtml}</div>`;
 }
 
 // ゾーン設定（A1: 上位4=決勝進出 / 下位4=降格、A2: 上位6=昇格）
@@ -1514,6 +1614,7 @@ function _openGroupModal() {
   document.getElementById('mg-stream-logo').value = '';
   document.getElementById('mg-stream-bg-name').textContent = '';
   document.getElementById('mg-stream-logo-name').textContent = '';
+  document.getElementById('mg-sid').value = '';
   setMgPwMode('none');
   window._mgImgData = null;
   window._mgStreamBg = null;
@@ -1547,6 +1648,7 @@ function _editGroup(id) {
   window._mgStreamLogo = g.streamLogo || null;
   document.getElementById('mg-stream-bg-name').textContent = g.streamBg ? '設定済み ✓' : '';
   document.getElementById('mg-stream-logo-name').textContent = g.streamLogo ? '設定済み ✓' : '';
+  document.getElementById('mg-sid').value = g.spreadsheetId || '';
   document.getElementById('mg-custom').style.display = g.rule === 'custom' ? 'block' : 'none';
   document.getElementById('mg-league-inp').value = '';
   // 画像
@@ -1641,6 +1743,7 @@ function saveGroup() {
   const kaeshi = rule === 'custom' ? parseInt(document.getElementById('mg-kaeshi').value)||30000 : preset.kaeshi;
   const memo = document.getElementById('mg-memo').value.trim();
   const season = parseInt(document.getElementById('mg-season').value) || 1;
+  const spreadsheetId = document.getElementById('mg-sid').value.trim() || null;
   const pwWrap = document.getElementById('mg-pw-wrap');
   const pw = pwWrap?.style.display !== 'none' ? (document.getElementById('mg-pw').value.trim() || null) : null;
   const newLeagues = window._mgLeagues || [];
@@ -1648,7 +1751,7 @@ function saveGroup() {
     const g = groups.find(x => x.id === editGroupId);
     if (g) {
       g.name=name; g.org=org||null; g.memo=memo; g.rule=rule; g.uma=uma; g.oka=oka; g.kaeshi=kaeshi; g.season=season;
-      g.img=window._mgImgData||g.img||null; g.pw=pw||null;
+      g.img=window._mgImgData||g.img||null; g.pw=pw||null; g.spreadsheetId=spreadsheetId;
       if (window._mgStreamBg) g.streamBg = window._mgStreamBg;
       if (window._mgStreamLogo) g.streamLogo = window._mgStreamLogo;
       // リーグの追加のみ行う（削除・選手データは保持）
@@ -1659,7 +1762,7 @@ function saveGroup() {
     newLeagues.forEach(l => { players[l] = []; });
     groups.push({id:Date.now(), name, org:org||null, memo, rule, uma, oka, kaeshi, season,
       streamBg: window._mgStreamBg||null, streamLogo: window._mgStreamLogo||null,
-      img: window._mgImgData||null, pw: pw||null, players, hanzos:[], deleted:[]});
+      spreadsheetId, img: window._mgImgData||null, pw: pw||null, players, hanzos:[], deleted:[]});
   }
   save();
   closeOvl('modal-group');
@@ -3173,6 +3276,17 @@ function buildGraphData() {
     }))
   };
 
+  // 家別集計データ
+  const WIND_LABELS = ['東家','南家','西家','北家'];
+  const windCount = {};
+  allPlayers.forEach(p => { windCount[p] = [0,0,0,0]; });
+  hanzos.forEach(h => {
+    h.players.forEach((p, i) => {
+      if (windCount[p]) windCount[p][i]++;
+    });
+  });
+  window._graphWindData = { players: playersWithGames, windCount };
+
   // 出欠回数グラフデータ
   const totalHanzos = hanzos.length;
   const leagueMax = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : null;
@@ -3303,40 +3417,70 @@ function renderGraph() {
 
   buildGraphData();
 
-  const lineCanvas = document.getElementById('gc-line');
-  if (lineCanvas && _graphLineData) {
-    // 順位分布の高さをプレイヤー数に応じて調整
-    const rankWrap = document.getElementById('gwrap-rank');
-    if (rankWrap && _graphRankData) {
-      const h = Math.max(200, (_graphRankData.labels.length * 32) + 60);
-      rankWrap.style.height = Math.min(h, 320) + 'px';
+  // 開いているカードだけ再描画
+  ['line','rank','attend','wind','dok'].forEach(type => {
+    const body = document.getElementById('gbody-' + type);
+    if (body && body.style.display !== 'none') _renderGraphCard(type);
+  });
+}
+
+const _graphOpenState = {};
+
+function toggleGraphCard(type) {
+  const body = document.getElementById('gbody-' + type);
+  const arrow = document.getElementById('garrow-' + type);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▶' : '▼';
+  if (!isOpen) {
+    // 開いたときだけデータを描画
+    buildGraphData();
+    _renderGraphCard(type);
+  }
+}
+
+function _renderGraphCard(type) {
+  const g = curGroup;
+  if (!g) return;
+  if (type === 'line') {
+    const lineCanvas = document.getElementById('gc-line');
+    if (lineCanvas && _graphLineData) {
+      if (lChart) { lChart.destroy(); lChart = null; }
+      const rankWrap = document.getElementById('gwrap-rank');
+      if (rankWrap && _graphRankData) {
+        const h = Math.max(200, (_graphRankData.labels.length * 32) + 60);
+        rankWrap.style.height = Math.min(h, 320) + 'px';
+      }
+      lChart = new Chart(lineCanvas, { type: 'line', data: _graphLineData, options: makeLineOptions(true) });
     }
-    lChart = new Chart(lineCanvas, { type: 'line', data: _graphLineData, options: makeLineOptions(true) });
-  }
-
-  const rankCanvas = document.getElementById('gc-rank');
-  if (rankCanvas && _graphRankData) {
-    rChart = new Chart(rankCanvas, { type: 'bar', data: _graphRankData, options: makeRankOptions(true) });
-  }
-
-  // 出欠回数
-  const attendCanvas = document.getElementById('gc-attend');
-  if (attendCanvas && _graphAttendData) {
-    const attendWrap = document.getElementById('gwrap-attend');
-    if (attendWrap) {
-      const h = Math.max(200, (_graphAttendData.labels.length * 28) + 60);
-      attendWrap.style.height = Math.min(h, 320) + 'px';
+  } else if (type === 'rank') {
+    const rankCanvas = document.getElementById('gc-rank');
+    if (rankCanvas && _graphRankData) {
+      if (rChart) { rChart.destroy(); rChart = null; }
+      rChart = new Chart(rankCanvas, { type: 'bar', data: _graphRankData, options: makeRankOptions(true) });
     }
-    const _aMax = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : undefined;
-    aChart = new Chart(attendCanvas, { type: 'bar', data: _graphAttendData, options: makeAttendOptions(true, _aMax) });
-  }
-
-  // 同卓回数
-  const dokWrap = document.getElementById('graph-dok-wrap');
-  if (dokWrap) {
-    const stats = getStats(gLeague);
-    const players = (gLeague === '_default' ? (g._players||[]) : (g.players[gLeague]||[]));
-    dokWrap.innerHTML = players.length ? renderDok(gLeague, players) : '<div style="color:var(--tx2);text-align:center;padding:12px;font-size:.8rem">データなし</div>';
+  } else if (type === 'attend') {
+    const attendCanvas = document.getElementById('gc-attend');
+    if (attendCanvas && _graphAttendData) {
+      if (aChart) { aChart.destroy(); aChart = null; }
+      const attendWrap = document.getElementById('gwrap-attend');
+      if (attendWrap) {
+        const h = Math.max(200, (_graphAttendData.labels.length * 28) + 60);
+        attendWrap.style.height = Math.min(h, 320) + 'px';
+      }
+      const _aMax = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : undefined;
+      aChart = new Chart(attendCanvas, { type: 'bar', data: _graphAttendData, options: makeAttendOptions(true, _aMax) });
+    }
+  } else if (type === 'wind') {
+    const windWrap = document.getElementById('graph-wind-wrap');
+    if (windWrap) windWrap.innerHTML = renderWindTable(true);
+  } else if (type === 'dok') {
+    const dokWrap = document.getElementById('graph-dok-wrap');
+    if (dokWrap) {
+      const players = (gLeague === '_default' ? (g._players||[]) : (g.players[gLeague]||[]));
+      dokWrap.innerHTML = players.length ? renderDok(gLeague, players) : '<div style="color:var(--tx2);text-align:center;padding:12px;font-size:.8rem">データなし</div>';
+    }
   }
 }
 
@@ -3365,6 +3509,11 @@ function expandGraph(type) {
     htmlBox.style.display = 'none';
     const _aMaxFs = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : undefined;
     fsChart = new Chart(canvas, { type: 'bar', data: _graphAttendData, options: makeAttendOptions(false, _aMaxFs) });
+  } else if (type === 'wind') {
+    titleEl.textContent = '家別集計';
+    if (canvas) canvas.style.display = 'none';
+    htmlBox.style.display = 'block';
+    htmlBox.innerHTML = renderWindTable(false);
   } else if (type === 'dok') {
     titleEl.textContent = '同卓回数';
     if (canvas) canvas.style.display = 'none';
@@ -3373,6 +3522,36 @@ function expandGraph(type) {
     const players = (gLeague === '_default' ? (curGroup._players||[]) : (curGroup.players[gLeague]||[]));
     htmlBox.innerHTML = players.length ? renderDok(gLeague, players) : '<div style="color:var(--tx2);text-align:center;padding:12px;font-size:.8rem">データなし</div>';
   }
+}
+
+function renderWindTable(small) {
+  const d = window._graphWindData;
+  if (!d || !d.players.length) return '<div style="color:var(--tx2);text-align:center;padding:12px;font-size:.8rem">データなし</div>';
+  const WIND_LABELS = ['東家','南家','西家','北家'];
+  const WIND_COLORS = ['#e8a820','#4caf82','#5c9be0','#c46edd'];
+  const fs = small ? '.72rem' : '.85rem';
+  const hd = WIND_LABELS.map((w,i) =>
+    `<th style="padding:6px 10px;text-align:center;font-size:${fs};font-weight:700;color:${WIND_COLORS[i]};white-space:nowrap">${w}</th>`
+  ).join('');
+  const rows = d.players.map((p, pi) => {
+    const wc = d.windCount[p] || [0,0,0,0];
+    const total = wc.reduce((a,b)=>a+b,0);
+    const cells = wc.map((n,i) => {
+      const pct = total ? Math.round(n/total*100) : 0;
+      return `<td style="padding:6px 10px;text-align:center;font-size:${fs};color:${WIND_COLORS[i]};font-weight:700">${n}<span style="font-size:.65em;color:#888;margin-left:3px">${pct}%</span></td>`;
+    }).join('');
+    return `<tr style="background:${pi%2===0?'rgba(255,255,255,.03)':'transparent'}">
+      <td style="padding:6px 10px;font-size:${fs};font-weight:700;color:var(--tx);white-space:nowrap">${p}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+  return `<table style="width:100%;border-collapse:collapse;min-width:260px">
+    <thead><tr style="border-bottom:1px solid rgba(212,168,67,.25)">
+      <th style="padding:6px 10px;text-align:left;font-size:${fs};color:var(--gold);font-weight:700">選手</th>
+      ${hd}
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 
 function closeExpandGraph() {
