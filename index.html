@@ -297,9 +297,9 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div id="page-hanzos" class="page">
       <button class="btn btn-g" onclick="openHanzoModal()">＋ 半荘を入力</button>
       <div style="display:flex;gap:6px;margin-bottom:8px">
-        <button onclick="exportHanzosExcel()" style="flex:1;padding:7px;border-radius:7px;background:rgba(92,175,92,.1);border:1px solid rgba(92,175,92,.35);color:#5caf5c;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">Excel出力</button>
-        <button onclick="exportHanzosImage()" style="flex:1;padding:7px;border-radius:7px;background:rgba(92,155,224,.1);border:1px solid rgba(92,155,224,.35);color:#5c9be0;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">画像出力</button>
-        <button onclick="openBroadcast('daily')" style="flex:1;padding:7px;border-radius:7px;background:rgba(180,100,220,.1);border:1px solid rgba(180,100,220,.35);color:#c46edd;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">📺 配信用</button>
+        <button onclick="exportHanzosExcel()" style="flex:1;padding:7px;border-radius:7px;background:rgba(92,175,92,.1);border:1px solid rgba(92,175,92,.35);color:#5caf5c;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">Excel</button>
+        <button onclick="exportHanzosImage()" style="flex:1;padding:7px;border-radius:7px;background:rgba(92,155,224,.1);border:1px solid rgba(92,155,224,.35);color:#5c9be0;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">画像</button>
+        <button onclick="openBroadcast('daily')" style="flex:1;padding:7px;border-radius:7px;background:rgba(180,100,220,.1);border:1px solid rgba(180,100,220,.35);color:#c46edd;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">配信</button>
       </div>
       <div id="hanzo-list"></div>
     </div>
@@ -3348,7 +3348,7 @@ function makeRankOptions(small) {
     scales: {
       x: {
         stacked: true,
-        ticks: { color: '#e8e8f0', font: { size: small?10:12 }, maxRotation: 90, minRotation: 90, callback: (value, index) => {
+        ticks: { color: '#e8e8f0', font: { size: small?10:12 }, maxRotation: 90, minRotation: 90, autoSkip: false, callback: (value, index) => {
           const players = _graphRankData ? _graphRankData.labels : [];
           return players[index] || value;
         } },
@@ -3385,7 +3385,7 @@ function makeAttendOptions(small, yMax) {
     scales: {
       x: {
         stacked: true,
-        ticks: { color: '#e8e8f0', font: { size: small?10:12 }, maxRotation: 90, minRotation: 90 },
+        ticks: { color: '#e8e8f0', font: { size: small?10:12 }, maxRotation: 90, minRotation: 90, autoSkip: false },
         grid: { display: false }
       },
       y: {
@@ -3447,17 +3447,17 @@ function _renderGraphCard(type) {
     const lineCanvas = document.getElementById('gc-line');
     if (lineCanvas && _graphLineData) {
       if (lChart) { lChart.destroy(); lChart = null; }
-      const rankWrap = document.getElementById('gwrap-rank');
-      if (rankWrap && _graphRankData) {
-        const h = Math.max(200, (_graphRankData.labels.length * 32) + 60);
-        rankWrap.style.height = Math.min(h, 320) + 'px';
-      }
       lChart = new Chart(lineCanvas, { type: 'line', data: _graphLineData, options: makeLineOptions(true) });
     }
   } else if (type === 'rank') {
     const rankCanvas = document.getElementById('gc-rank');
     if (rankCanvas && _graphRankData) {
       if (rChart) { rChart.destroy(); rChart = null; }
+      const rankWrap = document.getElementById('gwrap-rank');
+      if (rankWrap) {
+        const h = Math.max(200, (_graphRankData.labels.length * 32) + 60);
+        rankWrap.style.height = h + 'px';
+      }
       rChart = new Chart(rankCanvas, { type: 'bar', data: _graphRankData, options: makeRankOptions(true) });
     }
   } else if (type === 'attend') {
@@ -3467,7 +3467,7 @@ function _renderGraphCard(type) {
       const attendWrap = document.getElementById('gwrap-attend');
       if (attendWrap) {
         const h = Math.max(200, (_graphAttendData.labels.length * 28) + 60);
-        attendWrap.style.height = Math.min(h, 320) + 'px';
+        attendWrap.style.height = h + 'px';
       }
       const _aMax = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : undefined;
       aChart = new Chart(attendCanvas, { type: 'bar', data: _graphAttendData, options: makeAttendOptions(true, _aMax) });
