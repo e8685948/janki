@@ -5883,14 +5883,10 @@ if (navigator.onLine) {
       if (ok) {
         showSyncBadge('☁ データを更新しました', 'rgba(76,175,130,.92)');
         refreshCurrentView();
-      } else {
-        // バッジを消す（ローカルが最新 or GASにデータなし）
-        const b = document.getElementById('sync-badge');
-        if (b) b.style.opacity = '0';
       }
+      // false の場合は loadFromGas() 内でバッジをセット済みなのでここでは何もしない
     }).catch(() => {
-      const b = document.getElementById('sync-badge');
-      if (b) b.style.opacity = '0';
+      showSyncBadge('⚠ 起動時GAS失敗', 'var(--red)');
     });
   }
 } else {
