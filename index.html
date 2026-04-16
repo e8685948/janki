@@ -461,11 +461,11 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           </div>
           <div class="fg">
             <label class="fl">GoogleスプレッドシートのURL</label>
-            <input class="fi" id="sched-url" value="https://docs.google.com/spreadsheets/d/1bxeu93VYAdS16MK1kFYGWpaV0hTpzcfBR0GtoeJIPFs/edit?gid=1583484601#gid=1583484601" placeholder="https://docs.google.com/spreadsheets/d/...">
+            <input class="fi" id="sched-url" placeholder="https://docs.google.com/spreadsheets/d/..." oninput="localStorage.setItem('sched_sheet_url',this.value)">
           </div>
           <div class="fg">
             <label class="fl">シート名（省略可・省略時はURLのgidのシート）</label>
-            <input class="fi" id="sched-sheet-name" placeholder="例：フォームの回答 1">
+            <input class="fi" id="sched-sheet-name" placeholder="例：フォームの回答 1" oninput="localStorage.setItem('sched_sheet_name',this.value)">
           </div>
           <button onclick="schedFetchFromGas()" class="sched-btn" style="margin-bottom:10px">取得する</button>
           <div id="sched-fetch-status" style="font-size:.72rem;color:var(--tx2);margin-bottom:8px"></div>
@@ -1945,7 +1945,17 @@ function showTab(t) {
   });
   // 試合日程は設定タブと連動して表示
   const schedEl = document.getElementById('page-schedule');
-  if (schedEl) schedEl.style.display = (t === 'settings') ? 'block' : 'none';
+  if (schedEl) {
+    schedEl.style.display = (t === 'settings') ? 'block' : 'none';
+    if (t === 'settings') {
+      const gasUrl = localStorage.getItem('sched_gas_url');
+      if (gasUrl) document.getElementById('sched-gas-url').value = gasUrl;
+      const sheetUrl = localStorage.getItem('sched_sheet_url');
+      if (sheetUrl) document.getElementById('sched-url').value = sheetUrl;
+      const sheetName = localStorage.getItem('sched_sheet_name');
+      if (sheetName) document.getElementById('sched-sheet-name').value = sheetName;
+    }
+  }
   if (t==='ranking') renderRanking();
   if (t==='players') renderPlayers();
   if (t==='hanzos')  renderHanzos();
@@ -1972,10 +1982,14 @@ function schedSetMode(mode) {
   const offStyle = 'border:1px solid var(--bd);background:rgba(255,255,255,.05);color:var(--tx2)';
   document.getElementById('sched-tab-url').style.cssText   += isUrl ? ';'+onStyle : ';'+offStyle;
   document.getElementById('sched-tab-paste').style.cssText += isUrl ? ';'+offStyle : ';'+onStyle;
-  // 保存済みGAS URLを復元
+  // 保存済みURLを復元
   if (isUrl) {
-    const saved = localStorage.getItem('sched_gas_url');
-    if (saved) document.getElementById('sched-gas-url').value = saved;
+    const gasUrl = localStorage.getItem('sched_gas_url');
+    if (gasUrl) document.getElementById('sched-gas-url').value = gasUrl;
+    const sheetUrl = localStorage.getItem('sched_sheet_url');
+    if (sheetUrl) document.getElementById('sched-url').value = sheetUrl;
+    const sheetName = localStorage.getItem('sched_sheet_name');
+    if (sheetName) document.getElementById('sched-sheet-name').value = sheetName;
   }
 }
 
