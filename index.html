@@ -285,6 +285,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   
 <div id="hdr">
   <div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div>
+  <button id="hdr-force-load" onclick="forceLoadFromGas()" style="background:none;border:1px solid var(--bd);color:var(--tx2);font-size:.65rem;padding:4px 10px;border-radius:8px;cursor:pointer;font-family:'Noto Sans JP',sans-serif">☁ 読込</button>
 </div>
 
 <div id="tabs" style="display:none">
@@ -987,7 +988,6 @@ function save() {
     const perGroups  = groups.filter(g =>  g.spreadsheetId);
     perGroups.forEach(g => syncGroupToSpreadsheet(g));
     if (!mainGroups.length) { setPendingSync(false); hideOfflineBadge(); return; }
-    showSyncBadge('☁ 同期中…');
     fetch(GAS_URL, {
       method: 'POST',
       headers: {'Content-Type': 'text/plain'},
@@ -995,11 +995,9 @@ function save() {
     }).then(() => {
       setPendingSync(false);
       hideOfflineBadge();
-      showSyncBadge('☁ 同期完了', 'rgba(76,175,130,.92)');
     }).catch(() => {
       setPendingSync(true);
       showOfflineBadge();
-      showSyncBadge('⚠ 同期失敗', 'var(--red)');
     });
   } else {
     setPendingSync(true);
@@ -1043,7 +1041,6 @@ function syncPendingData() {
   groups.filter(g => g.spreadsheetId).forEach(g => syncGroupToSpreadsheet(g));
   if (!mainGroups.length) { setPendingSync(false); hideOfflineBadge(); return; }
   const syncTs = parseInt(localStorage.getItem('janki_save_ts') || String(Date.now()), 10);
-  showSyncBadge('☁ 同期中…');
   fetch(GAS_URL, {
     method: 'POST',
     headers: {'Content-Type': 'text/plain'},
@@ -1051,10 +1048,8 @@ function syncPendingData() {
   }).then(() => {
     setPendingSync(false);
     hideOfflineBadge();
-    showSyncBadge('☁ 同期完了', 'rgba(76,175,130,.92)');
   }).catch(() => {
     showOfflineBadge();
-    showSyncBadge('⚠ 同期失敗', 'var(--red)');
   });
 }
 
@@ -1085,39 +1080,14 @@ async function loadFromGas() {
     if (json.ok && json.data) {
       const loaded = JSON.parse(json.data);
       if (Array.isArray(loaded) && loaded.length > 0) {
-        const localTs = parseInt(localStorage.getItem('janki_save_ts') || '0', 10);
-        const gasTs = parseInt(json.ts || '0', 10);
-        if (gasTs > 0 && localTs > gasTs) {
-          // ローカルが新しい場合はGASに送信して上書き
-          const mainGroups = groups.filter(g => !g.spreadsheetId);
-          if (mainGroups.length) {
-            fetch(GAS_URL, {
-              method: 'POST',
-              headers: {'Content-Type': 'text/plain'},
-              body: JSON.stringify({data: JSON.stringify(mainGroups), ts: localTs})
-            }).then(() => {
-              showSyncBadge('☁ ローカルデータを送信', 'rgba(76,175,130,.92)');
-            }).catch(() => {
-              showSyncBadge('⚠ 送信失敗', 'var(--red)');
-            });
-          }
-          showSyncBadge(`☁ ローカルが最新 (local:${new Date(localTs).toLocaleTimeString()} > gas:${gasTs>0?new Date(gasTs).toLocaleTimeString():'なし'})`, 'rgba(100,100,160,.9)');
-          return false;
-        }
         groups = loaded;
+        const gasTs = parseInt(json.ts || '0', 10);
         if (gasTs > 0) localStorage.setItem('janki_save_ts', String(gasTs));
         try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
         return true;
-      } else {
-        showSyncBadge('☁ GASにデータなし', 'rgba(100,100,160,.9)');
       }
-    } else {
-      showSyncBadge(`⚠ GAS応答エラー: ${JSON.stringify(json).slice(0,40)}`, 'var(--red)');
     }
-  } catch(e) {
-    console.warn('GAS読み込み失敗:', e);
-    showSyncBadge(`⚠ GAS接続失敗: ${e.message||e}`, 'var(--red)');
-  }
+  } catch(e) { console.warn('GAS読み込み失敗:', e); }
   return false;
 }
 
@@ -5831,6 +5801,39 @@ function saveHanzo(cont){
   }
 }
 
+async function forceLoadFromGas() {
+  const btn = document.getElementById('hdr-force-load');
+  if (btn) { btn.textContent = '☁ 読込中…'; btn.disabled = true; }
+  if (!navigator.onLine) {
+    showSyncBadge('⚠ オフラインです', 'var(--red)');
+    if (btn) { btn.textContent = '☁ 読込'; btn.disabled = false; }
+    return;
+  }
+  try {
+    showSyncBadge('☁ GASから読込中…');
+    const res = await fetch(GAS_URL);
+    const json = await res.json();
+    if (json.ok && json.data) {
+      const loaded = JSON.parse(json.data);
+      if (Array.isArray(loaded) && loaded.length > 0) {
+        const gasTs = parseInt(json.ts || '0', 10);
+        groups = loaded;
+        if (gasTs > 0) localStorage.setItem('janki_save_ts', String(gasTs));
+        try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
+        showSyncBadge('☁ 読込完了', 'rgba(76,175,130,.92)');
+        refreshCurrentView();
+      } else {
+        showSyncBadge('☁ GASにデータなし', 'rgba(100,100,160,.9)');
+      }
+    } else {
+      showSyncBadge('⚠ GAS応答エラー', 'var(--red)');
+    }
+  } catch(e) {
+    showSyncBadge(`⚠ 接続失敗: ${e.message||e}`, 'var(--red)');
+  }
+  if (btn) { btn.textContent = '☁ 読込'; btn.disabled = false; }
+}
+
 function manualRefresh() {
   const btn = document.getElementById('hdr-refresh');
   if (btn) { btn.textContent = '↻ 更新中…'; btn.disabled = true; }
@@ -5879,15 +5882,11 @@ if (navigator.onLine) {
   if (isPendingSync()) {
     syncPendingData();
   } else {
-    showSyncBadge('☁ 確認中…');
     loadFromGas().then(ok => {
       if (ok) {
         showSyncBadge('☁ データを更新しました', 'rgba(76,175,130,.92)');
         refreshCurrentView();
       }
-      // false の場合は loadFromGas() 内でバッジをセット済みなのでここでは何もしない
-    }).catch(() => {
-      showSyncBadge('⚠ 起動時GAS失敗', 'var(--red)');
     });
   }
 } else {
