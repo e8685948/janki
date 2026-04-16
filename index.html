@@ -1073,17 +1073,25 @@ function load() {
   } catch(e) {}
 }
 
-async function loadFromGas() {
+async function loadFromGas(force) {
+  // 2分以内に取得済みなら強制フラグがない限りスキップ
+  const lastFetch = parseInt(localStorage.getItem('janki_last_gas_fetch') || '0', 10);
+  if (!force && Date.now() - lastFetch < 120000) return false;
   try {
     const res = await fetch(GAS_URL);
     const json = await res.json();
+    localStorage.setItem('janki_last_gas_fetch', String(Date.now()));
     if (json.ok && json.data) {
       const loaded = JSON.parse(json.data);
       if (Array.isArray(loaded) && loaded.length > 0) {
+        // データが変わった時だけ更新
+        const prevJson = JSON.stringify(groups);
+        const newJson = JSON.stringify(loaded);
+        if (prevJson === newJson) return false;
         groups = loaded;
         const gasTs = parseInt(json.ts || '0', 10);
         if (gasTs > 0) localStorage.setItem('janki_save_ts', String(gasTs));
-        try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
+        try { localStorage.setItem('janki_v2', newJson); } catch(e) {}
         return true;
       }
     }
@@ -5813,6 +5821,7 @@ async function forceLoadFromGas() {
     showSyncBadge('☁ GASから読込中…');
     const res = await fetch(GAS_URL);
     const json = await res.json();
+    localStorage.setItem('janki_last_gas_fetch', String(Date.now()));
     if (json.ok && json.data) {
       const loaded = JSON.parse(json.data);
       if (Array.isArray(loaded) && loaded.length > 0) {
