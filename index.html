@@ -457,15 +457,15 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <div id="sched-mode-url">
           <div class="fg">
             <label class="fl">GAS WebアプリURL</label>
-            <input class="fi" id="sched-gas-url" placeholder="https://script.google.com/macros/s/..." oninput="localStorage.setItem('sched_gas_url',this.value)">
+            <input class="fi" id="sched-gas-url" placeholder="https://script.google.com/macros/s/..." oninput="schedSaveField('sched_gas_url',this.value)">
           </div>
           <div class="fg">
             <label class="fl">GoogleスプレッドシートのURL</label>
-            <input class="fi" id="sched-url" placeholder="https://docs.google.com/spreadsheets/d/..." oninput="localStorage.setItem('sched_sheet_url',this.value)">
+            <input class="fi" id="sched-url" placeholder="https://docs.google.com/spreadsheets/d/..." oninput="schedSaveField('sched_sheet_url',this.value)">
           </div>
           <div class="fg">
             <label class="fl">シート名（省略可・省略時はURLのgidのシート）</label>
-            <input class="fi" id="sched-sheet-name" placeholder="例：フォームの回答 1" oninput="localStorage.setItem('sched_sheet_name',this.value)">
+            <input class="fi" id="sched-sheet-name" placeholder="例：フォームの回答 1" oninput="schedSaveField('sched_sheet_name',this.value)">
           </div>
           <button onclick="schedFetchFromGas()" class="sched-btn" style="margin-bottom:10px">取得する</button>
           <div id="sched-fetch-status" style="font-size:.72rem;color:var(--tx2);margin-bottom:8px"></div>
@@ -543,7 +543,7 @@ if (d.action === 'getFormData') {
 
       <!-- 試合日程オプション -->
       <div id="sched-options-card" style="display:none" class="card">
-        <div class="ctitle">試合日程オプション</div>
+        <div class="ctitle">試合日程詳細</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px">
           <div>
             <label class="fl">AM 時間帯</label>
@@ -1947,14 +1947,7 @@ function showTab(t) {
   const schedEl = document.getElementById('page-schedule');
   if (schedEl) {
     schedEl.style.display = (t === 'settings') ? 'block' : 'none';
-    if (t === 'settings') {
-      const gasUrl = localStorage.getItem('sched_gas_url');
-      if (gasUrl) document.getElementById('sched-gas-url').value = gasUrl;
-      const sheetUrl = localStorage.getItem('sched_sheet_url');
-      if (sheetUrl) document.getElementById('sched-url').value = sheetUrl;
-      const sheetName = localStorage.getItem('sched_sheet_name');
-      if (sheetName) document.getElementById('sched-sheet-name').value = sheetName;
-    }
+    if (t === 'settings') schedRestoreFields();
   }
   if (t==='ranking') renderRanking();
   if (t==='players') renderPlayers();
@@ -1974,6 +1967,21 @@ let schedData = null;
 let schedResult = null;
 
 // ===== 試合日程 UI helpers =====
+function schedFieldKey(key) {
+  return curGroup ? key + '_' + curGroup.id : key;
+}
+function schedSaveField(key, value) {
+  localStorage.setItem(schedFieldKey(key), value);
+}
+function schedRestoreFields() {
+  const gasUrl   = localStorage.getItem(schedFieldKey('sched_gas_url'));
+  const sheetUrl = localStorage.getItem(schedFieldKey('sched_sheet_url'));
+  const sheetName= localStorage.getItem(schedFieldKey('sched_sheet_name'));
+  if (gasUrl)    document.getElementById('sched-gas-url').value   = gasUrl;
+  if (sheetUrl)  document.getElementById('sched-url').value       = sheetUrl;
+  if (sheetName) document.getElementById('sched-sheet-name').value = sheetName;
+}
+
 function schedSetMode(mode) {
   const isUrl = mode === 'url';
   document.getElementById('sched-mode-url').style.display   = isUrl ? 'block' : 'none';
@@ -1982,15 +1990,7 @@ function schedSetMode(mode) {
   const offStyle = 'border:1px solid var(--bd);background:rgba(255,255,255,.05);color:var(--tx2)';
   document.getElementById('sched-tab-url').style.cssText   += isUrl ? ';'+onStyle : ';'+offStyle;
   document.getElementById('sched-tab-paste').style.cssText += isUrl ? ';'+offStyle : ';'+onStyle;
-  // 保存済みURLを復元
-  if (isUrl) {
-    const gasUrl = localStorage.getItem('sched_gas_url');
-    if (gasUrl) document.getElementById('sched-gas-url').value = gasUrl;
-    const sheetUrl = localStorage.getItem('sched_sheet_url');
-    if (sheetUrl) document.getElementById('sched-url').value = sheetUrl;
-    const sheetName = localStorage.getItem('sched_sheet_name');
-    if (sheetName) document.getElementById('sched-sheet-name').value = sheetName;
-  }
+  if (isUrl) schedRestoreFields();
 }
 
 function schedCopyGasCode() {
@@ -2045,6 +2045,7 @@ async function schedFetchFromGas() {
     statusEl.textContent = '取得成功';
     statusEl.style.color = 'var(--green)';
     schedParseCsv();
+    document.getElementById('sched-avail-card').style.display = 'none';
   } catch (e) {
     statusEl.textContent = `エラー: ${e.message}｜GASへのコード追加と再デプロイが必要です`;
     statusEl.style.color = 'var(--red)';
@@ -2059,7 +2060,7 @@ function schedIsCircle(v) {
     || v === 'o' || v === 'O' || v === 'ｏ' || v === 'Ｏ';
 }
 
-function schedParseCsv() {
+function schedParseCsv(hideAvail = false) {
   const raw = document.getElementById('sched-csv').value.trim();
   if (!raw) { alert('データを貼り付けてください'); return; }
 
@@ -2110,8 +2111,12 @@ function schedParseCsv() {
   if (players.length === 0) { alert('選手データが見つかりません'); return; }
 
   schedData = { dates, players };
-  schedRenderAvail();
-  document.getElementById('sched-avail-card').style.display  = '';
+  if (!hideAvail) {
+    schedRenderAvail();
+    document.getElementById('sched-avail-card').style.display = '';
+  } else {
+    document.getElementById('sched-avail-card').style.display = 'none';
+  }
   document.getElementById('sched-options-card').style.display = '';
   document.getElementById('sched-output-card').style.display  = 'none';
 }
@@ -2196,7 +2201,7 @@ function schedShuffle() {
     let best = group4, bestScore = Infinity;
     PERMS4.forEach(perm => {
       const arranged = perm.map(i => group4[i]);
-      const score = arranged.reduce((s, p, i) => s + getSeat(p, i), 0);
+      const score = arranged.reduce((s, p, i) => s + getSeat(p, i), 0) + Math.random() * 0.5;
       if (score < bestScore) { bestScore = score; best = arranged; }
     });
     return best;
@@ -2234,7 +2239,7 @@ function schedShuffle() {
       const cpScore =
         getCoPlay(g[0],g[1]) + getCoPlay(g[0],g[2]) + getCoPlay(g[0],g[3]) +
         getCoPlay(g[1],g[2]) + getCoPlay(g[1],g[3]) + getCoPlay(g[2],g[3]);
-      const score = fairScore * 1000 + cpScore;
+      const score = fairScore * 1000 + cpScore + Math.random() * 0.5;
       if (score < bestScore) { bestScore = score; best = g; }
     }
     return best;
@@ -2303,34 +2308,60 @@ function schedRenderOutput() {
   });
   html += '</tbody></table>';
 
-  // 選手別出場回数・席回数サマリー
+  // 選手別出場回数・席回数サマリー（過去の試合記録 + 今回の日程）
+  const normName = n => (n || '').replace(/[（(][^）)]*[）)]/g, '').trim();
   const gameCount = {};
   const seatCountDisp = {};
+
+  // 過去の試合記録から集計
+  const pastCount = {};
+  if (curGroup && curGroup.hanzos) {
+    curGroup.hanzos.forEach(h => {
+      if (!h.players) return;
+      h.players.forEach((p, i) => {
+        if (!p) return;
+        const key = normName(p);
+        pastCount[key] = (pastCount[key] || 0) + 1;
+        gameCount[key] = (gameCount[key] || 0) + 1;
+        if (!seatCountDisp[key]) seatCountDisp[key] = [0,0,0,0];
+        seatCountDisp[key][i]++;
+      });
+    });
+  }
+
+  // 今回の日程から集計
+  const thisCount = {};
   schedResult.forEach(r => r.seats.forEach((p, i) => {
-    gameCount[p] = (gameCount[p] || 0) + 1;
-    if (!seatCountDisp[p]) seatCountDisp[p] = [0,0,0,0];
-    seatCountDisp[p][i]++;
+    const key = normName(p);
+    thisCount[key] = (thisCount[key] || 0) + 1;
+    gameCount[key] = (gameCount[key] || 0) + 1;
+    if (!seatCountDisp[key]) seatCountDisp[key] = [0,0,0,0];
+    seatCountDisp[key][i]++;
   }));
-  // schedShuffle で保持した詳細席カウントがあれば優先
-  const sc = schedResult._seatCount || seatCountDisp;
+
   const windLabels = ['東','南','西','北'];
   const leagues = schedData ? [...new Set(schedData.players.map(p => p.league))].sort() : [];
   let summary = '<div style="margin-top:14px">';
   leagues.forEach(league => {
     const lp = schedData.players.filter(p => p.league === league)
-      .map(p => ({ name: p.name, games: gameCount[p.name] || 0, avail: schedData.dates.filter(d => p.available[d]).length, seats: sc[p.name] || [0,0,0,0] }))
-      .sort((a, b) => b.games - a.games);
+      .map(p => {
+        const key = normName(p.name);
+        return { name: p.name, thisGames: thisCount[key] || 0, totalGames: gameCount[key] || 0, seats: seatCountDisp[key] || [0,0,0,0] };
+      })
+      .sort((a, b) => b.totalGames - a.totalGames);
     summary += `<div style="font-size:.7rem;color:var(--gold);font-weight:700;margin-bottom:6px">${league} 出場回数・席内訳</div>`;
     summary += `<div style="overflow-x:auto;margin-bottom:12px"><table style="border-collapse:collapse;font-size:.7rem;width:100%">
       <thead><tr style="border-bottom:1px solid var(--bd)">
         <th style="text-align:left;padding:3px 6px;color:var(--tx2);font-weight:400">選手</th>
-        <th style="padding:3px 6px;color:var(--tx2);font-weight:400">出場</th>
+        <th style="padding:3px 6px;color:var(--tx2);font-weight:400">今回</th>
+        <th style="padding:3px 6px;color:var(--tx2);font-weight:400">総出場</th>
         ${windLabels.map(w => `<th style="padding:3px 6px;color:var(--tx2);font-weight:400">${w}</th>`).join('')}
       </tr></thead><tbody>`;
-    lp.forEach(({ name, games, avail, seats }) => {
+    lp.forEach(({ name, thisGames, totalGames, seats }) => {
       summary += `<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
         <td style="padding:4px 6px;font-weight:700">${name}</td>
-        <td style="padding:4px 6px;text-align:center;color:var(--gold)">${games}<span style="color:var(--tx2);font-size:.63rem">/${avail}日</span></td>
+        <td style="padding:4px 6px;text-align:center;color:var(--gold)">${thisGames}</td>
+        <td style="padding:4px 6px;text-align:center">${totalGames}</td>
         ${seats.map(c => `<td style="padding:4px 6px;text-align:center">${c}</td>`).join('')}
       </tr>`;
     });
