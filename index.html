@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@700;800&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{--bg:#0d0d0f;--bg2:#141418;--bg3:#1c1c22;--bd:#2a2a35;--gold:#d4a843;--gold2:#f0c96a;--red:#e05252;--green:#4caf82;--tx:#e8e8f0;--tx2:#8888a0}
@@ -262,6 +263,21 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .mh-entry-row{display:grid;grid-template-columns:28px 1fr 80px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
 .mh-entry-row:last-child{border-bottom:none}
 .mh-wind{font-size:.78rem;font-weight:700;color:var(--gold);text-align:center}
+
+/* 日程自動生成 */
+.sched-avail-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.sched-avail-tbl{border-collapse:collapse;font-size:.7rem;white-space:nowrap}
+.sched-avail-tbl th,.sched-avail-tbl td{padding:4px 7px;border:1px solid var(--bd);text-align:center}
+.sched-avail-tbl th{background:var(--bg3);font-size:.62rem;color:var(--tx2);font-weight:400}
+.sched-avail-tbl td:first-child{text-align:left;font-weight:700;min-width:80px}
+.sched-o{color:var(--green);font-weight:700}.sched-x{color:var(--red)}
+.sched-tbl{width:100%;border-collapse:collapse;font-size:.78rem}
+.sched-tbl th{font-size:.62rem;color:var(--tx2);padding:5px 4px;text-align:center;font-weight:400;border-bottom:1px solid var(--bd)}
+.sched-tbl td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.05);text-align:center;vertical-align:middle}
+.sched-tbl td:first-child{text-align:left;font-size:.7rem;white-space:nowrap}
+.sched-tbl td:nth-child(2){font-size:.68rem;color:var(--tx2);white-space:nowrap}
+.sched-seat{font-size:.78rem;font-weight:700}
+.sched-btn{padding:11px;background:linear-gradient(135deg,var(--gold),#b8893a);border:none;border-radius:10px;color:#1a1200;font-size:.88rem;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;width:100%;margin-bottom:0}
 </style>
 </head>
 <body>
@@ -330,7 +346,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       </div>
       <div class="card" style="padding:0;overflow:hidden">
         <div onclick="toggleGraphCard('attend')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer">
-          <div class="ctitle" style="margin:0">出欠回数</div>
+          <div class="ctitle" style="margin:0">出場回数</div>
           <div style="display:flex;align-items:center;gap:8px">
             <button onclick="event.stopPropagation();expandGraph('attend')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">全画面</button>
             <span id="garrow-attend" style="color:var(--tx2);font-size:.8rem">▶</span>
@@ -342,7 +358,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       </div>
       <div class="card" style="padding:0;overflow:hidden">
         <div onclick="toggleGraphCard('wind')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer">
-          <div class="ctitle" style="margin:0">スタート席順集計</div>
+          <div class="ctitle" style="margin:0">席順集計</div>
           <div style="display:flex;align-items:center;gap:8px">
             <button onclick="event.stopPropagation();expandGraph('wind')" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">全画面</button>
             <span id="garrow-wind" style="color:var(--tx2);font-size:.8rem">▶</span>
@@ -418,6 +434,157 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div id="cd-results"></div>
     </div>
     <div id="page-settings" class="page"></div>
+
+    <!-- 試合日程（設定タブ内に表示） -->
+    <div id="page-schedule" style="display:none">
+      <!-- 出欠データ取得 -->
+      <div class="card">
+        <div class="ctitle">試合日程</div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--tx2);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--bd)">出欠データを読み込む</div>
+        <!-- モード切替 -->
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <button id="sched-tab-url" onclick="schedSetMode('url')"
+            style="flex:1;padding:8px;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;border:1px solid var(--gold);background:rgba(212,168,67,.2);color:var(--gold)">
+            URLから自動取得
+          </button>
+          <button id="sched-tab-paste" onclick="schedSetMode('paste')"
+            style="flex:1;padding:8px;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;border:1px solid var(--bd);background:rgba(255,255,255,.05);color:var(--tx2)">
+            手動で貼り付け
+          </button>
+        </div>
+
+        <!-- URLモード -->
+        <div id="sched-mode-url">
+          <div class="fg">
+            <label class="fl">GAS WebアプリURL</label>
+            <input class="fi" id="sched-gas-url" placeholder="https://script.google.com/macros/s/..." oninput="localStorage.setItem('sched_gas_url',this.value)">
+          </div>
+          <div class="fg">
+            <label class="fl">GoogleスプレッドシートのURL</label>
+            <input class="fi" id="sched-url" value="https://docs.google.com/spreadsheets/d/1bxeu93VYAdS16MK1kFYGWpaV0hTpzcfBR0GtoeJIPFs/edit?gid=1583484601#gid=1583484601" placeholder="https://docs.google.com/spreadsheets/d/...">
+          </div>
+          <div class="fg">
+            <label class="fl">シート名（省略可・省略時はURLのgidのシート）</label>
+            <input class="fi" id="sched-sheet-name" placeholder="例：フォームの回答 1">
+          </div>
+          <button onclick="schedFetchFromGas()" class="sched-btn" style="margin-bottom:10px">取得する</button>
+          <div id="sched-fetch-status" style="font-size:.72rem;color:var(--tx2);margin-bottom:8px"></div>
+          <!-- GASセットアップ案内 -->
+          <div style="border:1px solid var(--bd);border-radius:8px;overflow:hidden">
+            <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
+              style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;background:var(--bg3)">
+              <span style="font-size:.72rem;color:var(--tx2)">⚙ GASスクリプトへの追加コード</span>
+              <span style="font-size:.75rem;color:var(--tx2)">▼</span>
+            </div>
+            <div style="display:none;padding:10px 12px">
+              <div style="font-size:.68rem;color:var(--tx2);margin-bottom:8px;line-height:1.7">
+                既存のGASスクリプトの <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">doPost</code> 関数内の先頭付近に以下を追加してください。追加後は「デプロイを管理」→新バージョンで再デプロイしてください。
+              </div>
+              <pre id="sched-gas-code" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);border-radius:7px;padding:10px;font-size:.65rem;color:#7ec8a0;overflow-x:auto;white-space:pre;line-height:1.6">// ===== 出欠データ取得 =====
+if (d.action === 'getFormData') {
+  try {
+    var ss = SpreadsheetApp.openById(d.sid);
+    var sheet;
+    if (d.sheetName) {
+      sheet = ss.getSheetByName(d.sheetName);
+    } else if (d.gid) {
+      var sheets = ss.getSheets();
+      for (var i = 0; i < sheets.length; i++) {
+        if (String(sheets[i].getSheetId()) === String(d.gid)) {
+          sheet = sheets[i]; break;
+        }
+      }
+    }
+    if (!sheet) sheet = ss.getSheets()[0];
+    var values = sheet.getDataRange().getValues();
+    var tsv = values.map(function(r){
+      return r.map(function(c){ return String(c); }).join('\t');
+    }).join('\n');
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:true,data:tsv}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:false,error:err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+              <button onclick="schedCopyGasCode()"
+                style="margin-top:6px;padding:6px 14px;border-radius:7px;background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit">
+                コードをコピー
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 手動貼り付けモード -->
+        <div id="sched-mode-paste" style="display:none">
+          <div style="font-size:.7rem;color:var(--tx2);margin-bottom:10px;line-height:1.7">
+            スプレッドシートからA列〜全列をコピーして貼り付けてください。<br>
+            形式：<span style="color:var(--gold)">タイムスタンプ | リーグ | 選手名 | 日付1 | 日付2 …</span>（○/×）
+          </div>
+          <div class="fg">
+            <textarea class="fi" id="sched-csv" rows="6" placeholder="スプレッドシートの内容をここにペースト" style="resize:vertical;font-family:monospace;font-size:.72rem"></textarea>
+          </div>
+          <button onclick="schedParseCsv()" class="sched-btn">読み込む</button>
+        </div>
+      </div>
+
+      <!-- 出欠確認 -->
+      <div id="sched-avail-card" style="display:none" class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="ctitle" style="margin:0">出欠確認</div>
+          <div id="sched-avail-summary" style="font-size:.7rem;color:var(--tx2)"></div>
+        </div>
+        <div class="sched-avail-wrap">
+          <div id="sched-avail-content"></div>
+        </div>
+      </div>
+
+      <!-- 試合日程オプション -->
+      <div id="sched-options-card" style="display:none" class="card">
+        <div class="ctitle">試合日程オプション</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px">
+          <div>
+            <label class="fl">AM 時間帯</label>
+            <input class="fi" id="sched-slot-am" value="11時〜15時" placeholder="例：11時〜15時">
+          </div>
+          <div>
+            <label class="fl">PM 時間帯</label>
+            <input class="fi" id="sched-slot-pm" value="15時30分〜19時30分" placeholder="例：15時30分〜19時30分">
+          </div>
+        </div>
+        <div style="font-size:.63rem;color:var(--tx2);margin-bottom:11px">1日あたりリーグごとにAM1卓・PM1卓で割り当てます。出席者が4名未満の枠はスキップされます。</div>
+        <div class="fg">
+          <label class="fl">半荘数</label>
+          <input class="fi" type="number" id="sched-hanzos" value="3" min="1" style="text-align:center">
+        </div>
+        <button onclick="schedGenerate()" class="sched-btn">試合日程を自動生成</button>
+      </div>
+
+      <!-- 生成結果 -->
+      <div id="sched-output-card" style="display:none" class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="ctitle" style="margin:0">生成された試合日程</div>
+          <div style="display:flex;gap:6px">
+            <button onclick="schedShuffle()" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:5px 10px;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit">シャッフル</button>
+            <button onclick="schedExportExcel()" style="background:rgba(92,175,92,.1);border:1px solid rgba(92,175,92,.35);color:#5caf5c;padding:5px 10px;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit">Excel</button>
+            <button onclick="schedExportImage()" style="background:rgba(92,155,224,.1);border:1px solid rgba(92,155,224,.35);color:#5c9be0;padding:5px 10px;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit">画像</button>
+          </div>
+        </div>
+        <div id="sched-output" style="overflow-x:auto"></div>
+        <div id="sched-warnings" style="margin-top:8px"></div>
+      </div>
+
+      <!-- 変更履歴 -->
+      <div class="card" style="margin-top:4px">
+        <div class="ctitle" onclick="toggleChangelog()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:0">
+          <span>📋 変更履歴</span>
+          <span id="changelog-arrow" style="font-size:.8rem;color:var(--tx2)">▼</span>
+        </div>
+        <div id="changelog-body" style="display:none;margin-top:10px"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1539,7 +1706,9 @@ function openGroup(id) {
   if (!curGroup) return;
   document.getElementById('hdr').innerHTML = `
     <button class="back-btn" onclick="goTop()">◀ 戻る</button>
-    <div style="text-align:center"><div style="font-size:.95rem;font-weight:700;color:var(--gold)">${curGroup.name}</div><div style="font-size:.6rem;color:var(--tx2)">${RULES[curGroup.rule]?.label||'カスタム'}</div></div>
+    <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none">
+      <div style="font-size:1.1rem;font-weight:700;color:var(--gold)">${curGroup.name}</div>
+    </div>
     `;
   document.getElementById('tabs').style.display = 'flex';
   document.getElementById('screen-top').classList.remove('on');
@@ -1774,6 +1943,9 @@ function showTab(t) {
     document.getElementById('tab-'+n).classList.toggle('on', n===t);
     document.getElementById('page-'+n).classList.toggle('on', n===t);
   });
+  // 試合日程は設定タブと連動して表示
+  const schedEl = document.getElementById('page-schedule');
+  if (schedEl) schedEl.style.display = (t === 'settings') ? 'block' : 'none';
   if (t==='ranking') renderRanking();
   if (t==='players') renderPlayers();
   if (t==='hanzos')  renderHanzos();
@@ -1785,6 +1957,620 @@ function showTab(t) {
   if (res) res.innerHTML = '';
 }
   if (t==='settings') requireAuth(renderSettings);
+}
+
+// ===== 日程自動生成 =====
+let schedData = null;
+let schedResult = null;
+
+// ===== 試合日程 UI helpers =====
+function schedSetMode(mode) {
+  const isUrl = mode === 'url';
+  document.getElementById('sched-mode-url').style.display   = isUrl ? 'block' : 'none';
+  document.getElementById('sched-mode-paste').style.display = isUrl ? 'none'  : 'block';
+  const onStyle  = 'border:1px solid var(--gold);background:rgba(212,168,67,.2);color:var(--gold)';
+  const offStyle = 'border:1px solid var(--bd);background:rgba(255,255,255,.05);color:var(--tx2)';
+  document.getElementById('sched-tab-url').style.cssText   += isUrl ? ';'+onStyle : ';'+offStyle;
+  document.getElementById('sched-tab-paste').style.cssText += isUrl ? ';'+offStyle : ';'+onStyle;
+  // 保存済みGAS URLを復元
+  if (isUrl) {
+    const saved = localStorage.getItem('sched_gas_url');
+    if (saved) document.getElementById('sched-gas-url').value = saved;
+  }
+}
+
+function schedCopyGasCode() {
+  const code = document.getElementById('sched-gas-code').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    showToast('コードをコピーしました');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = code; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('コードをコピーしました');
+  });
+}
+
+async function schedFetchFromGas() {
+  const urlVal = (document.getElementById('sched-url').value || '').trim();
+  const sheetName = (document.getElementById('sched-sheet-name').value || '').trim();
+  const statusEl = document.getElementById('sched-fetch-status');
+
+  if (!urlVal) { statusEl.textContent = 'URLを入力してください'; statusEl.style.color = 'var(--red)'; return; }
+
+  // SpreadsheetID と GID を URL から抽出
+  const m = urlVal.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  if (!m) { statusEl.textContent = '正しいスプレッドシートURLを入力してください'; statusEl.style.color = 'var(--red)'; return; }
+  const sid = m[1];
+  const gidM = urlVal.match(/[#&?]gid=(\d+)/);
+  const gid = gidM ? gidM[1] : null;
+
+  const gasUrl = (document.getElementById('sched-gas-url').value || '').trim()
+    || localStorage.getItem('sched_gas_url')
+    || localStorage.getItem('janki_gas')
+    || GAS_URL;
+  if (!gasUrl) {
+    statusEl.textContent = 'GAS WebアプリURLを入力してください';
+    statusEl.style.color = 'var(--red)'; return;
+  }
+
+  statusEl.textContent = '取得中...'; statusEl.style.color = 'var(--tx2)';
+
+  try {
+    const res = await fetch(gasUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'getFormData', sid, sheetName: sheetName || null, gid: gid || null })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || '取得失敗');
+
+    // 取得成功 → paste モードに切り替えてCSVをセット＆パース
+    schedSetMode('paste');
+    document.getElementById('sched-csv').value = json.data;
+    statusEl.textContent = '取得成功';
+    statusEl.style.color = 'var(--green)';
+    schedParseCsv();
+  } catch (e) {
+    statusEl.textContent = `エラー: ${e.message}｜GASへのコード追加と再デプロイが必要です`;
+    statusEl.style.color = 'var(--red)';
+  }
+}
+
+function schedIsCircle(v) {
+  // ⚪︎ U+26AA / ○ U+25CB / 〇 U+3007 / ◯ U+25EF / ⭕ U+2B55 / o / O など
+  if (!v) return false;
+  const code = v.charCodeAt(0);
+  return code === 0x26AA || code === 0x25CB || code === 0x3007 || code === 0x25EF || code === 0x2B55
+    || v === 'o' || v === 'O' || v === 'ｏ' || v === 'Ｏ';
+}
+
+function schedParseCsv() {
+  const raw = document.getElementById('sched-csv').value.trim();
+  if (!raw) { alert('データを貼り付けてください'); return; }
+
+  // CR/LF を統一してからタブ・カンマで分割
+  const normalized = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const sep = normalized.includes('\t') ? '\t' : ',';
+  const lines = normalized.split('\n').map(l =>
+    l.split(sep).map(c => c.trim().replace(/^"|"$/g, ''))
+  ).filter(l => l.some(c => c !== ''));
+
+  if (lines.length < 2) { alert('データが少なすぎます'); return; }
+
+  const header = lines[0];
+
+  // ヘッダーからリーグ列・選手名列を自動検出
+  const leagueCol = header.findIndex(h => /リーグ|league/i.test(h));
+  const nameCol   = header.findIndex(h => /選手|名前|name/i.test(h));
+  // 検出できない場合はデフォルト（B=リーグ C=選手名）
+  const lCol = leagueCol >= 0 ? leagueCol : 1;
+  const nCol = nameCol   >= 0 ? nameCol   : 2;
+  const dateStart = Math.max(lCol, nCol) + 1;
+  // 日付パターンにマッチする列だけ抽出（インデックス付き）
+  const isDateHeader = h => /\d+月\d+日|\d+\/\d+/.test(h);
+  const dateCols = header.slice(dateStart)
+    .map((h, i) => ({ h, i: dateStart + i }))
+    .filter(({ h }) => isDateHeader(h));
+  const dates = dateCols.map(({ h }) => h);
+
+  console.log('[日程デバッグ] 列検出: リーグ=', lCol, ' 選手名=', nCol, ' 日付列数=', dates.length);
+
+  if (dates.length === 0) { alert('日付列が見つかりません'); return; }
+
+  const players = [];
+  for (let i = 1; i < lines.length; i++) {
+    const row = lines[i];
+    if (row.length < dateStart + 1) continue;
+    const league = (row[lCol] || '').trim();
+    const name   = (row[nCol] || '').trim();
+    if (!name || !league) continue;
+    const available = {};
+    dateCols.forEach(({ h, i: colIdx }) => {
+      const v = (row[colIdx] || '').trim();
+      available[h] = schedIsCircle(v);
+    });
+    players.push({ name, league, available });
+  }
+
+  if (players.length === 0) { alert('選手データが見つかりません'); return; }
+
+  schedData = { dates, players };
+  schedRenderAvail();
+  document.getElementById('sched-avail-card').style.display  = '';
+  document.getElementById('sched-options-card').style.display = '';
+  document.getElementById('sched-output-card').style.display  = 'none';
+}
+
+function schedRenderAvail() {
+  if (!schedData) return;
+  const { dates, players } = schedData;
+  const leagues = [...new Set(players.map(p => p.league))].sort();
+  document.getElementById('sched-avail-summary').textContent =
+    `${players.length}名 / ${dates.length}日程`;
+
+  let html = '';
+  leagues.forEach(league => {
+    const lp = players.filter(p => p.league === league);
+    html += `<div style="margin-bottom:14px">
+      <div style="font-size:.72rem;color:var(--gold);font-weight:700;margin-bottom:6px">${league}（${lp.length}名）</div>
+      <table class="sched-avail-tbl"><thead><tr><th>選手</th>`;
+    dates.forEach(d => html += `<th style="max-width:48px;overflow:hidden;text-overflow:ellipsis">${d}</th>`);
+    html += '</tr></thead><tbody>';
+    lp.forEach(p => {
+      html += `<tr><td>${p.name}</td>`;
+      dates.forEach(d => {
+        const ok = p.available[d];
+        html += `<td class="${ok ? 'sched-o' : 'sched-x'}">${ok ? '○' : '×'}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  document.getElementById('sched-avail-content').innerHTML = html;
+}
+
+function schedGenerate() { schedShuffle(); }
+
+function _shuffleArr(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function schedShuffle() {
+  if (!schedData) return;
+  const { dates, players } = schedData;
+  const amSlot = (document.getElementById('sched-slot-am').value || '').trim() || 'AM';
+  const pmSlot = (document.getElementById('sched-slot-pm').value || '').trim() || 'PM';
+  const hanzos = parseInt(document.getElementById('sched-hanzos').value) || 3;
+  const leagues = [...new Set(players.map(p => p.league))].sort();
+
+  // 各選手の出席可能日数（少ない人 = 機会が少ない → 優先度高）
+  const availTotal = {};
+  players.forEach(p => {
+    availTotal[p.name] = dates.filter(d => p.available[d]).length;
+  });
+
+  // スケジュール済みゲーム数
+  const gameCount = {};
+  // 同卓回数 "p1\0p2"(ソート済み) → 回数
+  const coPlay = {};
+  const coKey = (a, b) => [a, b].sort().join('\x00');
+  const getCoPlay = (a, b) => coPlay[coKey(a, b)] || 0;
+  // 席回数 player → [東,南,西,北]
+  const seatCount = {};
+  const getSeat = (p, i) => (seatCount[p] || [0,0,0,0])[i] || 0;
+
+  // 4! = 24通りの座席順を列挙
+  const PERMS4 = (() => {
+    const r = [];
+    [0,1,2,3].forEach(a => [0,1,2,3].filter(x=>x!==a).forEach(b =>
+      [0,1,2,3].filter(x=>x!==a&&x!==b).forEach(c => {
+        const d = [0,1,2,3].find(x=>x!==a&&x!==b&&x!==c);
+        r.push([a,b,c,d]);
+      })
+    ));
+    return r;
+  })();
+
+  // 4名が決まったら最適な座席順を選ぶ（各席の回数合計を最小化）
+  const bestSeating = (group4) => {
+    let best = group4, bestScore = Infinity;
+    PERMS4.forEach(perm => {
+      const arranged = perm.map(i => group4[i]);
+      const score = arranged.reduce((s, p, i) => s + getSeat(p, i), 0);
+      if (score < bestScore) { bestScore = score; best = arranged; }
+    });
+    return best;
+  };
+
+  const recordTable = (group4, date, slot, league) => {
+    const seats = bestSeating(group4);
+    schedule.push({ date, slot, hanzos, league, seats });
+    seats.forEach((p, i) => {
+      gameCount[p] = (gameCount[p] || 0) + 1;
+      if (!seatCount[p]) seatCount[p] = [0,0,0,0];
+      seatCount[p][i]++;
+    });
+    for (let i = 0; i < seats.length; i++)
+      for (let j = i + 1; j < seats.length; j++) {
+        const k = coKey(seats[i], seats[j]);
+        coPlay[k] = (coPlay[k] || 0) + 1;
+      }
+  };
+
+  // C(n,4)を全探索し最適な4名を選ぶ
+  const bestTable = (avail) => {
+    if (avail.length < 4) return null;
+    if (avail.length === 4) return [...avail];
+    const n = avail.length;
+    let best = null, bestScore = Infinity;
+    for (let i = 0; i < n - 3; i++)
+    for (let j = i + 1; j < n - 2; j++)
+    for (let k = j + 1; k < n - 1; k++)
+    for (let l = k + 1; l < n; l++) {
+      const g = [avail[i], avail[j], avail[k], avail[l]];
+      const fairScore = g.reduce((s, p) => {
+        return s + (gameCount[p] || 0) / Math.max(1, availTotal[p] || 1);
+      }, 0);
+      const cpScore =
+        getCoPlay(g[0],g[1]) + getCoPlay(g[0],g[2]) + getCoPlay(g[0],g[3]) +
+        getCoPlay(g[1],g[2]) + getCoPlay(g[1],g[3]) + getCoPlay(g[2],g[3]);
+      const score = fairScore * 1000 + cpScore;
+      if (score < bestScore) { bestScore = score; best = g; }
+    }
+    return best;
+  };
+
+  const schedule = [];
+
+  dates.forEach(date => {
+    leagues.forEach(league => {
+      const avail = players
+        .filter(p => p.league === league && p.available[date] && (gameCount[p.name] || 0) < 2)
+        .map(p => p.name)
+        .sort((a, b) => (availTotal[a] || 0) - (availTotal[b] || 0));
+
+      if (avail.length < 4) return;
+
+      // AM卓
+      const amGroup = bestTable(avail);
+      if (!amGroup) return;
+      recordTable(amGroup, date, amSlot, league);
+
+      // PM卓（8名以上いれば残りから選出）
+      if (avail.length >= 8) {
+        const remaining = avail.filter(p => !amGroup.includes(p));
+        const pmGroup = bestTable(remaining);
+        if (pmGroup) recordTable(pmGroup, date, pmSlot, league);
+      }
+    });
+  });
+
+  schedResult = schedule;
+  schedResult._seatCount = seatCount;
+  schedRenderOutput();
+  document.getElementById('sched-output-card').style.display = '';
+}
+
+function schedRenderOutput() {
+  if (!schedResult) return;
+  const winds = ['東家', '南家', '西家', '北家'];
+
+  // 日程テーブル
+  let html = `<table class="sched-tbl"><thead><tr>
+    <th style="text-align:left">日付</th>
+    <th style="text-align:left">時間帯</th>
+    <th>半荘</th>
+    <th>リーグ</th>
+    ${winds.map(w => `<th>${w}</th>`).join('')}
+  </tr></thead><tbody>`;
+
+  let lastDate = null;
+  schedResult.forEach(row => {
+    if (row.date !== lastDate) {
+      lastDate = row.date;
+      html += `<tr style="background:rgba(212,168,67,.06)">
+        <td colspan="8" style="font-size:.72rem;font-weight:700;color:var(--gold);padding:6px 4px">${row.date}</td>
+      </tr>`;
+    }
+    html += `<tr>
+      <td></td>
+      <td>${row.slot}</td>
+      <td style="text-align:center">${row.hanzos}</td>
+      <td style="text-align:center;font-size:.72rem">${row.league}</td>
+      ${row.seats.map(n => `<td class="sched-seat">${n}</td>`).join('')}
+      ${'<td></td>'.repeat(Math.max(0, 4 - row.seats.length))}
+    </tr>`;
+  });
+  html += '</tbody></table>';
+
+  // 選手別出場回数・席回数サマリー
+  const gameCount = {};
+  const seatCountDisp = {};
+  schedResult.forEach(r => r.seats.forEach((p, i) => {
+    gameCount[p] = (gameCount[p] || 0) + 1;
+    if (!seatCountDisp[p]) seatCountDisp[p] = [0,0,0,0];
+    seatCountDisp[p][i]++;
+  }));
+  // schedShuffle で保持した詳細席カウントがあれば優先
+  const sc = schedResult._seatCount || seatCountDisp;
+  const windLabels = ['東','南','西','北'];
+  const leagues = schedData ? [...new Set(schedData.players.map(p => p.league))].sort() : [];
+  let summary = '<div style="margin-top:14px">';
+  leagues.forEach(league => {
+    const lp = schedData.players.filter(p => p.league === league)
+      .map(p => ({ name: p.name, games: gameCount[p.name] || 0, avail: schedData.dates.filter(d => p.available[d]).length, seats: sc[p.name] || [0,0,0,0] }))
+      .sort((a, b) => b.games - a.games);
+    summary += `<div style="font-size:.7rem;color:var(--gold);font-weight:700;margin-bottom:6px">${league} 出場回数・席内訳</div>`;
+    summary += `<div style="overflow-x:auto;margin-bottom:12px"><table style="border-collapse:collapse;font-size:.7rem;width:100%">
+      <thead><tr style="border-bottom:1px solid var(--bd)">
+        <th style="text-align:left;padding:3px 6px;color:var(--tx2);font-weight:400">選手</th>
+        <th style="padding:3px 6px;color:var(--tx2);font-weight:400">出場</th>
+        ${windLabels.map(w => `<th style="padding:3px 6px;color:var(--tx2);font-weight:400">${w}</th>`).join('')}
+      </tr></thead><tbody>`;
+    lp.forEach(({ name, games, avail, seats }) => {
+      summary += `<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+        <td style="padding:4px 6px;font-weight:700">${name}</td>
+        <td style="padding:4px 6px;text-align:center;color:var(--gold)">${games}<span style="color:var(--tx2);font-size:.63rem">/${avail}日</span></td>
+        ${seats.map(c => `<td style="padding:4px 6px;text-align:center">${c}</td>`).join('')}
+      </tr>`;
+    });
+    summary += '</tbody></table></div>';
+  });
+  summary += '</div>';
+
+  document.getElementById('sched-output').innerHTML = html + summary;
+  document.getElementById('sched-warnings').innerHTML = '';
+}
+
+async function schedExportExcel() {
+  if (!schedResult || schedResult.length === 0) { alert('先に日程を生成してください'); return; }
+  if (typeof ExcelJS === 'undefined') { alert('ExcelJSライブラリの読み込み中です。少し待ってから再試ください'); return; }
+
+  // ARGB カラー定義（ExcelJSはFFプレフィックス付き）
+  const C = {
+    titleBg:  'FF1F3864', titleFg:  'FFFFFFFF',
+    headBg:   'FF2E4F6F', headFg:   'FFFFFFFF',
+    a1Bg:     'FFBDD7EE', a2Bg:     'FFFCE4D6',
+    studyBg:  'FFE2EFDA', whiteBg:  'FFFFFFFF',
+    dateFg:   'FF1F3864', black:    'FF000000',
+    border:   'FFAAAAAA',
+  };
+
+  const borderSide = { style: 'thin', color: { argb: C.border } };
+  const allBorders = { top: borderSide, bottom: borderSide, left: borderSide, right: borderSide };
+
+  const applyStyle = (cell, fillArgb, fontArgb, bold, hAlign, sz) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillArgb } };
+    cell.font = { name: 'Meiryo', bold: !!bold, size: sz || 11, color: { argb: fontArgb } };
+    cell.border = allBorders;
+    cell.alignment = { horizontal: hAlign || 'center', vertical: 'middle', wrapText: false };
+  };
+
+  // 月を最初の日付から取得
+  const firstDate = schedResult[0]?.date || '';
+  const monthMatch = firstDate.match(/^(\d+)\//);
+  const monthStr = monthMatch ? monthMatch[1] + '月' : '';
+
+  // 日付ごとにグループ化（順序維持）
+  const dateOrder = [];
+  const byDate = {};
+  schedResult.forEach(r => {
+    if (!byDate[r.date]) { byDate[r.date] = []; dateOrder.push(r.date); }
+    byDate[r.date].push(r);
+  });
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('試合日程');
+
+  // 列幅設定
+  ws.columns = [
+    { width: 13 }, { width: 22 }, { width: 7 }, { width: 13 },
+    { width: 16 }, { width: 16 }, { width: 16 }, { width: 16 },
+  ];
+
+  // Row 1: タイトル行
+  ws.addRow(['E.M.A龍聖戦', '', '', '', monthStr + '試合日程', '', '', '']);
+  ws.mergeCells('A1:D1');
+  ws.mergeCells('E1:H1');
+  ws.getRow(1).height = 24;
+  for (let c = 1; c <= 8; c++) {
+    applyStyle(ws.getRow(1).getCell(c), C.titleBg, C.titleFg, true, c <= 4 ? 'left' : 'center', 13);
+  }
+
+  // Row 2: カラムヘッダー
+  ws.addRow(['日程', '開始/終了時刻', '半荘数', 'リーグ', '東家', '南家', '西家', '北家']);
+  ws.getRow(2).height = 20;
+  for (let c = 1; c <= 8; c++) {
+    applyStyle(ws.getRow(2).getCell(c), C.headBg, C.headFg, true, 'center', 11);
+  }
+
+  // 枠線定義
+  const thinSide  = { style: 'thin',   color: { argb: C.border } };
+  const thickSide = { style: 'medium', color: { argb: 'FF444444' } };
+
+  const makeDateBorder = (isFirst, isLast, isLeftEdge, isRightEdge) => ({
+    top:    isFirst ? thickSide : thinSide,
+    bottom: isLast  ? thickSide : thinSide,
+    left:   isLeftEdge  ? thickSide : thinSide,
+    right:  isRightEdge ? thickSide : thinSide,
+  });
+
+  // データ行
+  let rowIdx = 3;
+  dateOrder.forEach(date => {
+    const rows = byDate[date];
+    const startRow = rowIdx;
+    rows.forEach((r, i) => {
+      const isFirst = i === 0;
+      const isLast  = i === rows.length - 1;
+      const league = r.league || '';
+      ws.addRow([
+        isFirst ? date : '',
+        r.slot || '', r.hanzos || '', league,
+        r.seats[0]||'', r.seats[1]||'', r.seats[2]||'', r.seats[3]||''
+      ]);
+      ws.getRow(rowIdx).height = 20;
+
+      let bg = C.whiteBg;
+      if      (league.includes('A1') && !league.includes('勉強会')) bg = C.a1Bg;
+      else if (league.includes('A2') && !league.includes('勉強会')) bg = C.a2Bg;
+      else if (league.includes('勉強会')) bg = C.studyBg;
+
+      for (let c = 1; c <= 8; c++) {
+        const cell = ws.getRow(rowIdx).getCell(c);
+        // 日程・時刻・半荘列は塗りつぶしなし（白）、それ以外はリーグ色
+        const isDateTimeHanzo = c <= 3;
+        const cellBg = isDateTimeHanzo ? C.whiteBg : bg;
+        const isDate = c === 1, isHanzo = c === 3;
+        applyStyle(cell, cellBg, isDate ? C.dateFg : C.black, isDate, isDate || isHanzo ? 'center' : 'left', 11);
+        // 日付グループの外枠を太く
+        cell.border = makeDateBorder(isFirst, isLast, c === 1, c === 8);
+      }
+      rowIdx++;
+    });
+    // 日付セルを縦結合
+    if (rows.length > 1) {
+      ws.mergeCells(startRow, 1, rowIdx - 1, 1);
+    }
+  });
+
+  // ===== シート2: 選手集計 =====
+  const ws2 = wb.addWorksheet('選手集計');
+  ws2.columns = [
+    {width:14},{width:10},{width:10},{width:10},{width:10},{width:10},{width:10},{width:10}
+  ];
+
+  // 名前正規化：括弧内(LINE名など)を除去してマッチング用キーを返す
+  const normName = n => (n || '').replace(/[（(][^）)]*[）)]/g, '').trim();
+
+  // 出場回数・席カウントを集計（過去の試合記録 + 今回の日程）
+  // キーは正規化名
+  const gameCount = {};
+  const seatCount = {};
+
+  // 過去の試合記録（curGroup.hanzos）から集計
+  if (curGroup && curGroup.hanzos) {
+    curGroup.hanzos.forEach(h => {
+      if (!h.players) return;
+      h.players.forEach((p, si) => {
+        if (!p) return;
+        const key = normName(p);
+        gameCount[key] = (gameCount[key] || 0) + 1;
+        if (!seatCount[key]) seatCount[key] = [0,0,0,0];
+        seatCount[key][si]++;
+      });
+    });
+  }
+
+  // 今回生成した日程から追加集計
+  schedResult.forEach(r => {
+    r.seats.forEach((p, si) => {
+      if (!p) return;
+      const key = normName(p);
+      gameCount[key] = (gameCount[key] || 0) + 1;
+      if (!seatCount[key]) seatCount[key] = [0,0,0,0];
+      seatCount[key][si]++;
+    });
+  });
+
+  // 今月出場数（schedResultから：今回生成した日程のみ）
+  const thisMonthCount = {};
+  schedResult.forEach(r => {
+    r.seats.forEach(p => {
+      if (!p) return;
+      const key = normName(p);
+      thisMonthCount[key] = (thisMonthCount[key] || 0) + 1;
+    });
+  });
+
+  // リーグ別に選手をまとめる
+  const leagueMap = {};
+  if (schedData) {
+    schedData.players.forEach(p => {
+      if (!leagueMap[p.league]) leagueMap[p.league] = [];
+      leagueMap[p.league].push(p.name);
+    });
+  } else {
+    const names = [...new Set(schedResult.flatMap(r => r.seats.filter(Boolean)))];
+    leagueMap[''] = names;
+  }
+
+  const NCOLS2 = 7;
+  // タイトル行
+  ws2.addRow(['選手集計', '', '', '', '', '', '']);
+  ws2.mergeCells('A1:G1');
+  ws2.getRow(1).height = 22;
+  for (let c = 1; c <= NCOLS2; c++) {
+    applyStyle(ws2.getRow(1).getCell(c), C.titleBg, C.titleFg, true, 'left', 13);
+  }
+
+  let r2 = 2;
+  Object.entries(leagueMap).forEach(([league, names]) => {
+    // リーグ見出し
+    ws2.addRow([league || '選手', '', '', '', '', '', '']);
+    ws2.mergeCells(r2, 1, r2, NCOLS2);
+    ws2.getRow(r2).height = 18;
+    const lbg = league.includes('A1') && !league.includes('勉強会') ? C.a1Bg
+               : league.includes('A2') && !league.includes('勉強会') ? C.a2Bg
+               : league.includes('勉強会') ? C.studyBg : C.headBg;
+    const lfg = (lbg === C.headBg) ? C.titleFg : C.black;
+    for (let c = 1; c <= NCOLS2; c++) applyStyle(ws2.getRow(r2).getCell(c), lbg, lfg, true, 'left', 11);
+    r2++;
+
+    // カラムヘッダー
+    ws2.addRow(['選手名', '今月出場数', '総出場数', '東家', '南家', '西家', '北家']);
+    ws2.getRow(r2).height = 18;
+    for (let c = 1; c <= NCOLS2; c++) applyStyle(ws2.getRow(r2).getCell(c), C.headBg, C.headFg, true, 'center', 10);
+    r2++;
+
+    // 選手データ
+    names.forEach(name => {
+      const key = normName(name);
+      const sc = seatCount[key] || [0,0,0,0];
+      ws2.addRow([
+        name,
+        thisMonthCount[key] || 0,
+        gameCount[key] || 0,
+        sc[0], sc[1], sc[2], sc[3]
+      ]);
+      ws2.getRow(r2).height = 18;
+      for (let c = 1; c <= NCOLS2; c++) {
+        const cell = ws2.getRow(r2).getCell(c);
+        applyStyle(cell, C.whiteBg, C.black, false, c === 1 ? 'left' : 'center', 11);
+      }
+      r2++;
+    });
+    r2++; // 空行
+  });
+
+  // ダウンロード
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  a.download = `試合日程_${dt}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function schedExportImage() {
+  const el = document.getElementById('sched-output-card');
+  if (!el || !window.html2canvas) { alert('エクスポート機能が利用できません'); return; }
+  try {
+    const canvas = await html2canvas(el, { backgroundColor: '#141418', scale: 2 });
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = '日程.png';
+    a.click();
+  } catch(e) { alert('画像の出力に失敗しました'); }
 }
 
 // ===== 条件計算 モード管理 =====
@@ -3286,7 +4072,7 @@ function buildGraphData() {
   });
   window._graphWindData = { players: playersWithGames, windCount };
 
-  // 出欠回数グラフデータ
+  // 出場回数グラフデータ
   const totalHanzos = hanzos.length;
   const leagueMax = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : null;
   const attendSorted = [...allPlayers].sort((a, b) => (stats[b]?.games || 0) - (stats[a]?.games || 0));
@@ -3503,7 +4289,7 @@ function expandGraph(type) {
     htmlBox.style.display = 'none';
     fsChart = new Chart(canvas, { type: 'bar', data: _graphRankData, options: makeRankOptions(false) });
   } else if (type === 'attend') {
-    titleEl.textContent = '出欠回数';
+    titleEl.textContent = '出場回数';
     canvas.style.display = 'block';
     htmlBox.style.display = 'none';
     const _aMaxFs = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : undefined;
@@ -3537,7 +4323,7 @@ function renderWindTable(small) {
     const total = wc.reduce((a,b)=>a+b,0);
     const cells = wc.map((n,i) => {
       const pct = total ? Math.round(n/total*100) : 0;
-      return `<td style="padding:6px 10px;text-align:center;font-size:${fs};color:${WIND_COLORS[i]};font-weight:700">${n}<span style="font-size:.65em;color:#888;margin-left:3px">${pct}%</span></td>`;
+      return `<td style="padding:6px 10px;text-align:center;font-size:${fs};color:${WIND_COLORS[i]};font-weight:700">${n}</td>`;
     }).join('');
     return `<tr style="background:${pi%2===0?'rgba(255,255,255,.03)':'transparent'}">
       <td style="padding:6px 10px;font-size:${fs};font-weight:700;color:var(--tx);white-space:nowrap">${p}</td>
@@ -3721,72 +4507,36 @@ function renderSettings() {
     }
   }
   el.innerHTML=`
-  <div class="card"><div class="ctitle">ルール設定</div>
-    <div class="fg"><label class="fl">ルール</label>
-      <select class="fs" id="s-rule" onchange="onSRuleChange()">
-        ${Object.entries(RULES).map(([k,v])=>`<option value="${k}"${g.rule===k?' selected':''}>${v.label}</option>`).join('')}
-      </select>
-    </div>
-    <div class="rule-info">
-      <div class="rule-row"><span class="rule-key">ウマ（1/2/3/4位）</span><span class="rule-val">${g.uma[0]}/${g.uma[1]}/${g.uma[2]}/${g.uma[3]}</span></div>
-      <div class="rule-row"><span class="rule-key">オカ</span><span class="rule-val">+${g.oka}</span></div>
-      <div class="rule-row"><span class="rule-key">返し点</span><span class="rule-val">${g.kaeshi.toLocaleString()}</span></div>
-    </div>
-    <div id="s-custom" style="display:${g.rule==='custom'?'block':'none'}">
-      <div class="fg"><label class="fl">ウマ（1位/2位/3位/4位）</label>
-        <div class="uma-row">
-          ${[0,1,2,3].map(i=>`<input class="uma-inp" type="number" id="s-u${i}" value="${g.uma[i]}" oninput="onSUmaOkaChange()">`).join('')}
-        </div>
-      </div>
-      <div class="fg"><label class="fl">オカ</label><input class="fi" type="number" id="s-oka" value="${g.oka}" style="text-align:center" oninput="onSUmaOkaChange()"></div>
-      <div class="fg"><label class="fl">返し点</label><input class="fi" type="number" id="s-kaeshi" value="${g.kaeshi}" style="text-align:center" oninput="this.style.color='';saveCustomRule()"></div>
-    </div>
-  </div>
   ${Object.keys(g.players).length > 0 ?
-    Object.keys(g.players).map(league=>`
-    <div class="card"><div class="ctitle">${league}リーグ選手（<span id="cnt-${league}">${(g.players[league]||[]).length}</span>名）</div>
-      <div id="plist-${league}">${renderPList(league)}</div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input class="fi" id="padd-${league}" placeholder="選手名を追加" style="flex:1">
-        <button class="btn btn-g" style="width:72px;padding:9px;font-size:.8rem;margin:0" onclick="addP('${league}')">追加</button>
-      </div>
-    </div>`).join('')
+    `<div class="card">
+      <div class="ctitle">選手設定</div>
+      ${Object.keys(g.players).map(league=>`
+      <div style="border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:8px">
+        <div onclick="toggleLeagueCard('${league}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;background:var(--bg3)">
+          <div style="font-size:.78rem;font-weight:700;color:var(--gold)">${league}リーグ（<span id="cnt-${league}">${(g.players[league]||[]).length}</span>名）</div>
+          <span id="larrow-${league}" style="color:var(--tx2);font-size:.8rem">▶</span>
+        </div>
+        <div id="lbody-${league}" style="display:none;padding:10px 12px">
+          <div id="plist-${league}">${renderPList(league)}</div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <input class="fi" id="padd-${league}" placeholder="選手名を追加" style="flex:1">
+            <button class="btn btn-g" style="width:72px;padding:9px;font-size:.8rem;margin:0" onclick="addP('${league}')">追加</button>
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>`
   :
     `<div class="card">
-      <div class="ctitle">選手</div>
+      <div class="ctitle">選手設定</div>
       <div id="plist-default">${renderPListSimple()}</div>
       <div style="display:flex;gap:8px;margin-top:10px">
         <input class="fi" id="padd-default" placeholder="選手名を追加" style="flex:1">
         <button class="btn btn-g" style="width:72px;padding:9px;font-size:.8rem;margin:0" onclick="addPSimple()">追加</button>
       </div>
-    </div>
     </div>`
   }
-  <button class="btn btn-gh" onclick="askReset(this)">⚠ この大会の記録をリセット</button>
-  <div id="reset-confirm" style="display:none;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:9px;padding:12px;margin-bottom:8px">
-    <div style="font-size:.82rem;color:var(--red);margin-bottom:8px">本当にリセットしますか？</div>
-    <div style="display:flex;gap:8px">
-      <button class="mbtn mok" style="background:var(--red);border:none" onclick="doReset()">リセット</button>
-      <button class="mbtn mng" onclick="document.getElementById('reset-confirm').style.display='none'">キャンセル</button>
-    </div>
-  </div>
-  <div class="card" style="margin-top:4px">
-    <div class="ctitle" onclick="toggleChangelog()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:0">
-      <span>📋 変更履歴</span>
-      <span id="changelog-arrow" style="font-size:.8rem;color:var(--tx2)">▼</span>
-    </div>
-    <div id="changelog-body" style="display:none;margin-top:10px">
-      ${(g.changelog && g.changelog.length > 0) ? g.changelog.map(log => {
-        const color = log.action==='削除' ? 'var(--red)' : log.action==='編集' ? 'var(--gold)' : 'var(--tx2)';
-        const icon = log.action==='削除' ? '🗑' : log.action==='編集' ? '✏️' : '📝';
-        return `<div style="display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-          <span style="font-size:.68rem;color:var(--tx2);white-space:nowrap;min-width:100px">${log.ts}</span>
-          <span style="font-size:.72rem;font-weight:700;color:${color};white-space:nowrap">${icon} ${log.action}</span>
-          <span style="font-size:.72rem;color:var(--tx2);word-break:break-all">${log.detail}</span>
-        </div>`;
-      }).join('') : '<div style="font-size:.75rem;color:var(--tx2);text-align:center;padding:12px 0">まだ変更履歴はありません</div>'}
-    </div>
-  </div>`;
+  `;
+  renderChangelog();
 }
 
 function onSRuleChange(){
@@ -3827,6 +4577,30 @@ function saveGasUrl(){
     document.getElementById('gas-status').style.color='var(--tx2)';
   }
 }
+function toggleLeagueCard(league) {
+  const body  = document.getElementById('lbody-' + league);
+  const arrow = document.getElementById('larrow-' + league);
+  if (!body) return;
+  const open = body.style.display === 'none';
+  body.style.display  = open ? 'block' : 'none';
+  arrow.textContent   = open ? '▼' : '▶';
+}
+
+function renderChangelog() {
+  const body = document.getElementById('changelog-body');
+  if (!body || !curGroup) return;
+  const g = curGroup;
+  body.innerHTML = (g.changelog && g.changelog.length > 0) ? g.changelog.map(log => {
+    const color = log.action==='削除' ? 'var(--red)' : log.action==='編集' ? 'var(--gold)' : 'var(--tx2)';
+    const icon = log.action==='削除' ? '🗑' : log.action==='編集' ? '✏️' : '📝';
+    return `<div style="display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span style="font-size:.68rem;color:var(--tx2);white-space:nowrap;min-width:100px">${log.ts}</span>
+      <span style="font-size:.72rem;font-weight:700;color:${color};white-space:nowrap">${icon} ${log.action}</span>
+      <span style="font-size:.72rem;color:var(--tx2);word-break:break-all">${log.detail}</span>
+    </div>`;
+  }).join('') : '<div style="font-size:.75rem;color:var(--tx2);text-align:center;padding:12px 0">まだ変更履歴はありません</div>';
+}
+
 function toggleChangelog() {
   const body = document.getElementById('changelog-body');
   const arrow = document.getElementById('changelog-arrow');
@@ -4696,7 +5470,7 @@ function refreshCurrentView() {
     const newGroup = groups.find(g => g.id === curGroup.id);
     if (newGroup) {
       curGroup = newGroup;
-      const activeTab = ['ranking','players','hanzos','graph','settings'].find(t =>
+      const activeTab = ['ranking','players','hanzos','graph','condition','settings'].find(t =>
         document.getElementById('page-'+t)?.classList.contains('on')
       ) || 'ranking';
       showTab(activeTab);
