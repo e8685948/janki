@@ -285,7 +285,6 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   
 <div id="hdr">
   <div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div>
-  <button id="hdr-force-load" onclick="forceLoadFromGas()" style="background:none;border:1px solid var(--bd);color:var(--tx2);font-size:.65rem;padding:4px 10px;border-radius:8px;cursor:pointer;font-family:'Noto Sans JP',sans-serif">☁ 読込</button>
 </div>
 
 <div id="tabs" style="display:none">
@@ -1053,13 +1052,9 @@ function syncPendingData() {
   });
 }
 
-// オンライン復帰時に自動同期
+// オンライン復帰時に未送信データがあれば送信
 window.addEventListener('online', () => {
-  if (isPendingSync()) {
-    syncPendingData();
-  } else {
-    loadFromGas().then(ok => { if (ok) refreshCurrentView(); });
-  }
+  if (isPendingSync()) syncPendingData();
 });
 
 window.addEventListener('offline', () => {
@@ -1084,12 +1079,24 @@ async function loadFromGas(force) {
     if (json.ok && json.data) {
       const loaded = JSON.parse(json.data);
       if (Array.isArray(loaded) && loaded.length > 0) {
-        // データが変わった時だけ更新
-        const prevJson = JSON.stringify(groups);
+        const localTs = parseInt(localStorage.getItem('janki_save_ts') || '0', 10);
+        const gasTs  = parseInt(json.ts || '0', 10);
+        // ローカルの方が新しければGASに送ってスキップ（上書きしない）
+        if (!force && gasTs > 0 && localTs > gasTs) {
+          const mainGroups = groups.filter(g => !g.spreadsheetId);
+          if (mainGroups.length) {
+            fetch(GAS_URL, {
+              method: 'POST',
+              headers: {'Content-Type': 'text/plain'},
+              body: JSON.stringify({data: JSON.stringify(mainGroups), ts: localTs})
+            }).catch(() => {});
+          }
+          return false;
+        }
+        // データが変わった時だけ更新・再描画
         const newJson = JSON.stringify(loaded);
-        if (prevJson === newJson) return false;
+        if (!force && JSON.stringify(groups) === newJson) return false;
         groups = loaded;
-        const gasTs = parseInt(json.ts || '0', 10);
         if (gasTs > 0) localStorage.setItem('janki_save_ts', String(gasTs));
         try { localStorage.setItem('janki_v2', newJson); } catch(e) {}
         return true;
@@ -5809,39 +5816,6 @@ function saveHanzo(cont){
   }
 }
 
-async function forceLoadFromGas() {
-  const btn = document.getElementById('hdr-force-load');
-  if (btn) { btn.textContent = '☁ 読込中…'; btn.disabled = true; }
-  if (!navigator.onLine) {
-    showSyncBadge('⚠ オフラインです', 'var(--red)');
-    if (btn) { btn.textContent = '☁ 読込'; btn.disabled = false; }
-    return;
-  }
-  try {
-    showSyncBadge('☁ GASから読込中…');
-    const res = await fetch(GAS_URL);
-    const json = await res.json();
-    localStorage.setItem('janki_last_gas_fetch', String(Date.now()));
-    if (json.ok && json.data) {
-      const loaded = JSON.parse(json.data);
-      if (Array.isArray(loaded) && loaded.length > 0) {
-        const gasTs = parseInt(json.ts || '0', 10);
-        groups = loaded;
-        if (gasTs > 0) localStorage.setItem('janki_save_ts', String(gasTs));
-        try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
-        showSyncBadge('☁ 読込完了', 'rgba(76,175,130,.92)');
-        refreshCurrentView();
-      } else {
-        showSyncBadge('☁ GASにデータなし', 'rgba(100,100,160,.9)');
-      }
-    } else {
-      showSyncBadge('⚠ GAS応答エラー', 'var(--red)');
-    }
-  } catch(e) {
-    showSyncBadge(`⚠ 接続失敗: ${e.message||e}`, 'var(--red)');
-  }
-  if (btn) { btn.textContent = '☁ 読込'; btn.disabled = false; }
-}
 
 function manualRefresh() {
   const btn = document.getElementById('hdr-refresh');
@@ -5853,15 +5827,8 @@ function manualRefresh() {
     if (t) { t.textContent = 'オフラインのため更新できません'; t.style.opacity='1'; setTimeout(()=>{ t.style.opacity='0'; t.textContent='✓ 記録しました'; },2000); }
     return;
   }
-  if (isPendingSync()) {
-    syncPendingData();
-    restore();
-  } else {
-    loadFromGas().then(ok => {
-      if (ok) refreshCurrentView();
-      restore();
-    }).catch(restore);
-  }
+  if (isPendingSync()) syncPendingData();
+  restore();
 }
 
 // ===== 起動 =====
@@ -5886,18 +5853,9 @@ function refreshCurrentView() {
   }
 }
 
-// 起動時に未同期データがあれば先に同期、なければGASから最新を取得
+// 起動時に未送信データがあれば送信
 if (navigator.onLine) {
-  if (isPendingSync()) {
-    syncPendingData();
-  } else {
-    loadFromGas().then(ok => {
-      if (ok) {
-        showSyncBadge('☁ データを更新しました', 'rgba(76,175,130,.92)');
-        refreshCurrentView();
-      }
-    });
-  }
+  if (isPendingSync()) syncPendingData();
 } else {
   if (isPendingSync()) showOfflineBadge();
 }
