@@ -1052,9 +1052,10 @@ function syncPendingData() {
   });
 }
 
-// オンライン復帰時に未送信データがあれば送信
+// オンライン復帰時
 window.addEventListener('online', () => {
   if (isPendingSync()) syncPendingData();
+  else loadFromGas().then(ok => { if (ok) refreshCurrentView(); });
 });
 
 window.addEventListener('offline', () => {
@@ -1068,10 +1069,10 @@ function load() {
   } catch(e) {}
 }
 
-async function loadFromGas(force) {
-  // 2分以内に取得済みなら強制フラグがない限りスキップ
+async function loadFromGas() {
+  // 2分以内に取得済みならスキップ
   const lastFetch = parseInt(localStorage.getItem('janki_last_gas_fetch') || '0', 10);
-  if (!force && Date.now() - lastFetch < 120000) return false;
+  if (Date.now() - lastFetch < 120000) return false;
   try {
     const res = await fetch(GAS_URL);
     const json = await res.json();
@@ -1080,22 +1081,11 @@ async function loadFromGas(force) {
       const loaded = JSON.parse(json.data);
       if (Array.isArray(loaded) && loaded.length > 0) {
         const localTs = parseInt(localStorage.getItem('janki_save_ts') || '0', 10);
-        const gasTs  = parseInt(json.ts || '0', 10);
-        // ローカルの方が新しければGASに送ってスキップ（上書きしない）
-        if (!force && gasTs > 0 && localTs > gasTs) {
-          const mainGroups = groups.filter(g => !g.spreadsheetId);
-          if (mainGroups.length) {
-            fetch(GAS_URL, {
-              method: 'POST',
-              headers: {'Content-Type': 'text/plain'},
-              body: JSON.stringify({data: JSON.stringify(mainGroups), ts: localTs})
-            }).catch(() => {});
-          }
-          return false;
-        }
-        // データが変わった時だけ更新・再描画
+        const gasTs   = parseInt(json.ts || '0', 10);
+        // GASが新しい時だけ上書き（古いGASでローカルを壊さない）
+        if (gasTs > 0 && gasTs <= localTs) return false;
         const newJson = JSON.stringify(loaded);
-        if (!force && JSON.stringify(groups) === newJson) return false;
+        if (JSON.stringify(groups) === newJson) return false;
         groups = loaded;
         if (gasTs > 0) localStorage.setItem('janki_save_ts', String(gasTs));
         try { localStorage.setItem('janki_v2', newJson); } catch(e) {}
@@ -5853,9 +5843,10 @@ function refreshCurrentView() {
   }
 }
 
-// 起動時に未送信データがあれば送信
+// 起動時
 if (navigator.onLine) {
   if (isPendingSync()) syncPendingData();
+  else loadFromGas().then(ok => { if (ok) refreshCurrentView(); });
 } else {
   if (isPendingSync()) showOfflineBadge();
 }
