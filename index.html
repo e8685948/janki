@@ -219,7 +219,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .empty{text-align:center;padding:36px 16px;color:var(--tx2);font-size:.85rem;line-height:2}
 .eico{font-size:2.5rem;margin-bottom:8px;display:block}
 #toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;font-size:.82rem;font-weight:700;padding:8px 20px;border-radius:20px;z-index:300;opacity:0;transition:opacity .3s,background .3s;pointer-events:none;font-family:'Noto Sans JP',sans-serif}
-#sync-badge{position:fixed;top:64px;right:12px;max-width:calc(100vw - 24px);background:rgba(212,168,67,.92);color:#1a1200;font-size:.68rem;font-weight:700;padding:5px 12px;border-radius:16px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;font-family:'Noto Sans JP',sans-serif;word-break:break-all}
+#sync-badge{position:fixed;top:64px;right:12px;max-width:calc(100vw - 24px);background:rgba(212,168,67,.92);color:#1a1200;font-size:.68rem;font-weight:700;padding:5px 12px;border-radius:16px;z-index:300;opacity:0;transition:opacity .3s;cursor:pointer;font-family:'Noto Sans JP',sans-serif;word-break:break-all}
 
 /* 条件計算 */
 .cd-player-row{display:grid;grid-template-columns:80px 1fr 1fr auto;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
@@ -1737,12 +1737,13 @@ let _syncBadgeTimer = null;
 function showSyncBadge(msg, bg) {
   const b = document.getElementById('sync-badge');
   if (!b) return;
-  b.textContent = msg;
+  b.textContent = msg + ' ✕';
   b.style.background = bg || 'rgba(212,168,67,.92)';
-  b.style.color = bg === 'var(--red)' ? '#fff' : '#1a1200';
+  b.style.color = (bg === 'var(--red)') ? '#fff' : '#1a1200';
   b.style.opacity = '1';
+  b.onclick = () => { b.style.opacity = '0'; };
   if (_syncBadgeTimer) clearTimeout(_syncBadgeTimer);
-  _syncBadgeTimer = setTimeout(() => { b.style.opacity = '0'; }, 5000);
+  _syncBadgeTimer = setTimeout(() => { b.style.opacity = '0'; }, 12000);
 }
 function badge(i) { return ['b1','b2','b3','bx'][Math.min(i,3)]; }
 
