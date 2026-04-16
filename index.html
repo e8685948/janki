@@ -218,7 +218,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .rb-badge{display:inline-block;font-size:.65rem;background:rgba(212,168,67,.15);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:2px 7px;border-radius:4px;margin-left:6px}
 .empty{text-align:center;padding:36px 16px;color:var(--tx2);font-size:.85rem;line-height:2}
 .eico{font-size:2.5rem;margin-bottom:8px;display:block}
-#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;font-size:.82rem;font-weight:700;padding:8px 20px;border-radius:20px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;font-family:'Noto Sans JP',sans-serif}
+#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;font-size:.82rem;font-weight:700;padding:8px 20px;border-radius:20px;z-index:300;opacity:0;transition:opacity .3s,background .3s;pointer-events:none;font-family:'Noto Sans JP',sans-serif}
+#sync-badge{position:fixed;top:64px;right:12px;background:rgba(212,168,67,.92);color:#1a1200;font-size:.7rem;font-weight:700;padding:5px 12px;border-radius:16px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;font-family:'Noto Sans JP',sans-serif}
 
 /* 条件計算 */
 .cd-player-row{display:grid;grid-template-columns:80px 1fr 1fr auto;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
@@ -594,6 +595,7 @@ if (d.action === 'getFormData') {
 </div>
 
 <div id="toast">✓ 記録しました</div>
+<div id="sync-badge"></div>
 
 <!-- グラフ拡大オーバーレイ -->
 <div id="graph-fullscreen" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:500;flex-direction:column">
@@ -985,6 +987,7 @@ function save() {
     const perGroups  = groups.filter(g =>  g.spreadsheetId);
     perGroups.forEach(g => syncGroupToSpreadsheet(g));
     if (!mainGroups.length) { setPendingSync(false); hideOfflineBadge(); return; }
+    showSyncBadge('☁ 同期中…');
     fetch(GAS_URL, {
       method: 'POST',
       headers: {'Content-Type': 'text/plain'},
@@ -992,9 +995,11 @@ function save() {
     }).then(() => {
       setPendingSync(false);
       hideOfflineBadge();
+      showSyncBadge('☁ 同期完了', 'rgba(76,175,130,.92)');
     }).catch(() => {
       setPendingSync(true);
       showOfflineBadge();
+      showSyncBadge('⚠ 同期失敗', 'var(--red)');
     });
   } else {
     setPendingSync(true);
@@ -1037,23 +1042,27 @@ function syncPendingData() {
   const mainGroups = groups.filter(g => !g.spreadsheetId);
   groups.filter(g => g.spreadsheetId).forEach(g => syncGroupToSpreadsheet(g));
   if (!mainGroups.length) { setPendingSync(false); hideOfflineBadge(); return; }
+  const syncTs = parseInt(localStorage.getItem('janki_save_ts') || String(Date.now()), 10);
+  showSyncBadge('☁ 同期中…');
   fetch(GAS_URL, {
     method: 'POST',
     headers: {'Content-Type': 'text/plain'},
-    body: JSON.stringify({data: JSON.stringify(mainGroups)})
+    body: JSON.stringify({data: JSON.stringify(mainGroups), ts: syncTs})
   }).then(() => {
     setPendingSync(false);
     hideOfflineBadge();
-    showToast();
+    showSyncBadge('☁ 同期完了', 'rgba(76,175,130,.92)');
   }).catch(() => {
     showOfflineBadge();
+    showSyncBadge('⚠ 同期失敗', 'var(--red)');
   });
 }
 
 // オンライン復帰時に自動同期
 window.addEventListener('online', () => {
-  syncPendingData();
-  if (!isPendingSync()) {
+  if (isPendingSync()) {
+    syncPendingData();
+  } else {
     loadFromGas().then(ok => { if (ok) refreshCurrentView(); });
   }
 });
@@ -1076,11 +1085,20 @@ async function loadFromGas() {
     if (json.ok && json.data) {
       const loaded = JSON.parse(json.data);
       if (Array.isArray(loaded) && loaded.length > 0) {
-        // ローカルの保存タイムスタンプとGASのタイムスタンプを比較し、
-        // GASデータが古い場合は上書きしない
         const localTs = parseInt(localStorage.getItem('janki_save_ts') || '0', 10);
         const gasTs = parseInt(json.ts || '0', 10);
         if (gasTs > 0 && localTs > gasTs) {
+          // ローカルが新しい場合はGASを上書き（ローカルデータをGASに送信）
+          const mainGroups = groups.filter(g => !g.spreadsheetId);
+          if (mainGroups.length) {
+            fetch(GAS_URL, {
+              method: 'POST',
+              headers: {'Content-Type': 'text/plain'},
+              body: JSON.stringify({data: JSON.stringify(mainGroups), ts: localTs})
+            }).then(() => {
+              showSyncBadge('☁ ローカルデータを送信', 'rgba(76,175,130,.92)');
+            }).catch(() => {});
+          }
           console.info('GASデータはローカルより古いため上書きをスキップ (local:', localTs, '> gas:', gasTs, ')');
           return false;
         }
@@ -1090,7 +1108,10 @@ async function loadFromGas() {
         return true;
       }
     }
-  } catch(e) { console.warn('GAS読み込み失敗:', e); }
+  } catch(e) {
+    console.warn('GAS読み込み失敗:', e);
+    showSyncBadge('⚠ GAS接続失敗', 'var(--red)');
+  }
   return false;
 }
 
@@ -1694,7 +1715,29 @@ function _exportDailyImg() { exportDailyImage(); }
 
 // ===== ユーティリティ =====
 function closeOvl(id) { document.getElementById(id).classList.remove('open'); }
-function showToast() { const t=document.getElementById('toast'); t.style.opacity='1'; setTimeout(()=>t.style.opacity='0',1800); }
+let _toastTimer = null;
+function showToast(msg, bg) {
+  const t = document.getElementById('toast');
+  if (msg) t.textContent = msg;
+  if (bg) t.style.background = bg; else t.style.background = '';
+  t.style.opacity = '1';
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => {
+    t.style.opacity = '0';
+    setTimeout(() => { t.textContent = '✓ 記録しました'; t.style.background = ''; }, 350);
+  }, 2000);
+}
+let _syncBadgeTimer = null;
+function showSyncBadge(msg, bg) {
+  const b = document.getElementById('sync-badge');
+  if (!b) return;
+  b.textContent = msg;
+  b.style.background = bg || 'rgba(212,168,67,.92)';
+  b.style.color = bg === 'var(--red)' ? '#fff' : '#1a1200';
+  b.style.opacity = '1';
+  if (_syncBadgeTimer) clearTimeout(_syncBadgeTimer);
+  _syncBadgeTimer = setTimeout(() => { b.style.opacity = '0'; }, 3000);
+}
 function badge(i) { return ['b1','b2','b3','bx'][Math.min(i,3)]; }
 
 // ===== トップ画面 =====
@@ -5829,7 +5872,20 @@ if (navigator.onLine) {
   if (isPendingSync()) {
     syncPendingData();
   } else {
-    loadFromGas().then(ok => { if (ok) refreshCurrentView(); });
+    showSyncBadge('☁ 確認中…');
+    loadFromGas().then(ok => {
+      if (ok) {
+        showSyncBadge('☁ データを更新しました', 'rgba(76,175,130,.92)');
+        refreshCurrentView();
+      } else {
+        // バッジを消す（ローカルが最新 or GASにデータなし）
+        const b = document.getElementById('sync-badge');
+        if (b) b.style.opacity = '0';
+      }
+    }).catch(() => {
+      const b = document.getElementById('sync-badge');
+      if (b) b.style.opacity = '0';
+    });
   }
 } else {
   if (isPendingSync()) showOfflineBadge();
