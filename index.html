@@ -311,7 +311,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div id="page-players" class="page"></div>
     <div id="page-hanzos" class="page">
       <button class="btn btn-g" onclick="openHanzoModal()">＋ 半荘を入力</button>
-      <div style="display:flex;gap:6px;margin-bottom:8px">
+      <div style="display:flex;gap:6px;margin-bottom:6px">
         <button onclick="exportHanzosExcel()" style="flex:1;padding:7px;border-radius:7px;background:rgba(92,175,92,.1);border:1px solid rgba(92,175,92,.35);color:#5caf5c;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">Excel</button>
         <button onclick="exportHanzosImage()" style="flex:1;padding:7px;border-radius:7px;background:rgba(92,155,224,.1);border:1px solid rgba(92,155,224,.35);color:#5c9be0;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">画像</button>
         <button onclick="openBroadcast('daily')" style="flex:1;padding:7px;border-radius:7px;background:rgba(180,100,220,.1);border:1px solid rgba(180,100,220,.35);color:#c46edd;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">配信</button>
@@ -437,10 +437,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
     <!-- 試合日程（設定タブ内に表示） -->
     <div id="page-schedule" style="display:none">
-      <!-- 出欠データ取得 -->
-      <div class="card">
-        <div class="ctitle">試合日程</div>
-        <div style="font-size:.75rem;font-weight:700;color:var(--tx2);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--bd)">出欠データを読み込む</div>
+      <!-- 出欑データ取得 -->
+      <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;margin-top:0;border-top:none">
         <!-- モード切替 -->
         <div style="display:flex;gap:6px;margin-bottom:12px">
           <button id="sched-tab-url" onclick="schedSetMode('url')"
@@ -576,7 +574,13 @@ if (d.action === 'getFormData') {
         <div id="sched-warnings" style="margin-top:8px"></div>
       </div>
 
-      <!-- 変更履歴 -->
+    </div>
+
+    <!-- YouTube設定・変更履歴（設定タブ内に表示・page-scheduleの後） -->
+    <div id="page-settings-bottom" style="display:none"></div>
+
+    <!-- 変更履歴（設定タブ内に表示） -->
+    <div id="page-changelog" style="display:none">
       <div class="card" style="margin-top:4px">
         <div class="ctitle" onclick="toggleChangelog()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:0">
           <span>📋 変更履歴</span>
@@ -585,6 +589,7 @@ if (d.action === 'getFormData') {
         <div id="changelog-body" style="display:none;margin-top:10px"></div>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -752,6 +757,42 @@ if (d.action === 'getFormData') {
   <div id="stream-inner" style="width:100%;max-width:800px;padding-top:100px;padding-bottom:24px"></div>
 </div>
 
+<!-- YouTube動画紐付けモーダル -->
+<div class="ovl" id="modal-yt-link">
+  <div class="modal" style="max-height:90vh;overflow-y:auto">
+    <div class="mtitle">📺 YouTube動画紐付け</div>
+
+    <!-- API設定 -->
+    <div style="background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:12px">
+      <div style="font-size:.7rem;color:var(--gold);font-weight:700;margin-bottom:8px">API設定</div>
+      <div class="fg" style="margin-bottom:6px">
+        <label class="fl">YouTube Data API キー</label>
+        <input class="fi" id="yt-api-key" placeholder="AIzaSy..." type="password">
+      </div>
+      <div class="fg" style="margin-bottom:6px">
+        <label class="fl">チャンネルハンドル</label>
+        <input class="fi" id="yt-channel-handle" placeholder="@EMAMAHJONGCLUB">
+      </div>
+      <div class="fg" style="margin-bottom:8px">
+        <label class="fl">対象リーグ</label>
+        <select class="fs" id="yt-target-league"></select>
+      </div>
+      <button onclick="ytSaveSettings()" style="width:100%;padding:7px;border-radius:7px;background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit">設定を保存</button>
+    </div>
+
+    <button onclick="ytSearchVideos()" id="yt-search-btn" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,0,0,.12);border:1px solid rgba(255,0,0,.3);color:#ff4444;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px">🔍 動画を検索して紐付け候補を表示</button>
+
+    <div id="yt-status" style="font-size:.72rem;color:var(--tx2);text-align:center;margin-bottom:8px"></div>
+    <div id="yt-results"></div>
+
+    <button onclick="ytClearLinks()" style="width:100%;padding:8px;border-radius:8px;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);color:var(--red);font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px">🗑 対象リーグのYouTubeリンクを一括削除</button>
+    <div class="mbtns" style="margin-top:8px">
+      <button class="mbtn mng" onclick="closeOvl('modal-yt-link')">閉じる</button>
+      <button class="mbtn mok" id="yt-save-btn" onclick="ytSaveLinks()" style="display:none">紐付けを保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- 半荘入力モーダル -->
 <div class="ovl" id="modal-hanzo">
   <div class="modal">
@@ -798,6 +839,10 @@ if (d.action === 'getFormData') {
         <button onclick="addPenalty()" style="background:rgba(224,82,82,.15);border:1px solid rgba(224,82,82,.3);color:var(--red);padding:3px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">＋ 追加</button>
       </div>
       <div id="penalty-list"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">YouTube URL（任意）</label>
+      <input class="fi" id="mh-youtube" placeholder="https://youtube.com/watch?v=..." type="url">
     </div>
     <div class="serr" id="mh-err"></div>
     <div class="prev">
@@ -1492,7 +1537,7 @@ function _buildTotalRows(col, sorted, stats, tgt, rowH, fontSize, badgeSize, gap
     const ptS = pt >= 0 ? `+ ${pt.toFixed(1)} pt` : `- ${Math.abs(pt).toFixed(1)} pt`;
     const z = _zoneInfo(tgt, rank, total);
     const playedToday = todaySet && todaySet.size > 0 && todaySet.has(p);
-    const cardBg = playedToday ? '#fffde0' : '#ffffff';
+    const cardBg = playedToday ? '#ffec99' : '#ffffff';
     return `<div style="display:flex;align-items:stretch;gap:${gap}px;height:${rowH}px">
       <div style="min-width:${badgeSize}px;flex-shrink:0;transform:skewX(-10deg);background:${z.badge};display:flex;align-items:center;justify-content:center;font-size:${Math.round(badgeSize*.55)}px;font-weight:800;color:#fff;letter-spacing:-.02em">${rank}</div>
       <div style="flex:1;transform:skewX(-10deg);background:${cardBg};box-sizing:border-box;overflow:hidden">
@@ -1943,12 +1988,13 @@ function showTab(t) {
     document.getElementById('tab-'+n).classList.toggle('on', n===t);
     document.getElementById('page-'+n).classList.toggle('on', n===t);
   });
-  // 試合日程は設定タブと連動して表示
+  // 試合日程・YouTube設定・変更履歴は設定タブと連動
   const schedEl = document.getElementById('page-schedule');
-  if (schedEl) {
-    schedEl.style.display = (t === 'settings') ? 'block' : 'none';
-    if (t === 'settings') schedRestoreFields();
-  }
+  if (schedEl && t !== 'settings') schedEl.style.display = 'none';
+  const btmEl = document.getElementById('page-settings-bottom');
+  if (btmEl) btmEl.style.display = (t === 'settings') ? 'block' : 'none';
+  const changelogEl = document.getElementById('page-changelog');
+  if (changelogEl) changelogEl.style.display = (t === 'settings') ? 'block' : 'none';
   if (t==='ranking') renderRanking();
   if (t==='players') renderPlayers();
   if (t==='hanzos')  renderHanzos();
@@ -4390,6 +4436,186 @@ function closeExpandGraph() {
 }
 
 
+// ===== YouTube動画紐付け =====
+let ytPendingLinks = {}; // date → { videoId, title, url }
+
+function openYtLinkModal() {
+  if (!curGroup) return;
+  // カード側の入力値を優先してlocalStorageに反映
+  const cardKey = document.getElementById('yt-card-api-key');
+  const cardHandle = document.getElementById('yt-card-handle');
+  const cardLeague = document.getElementById('yt-card-league');
+  if (cardKey?.value.trim()) localStorage.setItem('yt_api_key', cardKey.value.trim());
+  if (cardHandle?.value.trim()) localStorage.setItem('yt_channel_handle', cardHandle.value.trim());
+  if (cardLeague?.value) localStorage.setItem('yt_target_league', cardLeague.value);
+  document.getElementById('yt-api-key').value = localStorage.getItem('yt_api_key') || '';
+  document.getElementById('yt-channel-handle').value = localStorage.getItem('yt_channel_handle') || '';
+  document.getElementById('yt-status').textContent = '';
+  document.getElementById('yt-results').innerHTML = '';
+  document.getElementById('yt-save-btn').style.display = 'none';
+  ytPendingLinks = {};
+  // リーグ選択を初期化
+  const leagues = Object.keys(curGroup.players || {}).filter(k => (curGroup.players[k] || []).length > 0);
+  const sel = document.getElementById('yt-target-league');
+  const saved = localStorage.getItem('yt_target_league') || '';
+  sel.innerHTML = leagues.map(l => `<option value="${l}" ${l === saved ? 'selected' : ''}>${l}</option>`).join('');
+  document.getElementById('modal-yt-link').classList.add('open');
+}
+
+function ytSaveSettings() {
+  localStorage.setItem('yt_api_key', document.getElementById('yt-api-key').value.trim());
+  localStorage.setItem('yt_channel_handle', document.getElementById('yt-channel-handle').value.trim());
+  localStorage.setItem('yt_target_league', document.getElementById('yt-target-league').value);
+  showToast('設定を保存しました');
+}
+
+async function ytGetChannelId(handle, apiKey) {
+  const cached = localStorage.getItem('yt_channel_id_' + handle);
+  if (cached) return cached;
+  const h = handle.replace(/^@/, '');
+  const url = `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${encodeURIComponent(h)}&key=${apiKey}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  if (!json.items || !json.items.length) throw new Error('チャンネルが見つかりません: ' + handle);
+  const id = json.items[0].id;
+  localStorage.setItem('yt_channel_id_' + handle, id);
+  return id;
+}
+
+
+async function ytFetchVideosForDate(channelId, dateStr, apiKey) {
+  // JST日付 → UTC範囲（JST = UTC+9）
+  const after  = new Date(dateStr + 'T00:00:00+09:00').toISOString();
+  const before = new Date(dateStr + 'T23:59:59+09:00').toISOString();
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&order=date&publishedAfter=${encodeURIComponent(after)}&publishedBefore=${encodeURIComponent(before)}&maxResults=10&key=${apiKey}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  if (json.error) throw new Error(json.error.message);
+  return (json.items || []).map(item => ({
+    videoId: item.id.videoId,
+    title: item.snippet.title,
+    publishedAt: item.snippet.publishedAt,
+    thumbnail: item.snippet.thumbnails?.default?.url || '',
+    url: 'https://www.youtube.com/watch?v=' + item.id.videoId
+  }));
+}
+
+async function ytSearchVideos() {
+  const apiKey = document.getElementById('yt-api-key').value.trim();
+  const handle = document.getElementById('yt-channel-handle').value.trim();
+  const statusEl = document.getElementById('yt-status');
+  const resultsEl = document.getElementById('yt-results');
+
+  if (!apiKey) { statusEl.textContent = 'APIキーを入力してください'; statusEl.style.color = 'var(--red)'; return; }
+  if (!handle) { statusEl.textContent = 'チャンネルハンドルを入力してください'; statusEl.style.color = 'var(--red)'; return; }
+  const targetLeague = document.getElementById('yt-target-league').value;
+  if (!curGroup || !curGroup.hanzos.length) { statusEl.textContent = '試合記録がありません'; statusEl.style.color = 'var(--red)'; return; }
+
+  ytSaveSettings();
+  const btn = document.getElementById('yt-search-btn');
+  btn.disabled = true; btn.textContent = '検索中...';
+  statusEl.style.color = 'var(--tx2)';
+  resultsEl.innerHTML = '';
+  ytPendingLinks = {};
+
+  try {
+    statusEl.textContent = 'チャンネルIDを取得中...';
+    const channelId = await ytGetChannelId(handle, apiKey);
+
+    // 対象リーグのhanzosから試合日の一覧を取得（重複除去・降順）
+    const targetHanzos = curGroup.hanzos.filter(h => (h.league || '') === (targetLeague === '_default' ? '' : targetLeague));
+    const dates = [...new Set(targetHanzos.map(h => h.date))].sort((a,b) => b.localeCompare(a));
+    statusEl.textContent = `${dates.length}件の試合日を検索中...`;
+
+    let html = '';
+    let found = 0;
+    for (const date of dates) {
+      const videos = await ytFetchVideosForDate(channelId, date, apiKey);
+      const existingUrl = curGroup.hanzos.find(h => h.date === date && h.youtubeUrl)?.youtubeUrl || '';
+      html += `<div style="border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+        <div style="font-size:.75rem;font-weight:700;color:var(--gold);margin-bottom:8px">${date}</div>`;
+      if (!videos.length) {
+        html += `<div style="font-size:.68rem;color:var(--tx2)">この日の動画が見つかりませんでした</div>`;
+      } else {
+        found++;
+        videos.forEach((v, vi) => {
+          const checked = vi === 0 ? 'checked' : '';
+          if (vi === 0) ytPendingLinks[date] = v;
+          html += `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+            <input type="radio" name="yt-date-${date}" value="${vi}" ${checked} onchange="ytSelectVideo('${date}', ${JSON.stringify(v).replace(/"/g,'&quot;')})">
+            ${v.thumbnail ? `<img src="${v.thumbnail}" style="width:40px;height:30px;object-fit:cover;border-radius:3px;flex-shrink:0">` : ''}
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.68rem;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.title}</div>
+              <div style="font-size:.62rem;color:var(--tx2)">${new Date(v.publishedAt).toLocaleString('ja-JP')}</div>
+            </div>
+            <a href="${v.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#ff4444;font-size:.7rem;text-decoration:none;flex-shrink:0">▶</a>
+          </label>`;
+        });
+        html += `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 0;font-size:.68rem;color:var(--tx2)">
+          <input type="radio" name="yt-date-${date}" value="-1" onchange="ytSelectVideo('${date}', null)"> 紐付けなし
+        </label>`;
+      }
+      if (existingUrl) {
+        html += `<div style="font-size:.62rem;color:var(--tx2);margin-top:4px">現在: <a href="${existingUrl}" target="_blank" style="color:#ff6666">${existingUrl.slice(0,50)}...</a></div>`;
+      }
+      html += `</div>`;
+    }
+
+    resultsEl.innerHTML = html;
+    statusEl.textContent = `検索完了 - ${found}日分の動画が見つかりました`;
+    statusEl.style.color = 'var(--green)';
+    document.getElementById('yt-save-btn').style.display = found > 0 ? '' : 'none';
+  } catch (e) {
+    statusEl.textContent = 'エラー: ' + e.message;
+    statusEl.style.color = 'var(--red)';
+  } finally {
+    btn.disabled = false; btn.textContent = '🔍 動画を検索して紐付け候補を表示';
+  }
+}
+
+function ytSelectVideo(date, video) {
+  if (video) {
+    ytPendingLinks[date] = video;
+  } else {
+    delete ytPendingLinks[date];
+  }
+}
+
+function ytClearLinks() {
+  if (!curGroup) return;
+  const targetLeague = document.getElementById('yt-target-league').value;
+  const leagueLabel = targetLeague || '全体';
+  if (!confirm(`${leagueLabel}のYouTubeリンクを全て削除しますか？`)) return;
+  let count = 0;
+  curGroup.hanzos.forEach(h => {
+    if ((h.league || '') === (targetLeague === '_default' ? '' : targetLeague) && h.youtubeUrl) {
+      delete h.youtubeUrl;
+      count++;
+    }
+  });
+  save();
+  renderHanzos();
+  showToast(`${count}件のYouTubeリンクを削除しました`);
+}
+
+function ytSaveLinks() {
+  if (!curGroup) return;
+  const targetLeague = localStorage.getItem('yt_target_league') || '';
+  let count = 0;
+  Object.entries(ytPendingLinks).forEach(([date, video]) => {
+    const league = targetLeague === '_default' ? '' : targetLeague;
+    const first = curGroup.hanzos.find(h => h.date === date && (h.league || '') === league);
+    if (first) {
+      first.youtubeUrl = video.url;
+      count++;
+    }
+  });
+  save();
+  renderHanzos();
+  showToast(`${count}件の試合にYouTubeリンクを保存しました`);
+  closeOvl('modal-yt-link');
+}
+
 // ===== 半荘一覧 =====
 function renderHanzos() {
   const el = document.getElementById('hanzo-list');
@@ -4436,6 +4662,7 @@ function renderHanzos() {
             <div style="flex:1"><div class="hi-top">${h.date}　<span style="font-size:.72rem;color:var(--tx2);font-weight:400">${new Date(h.id).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span></div></div>
             <span style="font-size:.88rem;font-weight:700;color:var(--green)">+${pts[ti]}</span>
             <span style="font-size:.75rem;color:var(--tx2);margin-left:2px">${h.players[ti]}</span>
+            ${h.youtubeUrl ? `<a href="${h.youtubeUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;background:rgba(255,0,0,.15);border:1px solid rgba(255,0,0,.35);color:#ff4444;border-radius:5px;font-size:.7rem;font-weight:700;padding:2px 6px;margin-left:4px;text-decoration:none;line-height:1.4">▶</a>` : ''}
             <button onclick="event.stopPropagation();editH(${h.id})" style="background:none;border:none;color:var(--gold);font-size:.8rem;cursor:pointer;padding:2px 4px;margin-left:2px;line-height:1">✏</button>
             <button onclick="event.stopPropagation();delH(${h.id})" style="background:none;border:none;color:var(--tx2);font-size:1.1rem;cursor:pointer;padding:2px 4px;margin-left:2px;line-height:1">×</button>
           </div>
@@ -4580,7 +4807,42 @@ function renderSettings() {
       </div>
     </div>`
   }
+  <div class="card" style="margin-top:4px" id="sched-top-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="ctitle" style="margin:0">試合日程</div>
+      <span onclick="toggleScheduleSection()" id="sched-card-arrow" style="font-size:.8rem;color:var(--tx2);cursor:pointer;padding:2px 6px">▼</span>
+    </div>
+    <button onclick="toggleScheduleSection(true)" style="width:100%;padding:10px;border-radius:8px;background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.3);color:var(--gold);font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">Googleフォームを取得</button>
+  </div>
   `;
+
+  // YouTube設定カードをpage-settings-bottomに描画
+  const btmEl = document.getElementById('page-settings-bottom');
+  if (btmEl) btmEl.innerHTML = `
+  <div class="card" style="margin-top:4px">
+    <div onclick="toggleYtSettingsCard()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:0">
+      <div class="ctitle" style="margin:0">YouTube設定</div>
+      <span id="yt-card-arrow" style="font-size:.8rem;color:var(--tx2)">▼</span>
+    </div>
+    <div id="yt-settings-card-body" style="display:none;margin-top:10px">
+      <div class="fg" style="margin-bottom:6px">
+        <label class="fl">YouTube Data API キー</label>
+        <input class="fi" id="yt-card-api-key" type="password" placeholder="AIzaSy..." value="${localStorage.getItem('yt_api_key')||''}" oninput="localStorage.setItem('yt_api_key',this.value.trim())">
+      </div>
+      <div class="fg" style="margin-bottom:6px">
+        <label class="fl">チャンネルハンドル</label>
+        <input class="fi" id="yt-card-handle" placeholder="@EMAMAHJONGCLUB" value="${localStorage.getItem('yt_channel_handle')||''}" oninput="localStorage.setItem('yt_channel_handle',this.value.trim())">
+      </div>
+      <div class="fg" style="margin-bottom:10px">
+        <label class="fl">対象リーグ</label>
+        <select class="fs" id="yt-card-league" onchange="localStorage.setItem('yt_target_league',this.value)">
+          ${Object.keys(g.players||{}).filter(k=>(g.players[k]||[]).length>0).map(l=>`<option value="${l}" ${localStorage.getItem('yt_target_league')===l?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <button onclick="openYtLinkModal()" style="width:100%;padding:10px;border-radius:8px;background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.3);color:var(--gold);font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;margin-top:10px">YouTube動画を取得</button>
+  </div>`;
+
   renderChangelog();
 }
 
@@ -4644,6 +4906,33 @@ function renderChangelog() {
       <span style="font-size:.72rem;color:var(--tx2);word-break:break-all">${log.detail}</span>
     </div>`;
   }).join('') : '<div style="font-size:.75rem;color:var(--tx2);text-align:center;padding:12px 0">まだ変更履歴はありません</div>';
+}
+
+function toggleScheduleSection(forceOpen) {
+  const el = document.getElementById('page-schedule');
+  const arrow = document.getElementById('sched-card-arrow');
+  const topCard = document.getElementById('sched-top-card');
+  if (!el) return;
+  const isOpen = el.style.display !== 'none' && el.style.display !== '';
+  const open = forceOpen ? true : !isOpen;
+  el.style.display = open ? 'block' : 'none';
+  if (open) schedRestoreFields();
+  if (arrow) arrow.textContent = open ? '▲' : '▼';
+  // 展開時は下の角を丸くしない（page-scheduleと繋げる）
+  if (topCard) {
+    topCard.style.borderBottomLeftRadius = open ? '0' : '';
+    topCard.style.borderBottomRightRadius = open ? '0' : '';
+    topCard.style.marginBottom = open ? '0' : '';
+  }
+}
+
+function toggleYtSettingsCard() {
+  const body = document.getElementById('yt-settings-card-body');
+  const arrow = document.getElementById('yt-card-arrow');
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
 }
 
 function toggleChangelog() {
@@ -5204,6 +5493,8 @@ function _editH(id) {
     if (el) el.value = s / 100;
   });
   document.getElementById('mh-ky').value = h.ky || 0;
+  const ytEl = document.getElementById('mh-youtube');
+  if (ytEl) ytEl.value = h.youtubeUrl || '';
   penalties = h.penalties ? [...h.penalties] : [];
   renderPenalties();
   updateMhPreview();
@@ -5237,6 +5528,8 @@ function _openHanzoModal(){
   document.querySelector('#modal-hanzo .mtitle').textContent = '半荘を入力';
   document.getElementById('mh-save').textContent = '記録する';
   document.getElementById('mh-cont').style.display = '';
+  const ytElNew = document.getElementById('mh-youtube');
+  if (ytElNew) ytElNew.value = '';
   // 詳細入力リセット
   mhDetailOpen = false;
   mhDetailMode = 'manual';
@@ -5426,6 +5719,8 @@ function saveHanzo(cont){
     rounds = [];
   }
 
+  const youtubeUrl = (document.getElementById('mh-youtube')?.value || '').trim();
+
   // 編集モード
   if (window._editHanzoId) {
     const idx = curGroup.hanzos.findIndex(x => x.id === window._editHanzoId);
@@ -5438,7 +5733,8 @@ function saveHanzo(cont){
         players, scores, ky,
         rounds, detail,
         penalties: validPenalties,
-        uma: [...r.uma], oka: r.oka, kaeshi: r.kaeshi
+        uma: [...r.uma], oka: r.oka, kaeshi: r.kaeshi,
+        youtubeUrl: youtubeUrl || undefined
       };
       addLog('編集', `${d} ${players.join('・')}`);
     }
@@ -5453,7 +5749,8 @@ function saveHanzo(cont){
   }
   curGroup.hanzos.push({id:Date.now(), date:d, league:mhLeague==='_default'?'':mhLeague, players, scores, ky, rounds, detail,
     penalties: validPenalties,
-    uma:[...r.uma], oka:r.oka, kaeshi:r.kaeshi});
+    uma:[...r.uma], oka:r.oka, kaeshi:r.kaeshi,
+    youtubeUrl: youtubeUrl || undefined});
   addLog('記録', `${d} ${players.join('・')}`);
   save();
   if(cont){
