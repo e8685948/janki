@@ -1057,6 +1057,13 @@ window.addEventListener('online', () => {
   if (isPendingSync()) syncPendingData();
   else loadFromGas().then(ok => { if (ok) refreshCurrentView(); });
 });
+// アプリに戻った時（スマホでタブ切替・復帰）
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && navigator.onLine) {
+    if (isPendingSync()) syncPendingData();
+    else loadFromGas().then(ok => { if (ok) refreshCurrentView(); });
+  }
+});
 
 window.addEventListener('offline', () => {
   showOfflineBadge();
@@ -1070,9 +1077,9 @@ function load() {
 }
 
 async function loadFromGas() {
-  // 2分以内に取得済みならスキップ
+  // 30秒以内に取得済みならスキップ（連打・頻繁な復帰対策）
   const lastFetch = parseInt(localStorage.getItem('janki_last_gas_fetch') || '0', 10);
-  if (Date.now() - lastFetch < 120000) return false;
+  if (Date.now() - lastFetch < 30000) return false;
   try {
     const res = await fetch(GAS_URL);
     const json = await res.json();
@@ -1082,7 +1089,7 @@ async function loadFromGas() {
       if (Array.isArray(loaded) && loaded.length > 0) {
         const localTs = parseInt(localStorage.getItem('janki_save_ts') || '0', 10);
         const gasTs   = parseInt(json.ts || '0', 10);
-        // GASが新しい時だけ上書き（古いGASでローカルを壊さない）
+        // GASが新しい時だけ上書き
         if (gasTs > 0 && gasTs <= localTs) return false;
         const newJson = JSON.stringify(loaded);
         if (JSON.stringify(groups) === newJson) return false;
