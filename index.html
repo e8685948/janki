@@ -1107,9 +1107,11 @@ async function loadFromGas(force = false) {
         const gasTs   = parseInt(json.ts || '0', 10);
         // 強制更新でなければGASが新しい時だけ上書き
         if (!force && gasTs > 0 && gasTs <= localTs) return false;
-        const newJson = JSON.stringify(loaded);
+        const deletedIds = getDeletedGroupIds();
+        const filtered = deletedIds.length ? loaded.filter(g => !deletedIds.includes(g.id)) : loaded;
+        const newJson = JSON.stringify(filtered);
         if (JSON.stringify(groups) === newJson) return false;
-        groups = loaded;
+        groups = filtered;
         if (gasTs > 0) localStorage.setItem('janki_save_ts', String(gasTs));
         try { localStorage.setItem('janki_v2', newJson); } catch(e) {}
         return true;
@@ -1792,7 +1794,17 @@ function _askDelGroup(id, btn) {
     <button class="gc-btn" style="color:var(--red)" onclick="doDelGroup(${id})">はい</button>
     <button class="gc-btn" onclick="renderTop()">取消</button>`;
 }
-function doDelGroup(id) { groups = groups.filter(g => g.id !== id); save(); renderTop(); }
+function getDeletedGroupIds() {
+  try { return JSON.parse(localStorage.getItem('janki_deleted_groups') || '[]'); } catch(e) { return []; }
+}
+function doDelGroup(id) {
+  groups = groups.filter(g => g.id !== id);
+  const ids = getDeletedGroupIds();
+  if (!ids.includes(id)) { ids.push(id); if (ids.length > 100) ids.shift(); }
+  localStorage.setItem('janki_deleted_groups', JSON.stringify(ids));
+  save();
+  renderTop();
+}
 
 function openGroup(id) {
   curGroup = groups.find(g => g.id === id);
