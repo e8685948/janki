@@ -4552,15 +4552,17 @@ function ytRenderManualInputs() {
     return;
   }
   el.innerHTML = dates.map(date => {
-    const existing = hanzos.find(h => h.date === date && h.youtubeUrl)?.youtubeUrl || '';
     const dayHanzos = hanzos.filter(h => h.date === date);
-    const allPlayers = [...new Set(dayHanzos.flatMap(h => h.players))];
+    const rows = dayHanzos.map((h, i) => {
+      const existing = (h.youtubeUrl || '').replace(/"/g, '&quot;');
+      return `<div style="margin-bottom:6px">
+        <div style="font-size:.63rem;color:var(--tx2);margin-bottom:3px">${i+1}試合目　${h.players.join('・')}</div>
+        <input class="fi" id="yt-manual-${h.id}" value="${existing}" placeholder="https://youtube.com/watch?v=..." type="url" style="font-size:.72rem">
+      </div>`;
+    }).join('');
     return `<div style="border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:8px">
-      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-        <span style="font-size:.75rem;font-weight:700;color:var(--gold);flex-shrink:0">${date}</span>
-        <span style="font-size:.65rem;color:var(--tx2)">${allPlayers.join('・')}</span>
-      </div>
-      <input class="fi" id="yt-manual-${date}" value="${existing.replace(/"/g,'&quot;')}" placeholder="https://youtube.com/watch?v=..." type="url" style="font-size:.72rem">
+      <div style="font-size:.75rem;font-weight:700;color:var(--gold);margin-bottom:8px">${date}</div>
+      ${rows}
     </div>`;
   }).join('');
 }
@@ -4569,17 +4571,14 @@ function ytSaveManualLinks() {
   if (!curGroup) return;
   const league = document.getElementById('yt-target-league').value;
   const targetLeague = league === '_default' ? '' : league;
-  const dates = [...new Set(curGroup.hanzos.filter(h => (h.league || '') === targetLeague).map(h => h.date))];
+  const targetHanzos = curGroup.hanzos.filter(h => (h.league || '') === targetLeague);
   let count = 0;
-  dates.forEach(date => {
-    const input = document.getElementById('yt-manual-' + date);
+  targetHanzos.forEach(h => {
+    const input = document.getElementById('yt-manual-' + h.id);
     if (!input) return;
     const url = input.value.trim();
-    const first = curGroup.hanzos.find(h => (h.league || '') === targetLeague && h.date === date);
-    if (first) {
-      if (url) { first.youtubeUrl = url; count++; }
-      else delete first.youtubeUrl;
-    }
+    if (url) { h.youtubeUrl = url; count++; }
+    else delete h.youtubeUrl;
   });
   save();
   showToast(`${count}件のYouTubeリンクを保存しました`);
