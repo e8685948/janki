@@ -764,33 +764,47 @@ if (d.action === 'getFormData') {
   <div class="modal" style="max-height:90vh;overflow-y:auto">
     <div class="mtitle">📺 YouTube動画紐付け</div>
 
-    <!-- API設定 -->
-    <div style="background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:12px">
-      <div style="font-size:.7rem;color:var(--gold);font-weight:700;margin-bottom:8px">API設定</div>
-      <div class="fg" style="margin-bottom:6px">
-        <label class="fl">YouTube Data API キー</label>
-        <input class="fi" id="yt-api-key" placeholder="AIzaSy..." type="password">
-      </div>
-      <div class="fg" style="margin-bottom:6px">
-        <label class="fl">チャンネルハンドル</label>
-        <input class="fi" id="yt-channel-handle" placeholder="@EMAMAHJONGCLUB">
-      </div>
-      <div class="fg" style="margin-bottom:8px">
-        <label class="fl">対象リーグ</label>
-        <select class="fs" id="yt-target-league"></select>
-      </div>
-      <button onclick="ytSaveSettings()" style="width:100%;padding:7px;border-radius:7px;background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit">設定を保存</button>
+    <!-- 共通: 対象リーグ -->
+    <div class="fg" style="margin-bottom:10px">
+      <label class="fl">対象リーグ</label>
+      <select class="fs" id="yt-target-league" onchange="if(ytCurrentTab==='manual') ytRenderManualInputs()"></select>
     </div>
 
-    <button onclick="ytSearchVideos()" id="yt-search-btn" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,0,0,.12);border:1px solid rgba(255,0,0,.3);color:#ff4444;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px">🔍 動画を検索して紐付け候補を表示</button>
+    <!-- タブ切り替え -->
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <button id="yt-tab-auto" onclick="ytSwitchTab('auto')" style="flex:1;padding:8px;border-radius:7px;background:rgba(255,0,0,.15);border:1px solid rgba(255,0,0,.4);color:#ff4444;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit">🔍 自動</button>
+      <button id="yt-tab-manual" onclick="ytSwitchTab('manual')" style="flex:1;padding:8px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2);font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit">✏️ 手動</button>
+    </div>
 
-    <div id="yt-status" style="font-size:.72rem;color:var(--tx2);text-align:center;margin-bottom:8px"></div>
-    <div id="yt-results"></div>
+    <!-- 自動検索パネル -->
+    <div id="yt-panel-auto">
+      <div style="background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:12px">
+        <div style="font-size:.7rem;color:var(--gold);font-weight:700;margin-bottom:8px">API設定</div>
+        <div class="fg" style="margin-bottom:6px">
+          <label class="fl">YouTube Data API キー</label>
+          <input class="fi" id="yt-api-key" placeholder="AIzaSy..." type="password">
+        </div>
+        <div class="fg" style="margin-bottom:8px">
+          <label class="fl">チャンネルハンドル</label>
+          <input class="fi" id="yt-channel-handle" placeholder="@EMAMAHJONGCLUB">
+        </div>
+        <button onclick="ytSaveSettings()" style="width:100%;padding:7px;border-radius:7px;background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit">設定を保存</button>
+      </div>
+      <button onclick="ytSearchVideos()" style="width:100%;padding:10px;border-radius:8px;background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.3);color:var(--gold);font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px">🔍 動画検索</button>
+      <div id="yt-status" style="font-size:.72rem;color:var(--tx2);text-align:center;margin-bottom:8px"></div>
+      <div id="yt-results"></div>
+    </div>
 
-    <button onclick="ytClearLinks()" style="width:100%;padding:8px;border-radius:8px;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);color:var(--red);font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px">🗑 対象リーグのYouTubeリンクを一括削除</button>
+    <!-- 手動入力パネル -->
+    <div id="yt-panel-manual" style="display:none">
+      <div style="font-size:.68rem;color:var(--tx2);margin-bottom:10px;line-height:1.6">試合日ごとにYouTubeのURLを貼り付けてください。</div>
+      <div id="yt-manual-list"></div>
+    </div>
+
+    <button onclick="ytClearLinks()" style="width:100%;padding:8px;border-radius:8px;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);color:var(--red);font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px">🗑 YouTubeリンクを一括削除</button>
     <div class="mbtns" style="margin-top:8px">
       <button class="mbtn mng" onclick="closeOvl('modal-yt-link')">閉じる</button>
-      <button class="mbtn mok" id="yt-save-btn" onclick="ytSaveLinks()" style="display:none">紐付けを保存</button>
+      <button class="mbtn mok" id="yt-save-btn" onclick="ytCurrentTab==='manual'?ytSaveManualLinks():ytSaveLinks()" style="display:none">紐付けを保存</button>
     </div>
   </div>
 </div>
@@ -4471,11 +4485,11 @@ function closeExpandGraph() {
 
 
 // ===== YouTube動画紐付け =====
-let ytPendingLinks = {}; // date → { videoId, title, url }
+let ytPendingLinks = {};
+let ytCurrentTab = 'auto';
 
 function openYtLinkModal() {
   if (!curGroup) return;
-  // カード側の入力値を優先してlocalStorageに反映
   const cardKey = document.getElementById('yt-card-api-key');
   const cardHandle = document.getElementById('yt-card-handle');
   const cardLeague = document.getElementById('yt-card-league');
@@ -4488,12 +4502,77 @@ function openYtLinkModal() {
   document.getElementById('yt-results').innerHTML = '';
   document.getElementById('yt-save-btn').style.display = 'none';
   ytPendingLinks = {};
-  // リーグ選択を初期化
   const leagues = Object.keys(curGroup.players || {}).filter(k => (curGroup.players[k] || []).length > 0);
   const sel = document.getElementById('yt-target-league');
   const saved = localStorage.getItem('yt_target_league') || '';
   sel.innerHTML = leagues.map(l => `<option value="${l}" ${l === saved ? 'selected' : ''}>${l}</option>`).join('');
+  ytSwitchTab(ytCurrentTab);
   document.getElementById('modal-yt-link').classList.add('open');
+}
+
+function ytSwitchTab(tab) {
+  ytCurrentTab = tab;
+  document.getElementById('yt-panel-auto').style.display = tab === 'auto' ? '' : 'none';
+  document.getElementById('yt-panel-manual').style.display = tab === 'manual' ? '' : 'none';
+  const btnAuto = document.getElementById('yt-tab-auto');
+  const btnManual = document.getElementById('yt-tab-manual');
+  if (tab === 'auto') {
+    btnAuto.style.cssText = 'flex:1;padding:8px;border-radius:7px;background:rgba(255,0,0,.15);border:1px solid rgba(255,0,0,.4);color:#ff4444;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit';
+    btnManual.style.cssText = 'flex:1;padding:8px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2);font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit';
+    document.getElementById('yt-save-btn').style.display = 'none';
+  } else {
+    btnManual.style.cssText = 'flex:1;padding:8px;border-radius:7px;background:rgba(212,168,67,.15);border:1px solid rgba(212,168,67,.4);color:var(--gold);font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit';
+    btnAuto.style.cssText = 'flex:1;padding:8px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2);font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit';
+    document.getElementById('yt-save-btn').style.display = '';
+    ytRenderManualInputs();
+  }
+}
+
+function ytRenderManualInputs() {
+  if (!curGroup) return;
+  const league = document.getElementById('yt-target-league').value;
+  const targetLeague = league === '_default' ? '' : league;
+  const hanzos = curGroup.hanzos.filter(h => (h.league || '') === targetLeague);
+  const dates = [...new Set(hanzos.map(h => h.date))].sort((a, b) => b.localeCompare(a));
+  const el = document.getElementById('yt-manual-list');
+  if (!dates.length) {
+    el.innerHTML = '<div style="font-size:.72rem;color:var(--tx2);text-align:center;padding:12px">試合記録がありません</div>';
+    return;
+  }
+  el.innerHTML = dates.map(date => {
+    const existing = hanzos.find(h => h.date === date && h.youtubeUrl)?.youtubeUrl || '';
+    const dayHanzos = hanzos.filter(h => h.date === date);
+    const allPlayers = [...new Set(dayHanzos.flatMap(h => h.players))];
+    return `<div style="border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+        <span style="font-size:.75rem;font-weight:700;color:var(--gold);flex-shrink:0">${date}</span>
+        <span style="font-size:.65rem;color:var(--tx2)">${allPlayers.join('・')}</span>
+      </div>
+      <input class="fi" id="yt-manual-${date}" value="${existing.replace(/"/g,'&quot;')}" placeholder="https://youtube.com/watch?v=..." type="url" style="font-size:.72rem">
+    </div>`;
+  }).join('');
+}
+
+function ytSaveManualLinks() {
+  if (!curGroup) return;
+  const league = document.getElementById('yt-target-league').value;
+  const targetLeague = league === '_default' ? '' : league;
+  const dates = [...new Set(curGroup.hanzos.filter(h => (h.league || '') === targetLeague).map(h => h.date))];
+  let count = 0;
+  dates.forEach(date => {
+    const input = document.getElementById('yt-manual-' + date);
+    if (!input) return;
+    const url = input.value.trim();
+    const first = curGroup.hanzos.find(h => (h.league || '') === targetLeague && h.date === date);
+    if (first) {
+      if (url) { first.youtubeUrl = url; count++; }
+      else delete first.youtubeUrl;
+    }
+  });
+  save();
+  showToast(`${count}件のYouTubeリンクを保存しました`);
+  closeOvl('modal-yt-link');
+  renderHanzos();
 }
 
 function ytSaveSettings() {
@@ -4546,8 +4625,6 @@ async function ytSearchVideos() {
   if (!curGroup || !curGroup.hanzos.length) { statusEl.textContent = '試合記録がありません'; statusEl.style.color = 'var(--red)'; return; }
 
   ytSaveSettings();
-  const btn = document.getElementById('yt-search-btn');
-  btn.disabled = true; btn.textContent = '検索中...';
   statusEl.style.color = 'var(--tx2)';
   resultsEl.innerHTML = '';
   ytPendingLinks = {};
@@ -4603,7 +4680,6 @@ async function ytSearchVideos() {
     statusEl.textContent = 'エラー: ' + e.message;
     statusEl.style.color = 'var(--red)';
   } finally {
-    btn.disabled = false; btn.textContent = '🔍 動画を検索して紐付け候補を表示';
   }
 }
 
