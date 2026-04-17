@@ -997,14 +997,10 @@ function save() {
   try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
   if (navigator.onLine) {
     groups.filter(g => g.spreadsheetId).forEach(g => syncGroupToSpreadsheet(g));
-    // 全グループをメインGASに送る（perGroupは画像除く）
-    const syncGroups = groups.map(g =>
-      g.spreadsheetId ? {...g, img: null, streamBg: null, streamLogo: null} : g
-    );
     fetch(GAS_URL, {
       method: 'POST',
       headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({data: JSON.stringify(syncGroups), ts: saveTs})
+      body: JSON.stringify({data: JSON.stringify(groups), ts: saveTs})
     }).then(() => {
       setPendingSync(false);
       hideOfflineBadge();
@@ -1115,21 +1111,9 @@ async function loadFromGas(force = false) {
         if (!force && gasTs > 0 && gasTs <= localTs) return false;
         const deletedIds = getDeletedGroupIds();
         const filtered = deletedIds.length ? loaded.filter(g => !deletedIds.includes(g.id)) : loaded;
-        // ローカルの画像データを保持（GASは画像を持たないperGroupがある）
-        const localById = {};
-        groups.forEach(g => { localById[g.id] = g; });
-        const merged = filtered.map(g => {
-          const local = localById[g.id];
-          if (!local) return g;
-          return Object.assign({}, g, {
-            img:        g.img        != null ? g.img        : (local.img        != null ? local.img        : null),
-            streamBg:   g.streamBg   != null ? g.streamBg   : (local.streamBg   != null ? local.streamBg   : null),
-            streamLogo: g.streamLogo != null ? g.streamLogo : (local.streamLogo != null ? local.streamLogo : null),
-          });
-        });
-        const newJson = JSON.stringify(merged);
+        const newJson = JSON.stringify(filtered);
         if (JSON.stringify(groups) === newJson) return false;
-        groups = merged;
+        groups = filtered;
         if (gasTs > 0) localStorage.setItem('janki_save_ts', String(gasTs));
         try { localStorage.setItem('janki_v2', newJson); } catch(e) {}
         return true;
