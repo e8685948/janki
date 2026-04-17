@@ -1076,10 +1076,12 @@ function load() {
   } catch(e) {}
 }
 
-async function loadFromGas() {
+async function loadFromGas(force = false) {
   // 30秒以内に取得済みならスキップ（連打・頻繁な復帰対策）
-  const lastFetch = parseInt(localStorage.getItem('janki_last_gas_fetch') || '0', 10);
-  if (Date.now() - lastFetch < 30000) return false;
+  if (!force) {
+    const lastFetch = parseInt(localStorage.getItem('janki_last_gas_fetch') || '0', 10);
+    if (Date.now() - lastFetch < 30000) return false;
+  }
   try {
     const res = await fetch(GAS_URL);
     const json = await res.json();
@@ -1089,8 +1091,8 @@ async function loadFromGas() {
       if (Array.isArray(loaded) && loaded.length > 0) {
         const localTs = parseInt(localStorage.getItem('janki_save_ts') || '0', 10);
         const gasTs   = parseInt(json.ts || '0', 10);
-        // GASが新しい時だけ上書き
-        if (gasTs > 0 && gasTs <= localTs) return false;
+        // 強制更新でなければGASが新しい時だけ上書き
+        if (!force && gasTs > 0 && gasTs <= localTs) return false;
         const newJson = JSON.stringify(loaded);
         if (JSON.stringify(groups) === newJson) return false;
         groups = loaded;
@@ -5824,8 +5826,20 @@ function manualRefresh() {
     if (t) { t.textContent = 'オフラインのため更新できません'; t.style.opacity='1'; setTimeout(()=>{ t.style.opacity='0'; t.textContent='✓ 記録しました'; },2000); }
     return;
   }
-  if (isPendingSync()) syncPendingData();
-  restore();
+  if (isPendingSync()) {
+    syncPendingData();
+    restore();
+    return;
+  }
+  // 強制的にGASから最新データを取得（キャッシュ・タイムスタンプをバイパス）
+  loadFromGas(true).then(ok => {
+    restore();
+    if (ok) {
+      refreshCurrentView();
+      const t = document.getElementById('toast');
+      if (t) { t.textContent = '✓ 最新データを取得しました'; t.style.opacity='1'; setTimeout(()=>{ t.style.opacity='0'; t.textContent='✓ 記録しました'; },2000); }
+    }
+  }).catch(() => restore());
 }
 
 // ===== 起動 =====
