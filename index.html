@@ -996,15 +996,13 @@ function save() {
   localStorage.setItem('janki_save_ts', String(saveTs));
   try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
   if (navigator.onLine) {
-    // 専用スプレッドシートを持つグループはメインGASに送らない
-    const mainGroups = groups.filter(g => !g.spreadsheetId);
-    const perGroups  = groups.filter(g =>  g.spreadsheetId);
-    perGroups.forEach(g => syncGroupToSpreadsheet(g));
-    if (!mainGroups.length) { setPendingSync(false); hideOfflineBadge(); return; }
+    groups.filter(g => g.spreadsheetId).forEach(g => syncGroupToSpreadsheet(g));
+    // 全グループ（画像除く）をメインGASに送る（削除の反映・クロスデバイス同期のため）
+    const syncGroups = groups.map(g => ({...g, img: null, streamBg: null, streamLogo: null}));
     fetch(GAS_URL, {
       method: 'POST',
       headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({data: JSON.stringify(mainGroups), ts: saveTs})
+      body: JSON.stringify({data: JSON.stringify(syncGroups), ts: saveTs})
     }).then(() => {
       setPendingSync(false);
       hideOfflineBadge();
@@ -1086,7 +1084,13 @@ window.addEventListener('offline', () => {
 function load() {
   try {
     const d = localStorage.getItem('janki_v2');
-    if (d) { const a = JSON.parse(d); if (Array.isArray(a)) groups = a; }
+    if (d) {
+      const a = JSON.parse(d);
+      if (Array.isArray(a)) {
+        const deletedIds = getDeletedGroupIds();
+        groups = deletedIds.length ? a.filter(g => !deletedIds.includes(g.id)) : a;
+      }
+    }
   } catch(e) {}
 }
 
