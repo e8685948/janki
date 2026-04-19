@@ -756,7 +756,7 @@ if (d.action === 'getFormData') {
       <button id="stream-export-btn" onclick="exportBroadcastImage()" class="stream-nav-btn" style="color:#5c9be0;border-color:rgba(92,155,224,.35);white-space:nowrap">📷 画像</button>
     </div>
   </div>
-  <div id="stream-inner" style="width:100%;max-width:800px;padding-top:100px;padding-bottom:24px"></div>
+  <div id="stream-inner" style="width:100%;max-width:800px;padding-top:100px;padding-bottom:24px;font-family:'Yu Gothic','游ゴシック',YuGothic,sans-serif"></div>
 </div>
 
 <!-- YouTube動画紐付けモーダル -->
@@ -1424,10 +1424,10 @@ function exportDailyImage() {
     const rank = idx + 1;
     const d = data[p] || { games: Array(games.length).fill(null), total: 0 };
     const z = _zoneInfo(dailyViewLeague, rank, sorted.length);
-    const totalC = d.total > 0 ? '#1e6fd9' : d.total < 0 ? '#d42020' : '#555';
+    const totalC = d.total > 0 ? '#4106F9' : d.total < 0 ? '#FC0303' : '#555';
     const totalS = d.total > 0 ? `+ ${d.total} pt` : d.total < 0 ? `- ${Math.abs(d.total)} pt` : `0 pt`;
     const gameCells = d.games.map((v, i) => {
-      const c = v === null ? '#aaa' : v > 0 ? '#1e6fd9' : v < 0 ? '#d42020' : '#555';
+      const c = v === null ? '#aaa' : v > 0 ? '#4106F9' : v < 0 ? '#FC0303' : '#555';
       const s = v === null ? '—' : v > 0 ? `+${v}` : String(v);
       return `<div style="text-align:center;flex:1;${i>0?'border-left:1px solid #e0e0e0;':''}"
       >
@@ -1436,7 +1436,6 @@ function exportDailyImage() {
       </div>`;
     }).join('');
     return `<div style="display:flex;align-items:stretch;gap:8px;height:${rowH}px">
-      <div style="min-width:${badgeW}px;flex-shrink:0;transform:skewX(-10deg);background:${z.badge};display:flex;align-items:center;justify-content:center;font-size:${Math.round(badgeW*.5)}px;font-weight:800;color:#fff;letter-spacing:-.02em">${rank}</div>
       <div style="flex:1;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden">
         <div style="transform:skewX(10deg);display:flex;align-items:center;height:100%;padding:0 16px;gap:14px;overflow:hidden">
           <div style="min-width:${Math.round(fontSize*5)}px;display:flex;align-items:center;font-size:${fontSize}px;font-weight:700;color:#1a1a2e;white-space:nowrap"><span style="overflow:hidden;text-overflow:ellipsis">${p}</span></div>
@@ -1457,7 +1456,7 @@ function exportDailyImage() {
     : '';
 
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;${_bgStyle}padding:${PAD}px;box-sizing:border-box;font-family:'Noto Sans JP',sans-serif;overflow:hidden`;
+  wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;${_bgStyle}padding:${PAD}px;box-sizing:border-box;font-family:'Yu Gothic','游ゴシック',YuGothic,sans-serif;overflow:hidden`;
   wrapper.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:14px">
       <div style="font-size:1.4rem;font-weight:800;color:#ffffff;letter-spacing:.05em;line-height:1.4;text-shadow:0 2px 6px rgba(0,0,0,.9)">${_seasonLbl}　${_fullName}${leagueLbl ? '　'+leagueLbl : ''}　${dateStr}</div>
@@ -1500,25 +1499,32 @@ function _renderDailyStream() {
     const ROW_H = 52;
     const BADGE_W = 38;
     const FS = 13;
-    cardsHtml = sorted.map((p, idx) => {
+    const headerCells = games.map((_, i) =>
+      `<div style="flex:1;text-align:center;${i>0?'border-left:1px solid rgba(255,255,255,.3);':''}font-size:${Math.round(FS*.8)}px;color:rgba(255,255,255,.85);font-weight:600">${i+1}試合目</div>`
+    ).join('');
+    const headerRow = `<div style="display:flex;align-items:center;padding:0 12px;gap:10px;margin-bottom:4px">
+      <div style="min-width:80px"></div>
+      <div style="flex:1;display:flex;justify-content:space-evenly">${headerCells}</div>
+      <div style="min-width:80px"></div>
+    </div>`;
+const rowsHtml = sorted.map((p, idx) => {
       const rank = idx + 1;
       const d = data[p] || { games: Array(games.length).fill(null), total: 0 };
       const z = _zoneInfo(dailyViewLeague, rank, sorted.length);
-      const totalC = d.total > 0 ? '#1e6fd9' : d.total < 0 ? '#d42020' : '#555';
-      const totalS = d.total > 0 ? `+ ${d.total} pt` : d.total < 0 ? `- ${Math.abs(d.total)} pt` : `0 pt`;
+      const totalC = d.total > 0 ? '#4106F9' : d.total < 0 ? '#FC0303' : '#555';
+      const totalFixed = parseFloat(d.total).toFixed(1);
+      const totalS = d.total > 0 ? `+ ${totalFixed} pt` : d.total < 0 ? `- ${Math.abs(parseFloat(d.total)).toFixed(1)} pt` : `0.0 pt`;
       const gameCells = d.games.map((v, i) => {
-        const c = v === null ? '#aaa' : v > 0 ? '#1e6fd9' : v < 0 ? '#d42020' : '#555';
-        const s = _ptStr(v);
+        const c = v === null ? '#aaa' : v > 0 ? '#4106F9' : v < 0 ? '#FC0303' : '#555';
+        const s = v === null ? '—' : v > 0 ? '+' + parseFloat(v).toFixed(1) : parseFloat(v).toFixed(1);
         return `<div style="flex:1;text-align:center;${i>0?'border-left:1px solid #e0e0e0;':''}">
-          <div style="font-size:${Math.round(FS*.8)}px;color:#888;margin-bottom:2px;font-weight:600">${i+1}試合目</div>
-          <div style="font-size:${FS}px;font-weight:800;color:${c}">${s}</div>
+          <div style="font-size:${Math.round(FS*1.4)}px;font-weight:800;color:${c}">${s}</div>
         </div>`;
       }).join('');
       return `<div style="display:flex;align-items:stretch;gap:6px;height:${ROW_H}px">
-        <div style="min-width:${BADGE_W}px;flex-shrink:0;transform:skewX(-10deg);background:${z.badge};display:flex;align-items:center;justify-content:center;font-size:${Math.round(BADGE_W*.5)}px;font-weight:800;color:#fff;letter-spacing:-.02em">${rank}</div>
         <div style="flex:1;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden">
           <div style="transform:skewX(10deg);display:flex;align-items:center;height:100%;padding:0 12px;gap:10px;overflow:hidden">
-            <div style="min-width:80px;display:flex;align-items:center;font-size:${FS}px;font-weight:700;color:#1a1a2e;white-space:nowrap"><span style="overflow:hidden;text-overflow:ellipsis">${p}</span></div>
+            <div style="min-width:80px;display:flex;align-items:center;font-size:${Math.round(FS*1.5)}px;font-weight:700;color:#1a1a2e;white-space:nowrap"><span style="overflow:hidden;text-overflow:ellipsis">${p}</span></div>
             <div style="flex:1;display:flex;align-items:center;justify-content:space-evenly">${gameCells}</div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;border-left:1px solid #e0e0e0;padding-left:10px;min-width:80px">
               <div style="font-size:${Math.round(FS*.75)}px;color:#999;margin-bottom:1px">トータル</div>
@@ -1528,6 +1534,7 @@ function _renderDailyStream() {
         </div>
       </div>`;
     }).join('');
+    cardsHtml = headerRow + rowsHtml;
   }
 
   inner.innerHTML = `
@@ -1542,13 +1549,13 @@ function _renderDailyStream() {
 // ゾーン設定（A1: 上位4=決勝進出 / 下位4=降格、A2: 上位6=昇格）
 function _zoneInfo(league, rank, total) {
   if (league === 'A1') {
-    if (rank <= 4)        return { badge:'linear-gradient(135deg,#c47a10,#e8a820)' };
-    if (rank > total - 4) return { badge:'linear-gradient(135deg,#8a1212,#c02222)' };
-    return                       { badge:'linear-gradient(135deg,#2a5a2a,#3a7a3a)' };
+    if (rank <= 4)  return { badge:'#FF9700' };
+    if (rank >= 15) return { badge:'#00343B' };
+    return                 { badge:'#4D7700' };
   }
   if (league === 'A2') {
-    if (rank <= 6) return { badge:'linear-gradient(135deg,#a07800,#d4a820)' };
-    return               { badge:'linear-gradient(135deg,#1a6a2a,#28aa4a)' };
+    if (rank <= 6) return { badge:'#FF9700' };
+    return               { badge:'#4D7700' };
   }
   // リーグ指定なし（1-3位メダル）
   if (rank === 1) return { badge:'linear-gradient(135deg,#c4922a,#e8b84b)' };
@@ -1562,11 +1569,11 @@ function _buildTotalRows(col, sorted, stats, tgt, rowH, fontSize, badgeSize, gap
   return col.map((p) => {
     const rank = sorted.indexOf(p) + 1;
     const pt = stats[p]?.pt || 0;
-    const ptC = pt >= 0 ? '#1e6fd9' : '#d42020';
+    const ptC = pt >= 0 ? '#4106F9' : '#FC0303';
     const ptS = pt >= 0 ? `+ ${pt.toFixed(1)} pt` : `- ${Math.abs(pt).toFixed(1)} pt`;
     const z = _zoneInfo(tgt, rank, total);
     const playedToday = todaySet && todaySet.size > 0 && todaySet.has(p);
-    const cardBg = playedToday ? '#ffec99' : '#ffffff';
+    const cardBg = playedToday ? '#FFFFC0' : '#ffffff';
     return `<div style="display:flex;align-items:stretch;gap:${gap}px;height:${rowH}px">
       <div style="min-width:${badgeSize}px;flex-shrink:0;transform:skewX(-10deg);background:${z.badge};display:flex;align-items:center;justify-content:center;font-size:${Math.round(badgeSize*.55)}px;font-weight:800;color:#fff;letter-spacing:-.02em">${rank}</div>
       <div style="flex:1;transform:skewX(-10deg);background:${cardBg};box-sizing:border-box;overflow:hidden">
@@ -1611,8 +1618,8 @@ function _renderTotalStream() {
 
   // ゾーン凡例
   const legendItems = [];
-  if (tgt === 'A1') { legendItems.push({c:'#e8a820',l:'決勝進出'},{c:'#3a7a3a',l:'通常'},{c:'#c02222',l:'A2降格'}); }
-  else if (tgt === 'A2') { legendItems.push({c:'#d4a820',l:'A1昇格'},{c:'#28aa4a',l:'通常'}); }
+  if (tgt === 'A1') { legendItems.push({c:'#FF9700',l:'決定戦進出'},{c:'#4D7700',l:'残留'},{c:'#00343B',l:'降格'}); }
+  else if (tgt === 'A2') { legendItems.push({c:'#FF9700',l:'昇格'},{c:'#4D7700',l:'残留'}); }
   const legend = legendItems.length ? `<div style="display:flex;gap:14px;margin-bottom:10px;justify-content:flex-end">
     ${legendItems.map(l=>`<div style="display:flex;align-items:center;gap:5px;font-size:.68rem;color:#aaa"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${l.c}"></span>${l.l}</div>`).join('')}
   </div>` : '';
@@ -1675,8 +1682,8 @@ function _exportTotalImg() {
 
   // ゾーン凡例
   const legendItems = [];
-  if (tgt === 'A1') { legendItems.push({c:'#e8a820',l:'決勝進出'},{c:'#3a7a3a',l:'通常'},{c:'#c02222',l:'A2降格'}); }
-  else if (tgt === 'A2') { legendItems.push({c:'#d4a820',l:'A1昇格'},{c:'#28aa4a',l:'通常'}); }
+  if (tgt === 'A1') { legendItems.push({c:'#FF9700',l:'決定戦進出'},{c:'#4D7700',l:'残留'},{c:'#00343B',l:'降格'}); }
+  else if (tgt === 'A2') { legendItems.push({c:'#FF9700',l:'昇格'},{c:'#4D7700',l:'残留'}); }
   const legend = legendItems.length
     ? `<div style="display:flex;gap:18px;margin-top:12px;justify-content:flex-end">
         ${legendItems.map(l=>`<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa"><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:${l.c}"></span>${l.l}</div>`).join('')}
@@ -1686,7 +1693,7 @@ function _exportTotalImg() {
   const _bgStyle = g.streamBg
     ? `background-image:url('${g.streamBg}');background-size:cover;background-position:center;`
     : 'background:linear-gradient(150deg,#0e0e0c 0%,#080808 55%,#0c0e0c 100%);';
-  wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;${_bgStyle}padding:${PAD}px;box-sizing:border-box;font-family:'Noto Sans JP',sans-serif;overflow:hidden`;
+  wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;${_bgStyle}padding:${PAD}px;box-sizing:border-box;font-family:'Yu Gothic','游ゴシック',YuGothic,sans-serif;overflow:hidden`;
 
   const _expSeasonLbl = `第${g.season||1}期`;
   const _expFullName = (g.org||'')+g.name;
