@@ -72,7 +72,9 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .bar{height:100%;border-radius:2px}
 
 /* 半荘リスト */
-.hi-wrap{position:relative;margin-bottom:8px;border-radius:10px}
+.hi-wrap{position:relative;margin-bottom:8px;border-radius:10px;transition:opacity .15s}
+.hi-wrap.drag-over{outline:2px solid var(--gold);outline-offset:-2px}
+.drag-handle{cursor:grab;color:var(--tx2);padding:2px 6px;font-size:1rem;line-height:1;flex-shrink:0;touch-action:none;user-select:none;-webkit-user-select:none}
 .hi-del{position:absolute;right:0;top:0;bottom:0;width:80px;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;letter-spacing:.05em;border-radius:0 10px 10px 0;color:#fff;opacity:0;pointer-events:none}
 .hi{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;cursor:pointer;position:relative;z-index:1;touch-action:pan-y;will-change:transform;transition:transform .2s ease,border-color .2s}
 .hi.open{border-color:var(--gold)}
@@ -4789,6 +4791,37 @@ function ytSaveLinks() {
 }
 
 // ===== 半荘一覧 =====
+let _dragHId = null;
+function hanzoDragStart(e, id) {
+  _dragHId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => { const el = document.getElementById('wrap-'+id); if(el) el.style.opacity='0.35'; }, 0);
+}
+function hanzoDragOver(e, id) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.hi-wrap').forEach(el => el.classList.remove('drag-over'));
+  const el = document.getElementById('wrap-'+id);
+  if (el && id !== _dragHId) el.classList.add('drag-over');
+}
+function hanzoDragEnd() {
+  document.querySelectorAll('.hi-wrap').forEach(el => { el.style.opacity=''; el.classList.remove('drag-over'); });
+  _dragHId = null;
+}
+function hanzoDrop(e, targetId) {
+  e.preventDefault();
+  document.querySelectorAll('.hi-wrap').forEach(el => { el.style.opacity=''; el.classList.remove('drag-over'); });
+  if (_dragHId === null || _dragHId === targetId || !curGroup) return;
+  const hs = curGroup.hanzos;
+  const fi = hs.findIndex(h => h.id === _dragHId);
+  const ti = hs.findIndex(h => h.id === targetId);
+  if (fi === -1 || ti === -1) return;
+  const [moved] = hs.splice(fi, 1);
+  hs.splice(ti, 0, moved);
+  _dragHId = null;
+  save();
+  renderHanzos();
+}
 function renderHanzos() {
   const el = document.getElementById('hanzo-list');
   if (!curGroup) { el.innerHTML=''; return; }
@@ -4827,10 +4860,10 @@ function renderHanzos() {
           const d = h.detail[i] || {furo:0,houchu:0,ron:0,tsumo:0,riichi:0};
           return `<div style="margin-bottom:3px"><strong>${p}</strong>：副露${d.furo} 放銃${d.houchu} ロン${d.ron} ツモ${d.tsumo} リーチ${d.riichi}</div>`;
         }).join('') + '</div>' : '<div style="margin-top:6px;font-size:.72rem;color:var(--tx2)">詳細未入力</div>';
-      return `<div class="hi-wrap" id="wrap-${h.id}">
+      return `<div class="hi-wrap" id="wrap-${h.id}" draggable="true" ondragstart="hanzoDragStart(event,${h.id})" ondragover="hanzoDragOver(event,${h.id})" ondragend="hanzoDragEnd()" ondrop="hanzoDrop(event,${h.id})">
         <div class="hi-del" id="del-${h.id}">削除</div>
         <div class="hi" id="hi-${h.id}" ontouchstart="tsStart(event,${h.id})" ontouchmove="tsMove(event,${h.id})" ontouchend="tsEnd(event,${h.id})" onclick="tsClick(event,${h.id})">
-          <div class="hi-head"><span class="hi-num">#${oi+1}</span>
+          <div class="hi-head"><span class="drag-handle">⋮⋮</span><span class="hi-num">#${oi+1}</span>
             <div style="flex:1"><div class="hi-top">${h.date}　<span style="font-size:.72rem;color:var(--tx2);font-weight:400">${new Date(h.id).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span></div></div>
             <span style="font-size:.88rem;font-weight:700;color:var(--green)">+${pts[ti]}</span>
             <span style="font-size:.75rem;color:var(--tx2);margin-left:2px">${h.players[ti]}</span>
