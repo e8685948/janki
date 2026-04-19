@@ -1116,7 +1116,16 @@ async function loadFromGas(force = false) {
         const merged = filtered.map(g => {
           const local = localGroups.find(lg => lg.id === g.id);
           if (!local) return g;
+          // 半荘ごとのyoutubeUrlをローカルから引き継ぐ
+          const mergedHanzos = (g.hanzos || []).map(h => {
+            const localH = (local.hanzos || []).find(lh => lh.id === h.id);
+            if (!localH || h.youtubeUrl != null) return h;
+            const result = Object.assign({}, h);
+            if (localH.youtubeUrl != null) result.youtubeUrl = localH.youtubeUrl;
+            return result;
+          });
           return Object.assign({}, g, {
+            hanzos:    mergedHanzos,
             img:       g.img       != null ? g.img       : (local.img       != null ? local.img       : null),
             streamBg:  g.streamBg  != null ? g.streamBg  : (local.streamBg  != null ? local.streamBg  : null),
             streamLogo:g.streamLogo!= null ? g.streamLogo: (local.streamLogo!= null ? local.streamLogo: null),
