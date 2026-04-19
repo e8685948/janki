@@ -758,7 +758,7 @@ if (d.action === 'getFormData') {
       <button id="stream-export-btn" onclick="exportBroadcastImage()" class="stream-nav-btn" style="color:#5c9be0;border-color:rgba(92,155,224,.35);white-space:nowrap">📷 画像</button>
     </div>
   </div>
-  <div id="stream-inner" style="width:100%;max-width:800px;padding-top:100px;padding-bottom:24px;font-family:'Yu Gothic','游ゴシック',YuGothic,sans-serif"></div>
+  <div id="stream-inner" style="width:100%;max-width:800px;padding-top:100px;padding-bottom:24px;font-family:'Yu Gothic','游ゴシック',YuGothic,'Noto Sans JP',sans-serif"></div>
 </div>
 
 <!-- YouTube動画紐付けモーダル -->
@@ -1492,7 +1492,7 @@ function exportDailyImage() {
     : '';
 
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;${_bgStyle}padding:${PAD}px;box-sizing:border-box;font-family:'Yu Gothic','游ゴシック',YuGothic,sans-serif;overflow:hidden`;
+  wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;${_bgStyle}padding:${PAD}px;box-sizing:border-box;font-family:'Yu Gothic','游ゴシック',YuGothic,'Noto Sans JP',sans-serif;overflow:hidden`;
   wrapper.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:14px">
       <div style="font-size:1.4rem;font-weight:800;color:#ffffff;letter-spacing:.05em;line-height:1.4;text-shadow:0 2px 6px rgba(0,0,0,.9)">${_seasonLbl}　${_fullName}${leagueLbl ? '　'+leagueLbl : ''}　${dateStr}</div>
@@ -1737,7 +1737,7 @@ function _exportTotalImg() {
   const _bgStyle = g.streamBg
     ? `background-image:url('${g.streamBg}');background-size:cover;background-position:center;`
     : 'background:linear-gradient(150deg,#0e0e0c 0%,#080808 55%,#0c0e0c 100%);';
-  wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;${_bgStyle}padding:${PAD}px;box-sizing:border-box;font-family:'Yu Gothic','游ゴシック',YuGothic,sans-serif;overflow:hidden`;
+  wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;${_bgStyle}padding:${PAD}px;box-sizing:border-box;font-family:'Yu Gothic','游ゴシック',YuGothic,'Noto Sans JP',sans-serif;overflow:hidden`;
 
   const _expSeasonLbl = `第${g.season||1}期`;
   const _expFullName = (g.org||'')+g.name;
