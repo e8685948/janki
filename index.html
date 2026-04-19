@@ -936,6 +936,7 @@ let curRuleFilter = 'all';
 let pgLeague = 'A1';
 let pgRuleFilter = 'all';
 let gLeague = 'A1';
+let hzLeague = '_all';
 let mhLeague = 'A1';
 let lChart = null, rChart = null, aChart = null;
 let _graphAttendData = null;
@@ -3657,7 +3658,7 @@ function renderPlayerDetail(name, league, ruleFilter) {
     const {pts, ranks} = calcPts(h.scores, h.ky, uma, oka, kaeshi);
     // ルール名を特定
     const ruleLabel = h.uma ? (Object.entries(RULES).find(([,v])=>JSON.stringify(v.uma)===JSON.stringify(h.uma)&&v.oka===h.oka&&v.kaeshi===h.kaeshi)?.[1]?.label || 'カスタム') : (RULES[g.rule]?.label || 'カスタム');
-    return {date:h.date, score:h.scores[i], pt:pts[i], rank:ranks[i], ruleLabel};
+    return {date:h.date, score:h.scores[i], pt:pts[i], rank:ranks[i], ruleLabel, youtubeUrl:h.youtubeUrl||null};
   });
   const bestEntry = allPts.length ? allPts.reduce((a,b) => a.pt >= b.pt ? a : b) : null;
   const worstEntry = allPts.length ? allPts.reduce((a,b) => a.pt <= b.pt ? a : b) : null;
@@ -3791,6 +3792,7 @@ function renderPlayerDetail(name, league, ruleFilter) {
                 <span class="${bd}" style="width:18px;height:18px;font-size:.6rem">${x.rank}</span>
                 <span style="color:var(--tx2);font-size:.72rem">${x.date}</span>
                 <span style="font-size:.6rem;background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.25);color:var(--gold);padding:1px 5px;border-radius:3px">${x.ruleLabel}</span>
+                ${x.youtubeUrl ? `<a href="${x.youtubeUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;background:rgba(255,0,0,.15);border:1px solid rgba(255,0,0,.35);color:#ff4444;border-radius:5px;font-size:.7rem;font-weight:700;padding:2px 6px;text-decoration:none;line-height:1.4">▶</a>` : ''}
               </div>
               <div style="display:flex;gap:8px;align-items:center">
                 <span style="color:var(--tx2);font-size:.75rem">${x.score.toLocaleString()}</span>
@@ -4828,14 +4830,31 @@ function renderHanzos() {
   const g = curGroup;
   if (!g.hanzos.length && !(g.deleted&&g.deleted.length)) { el.innerHTML='<div class="empty"><span class="eico">🎴</span>まだ記録がありません</div>'; return; }
 
+  // リーグ一覧取得
+  const leagueSet = new Set(g.hanzos.map(h => h.league || ''));
+  const leagues = [...leagueSet].filter(l => l !== '');
+  const showTabs = leagues.length > 0;
+  if (!['_all', ...leagues].includes(hzLeague)) hzLeague = '_all';
+
+  // リーグフィルター適用
+  const filteredHanzos = hzLeague === '_all'
+    ? g.hanzos
+    : g.hanzos.filter(h => (h.league || '') === hzLeague);
+
   // 月別グループ化
   const byMonth = {};
-  [...g.hanzos].reverse().forEach((h, ri) => {
-    const oi = g.hanzos.length - 1 - ri;
+  [...filteredHanzos].reverse().forEach((h, ri) => {
+    const oi = g.hanzos.indexOf(h);
     const month = h.date.slice(0, 7); // YYYY-MM
     if (!byMonth[month]) byMonth[month] = [];
     byMonth[month].push({h, oi});
   });
+
+  // リーグタブHTML
+  const tabsHtml = showTabs ? `<div class="ltabs" style="margin-bottom:10px">
+    <div class="ltab ${hzLeague==='_all'?'on':''}" onclick="hzLeague='_all';renderHanzos()">全て</div>
+    ${leagues.map(l=>`<div class="ltab ${hzLeague===l?'on':''}" onclick="hzLeague='${l}';renderHanzos()">${l}リーグ</div>`).join('')}
+  </div>` : '';
 
   const wd = ['東','南','西','北'];
   const monthKeys = Object.keys(byMonth).sort((a,b) => b.localeCompare(a)); // 最新月順
@@ -4901,7 +4920,7 @@ function renderHanzos() {
       </div>`;
     }).join('')}</div>`;
   }
-  el.innerHTML = html;
+  el.innerHTML = tabsHtml + html;
 }
 
 function delH(id) { requireAuth(() => _delH(id)); }
