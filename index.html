@@ -1111,9 +1111,20 @@ async function loadFromGas(force = false) {
         if (!force && gasTs > 0 && gasTs <= localTs) return false;
         const deletedIds = getDeletedGroupIds();
         const filtered = deletedIds.length ? loaded.filter(g => !deletedIds.includes(g.id)) : loaded;
-        const newJson = JSON.stringify(filtered);
+        // GASに画像がない場合はローカルの画像を引き継ぐ
+        const localGroups = groups;
+        const merged = filtered.map(g => {
+          const local = localGroups.find(lg => lg.id === g.id);
+          if (!local) return g;
+          return Object.assign({}, g, {
+            img:       g.img       != null ? g.img       : (local.img       != null ? local.img       : null),
+            streamBg:  g.streamBg  != null ? g.streamBg  : (local.streamBg  != null ? local.streamBg  : null),
+            streamLogo:g.streamLogo!= null ? g.streamLogo: (local.streamLogo!= null ? local.streamLogo: null),
+          });
+        });
+        const newJson = JSON.stringify(merged);
         if (JSON.stringify(groups) === newJson) return false;
-        groups = filtered;
+        groups = merged;
         if (gasTs > 0) localStorage.setItem('janki_save_ts', String(gasTs));
         try { localStorage.setItem('janki_v2', newJson); } catch(e) {}
         return true;
@@ -1499,13 +1510,16 @@ function _renderDailyStream() {
     const ROW_H = 52;
     const BADGE_W = 38;
     const FS = 13;
+    const CELL_W = 72;
+    const NAME_W = 80;
+    const TOTAL_W = 80;
     const headerCells = games.map((_, i) =>
-      `<div style="flex:1;text-align:center;${i>0?'border-left:1px solid rgba(255,255,255,.3);':''}font-size:${Math.round(FS*.8)}px;color:rgba(255,255,255,.85);font-weight:600">${i+1}試合目</div>`
+      `<div style="width:${CELL_W}px;flex-shrink:0;text-align:center;${i>0?'border-left:1px solid rgba(255,255,255,.3);':''}font-size:${Math.round(FS*.8)}px;color:rgba(255,255,255,.85);font-weight:600">${i+1}試合目</div>`
     ).join('');
     const headerRow = `<div style="display:flex;align-items:center;padding:0 12px;gap:10px;margin-bottom:4px">
-      <div style="min-width:80px"></div>
-      <div style="flex:1;display:flex;justify-content:space-evenly">${headerCells}</div>
-      <div style="min-width:80px"></div>
+      <div style="width:${NAME_W}px;flex-shrink:0"></div>
+      <div style="flex:1;display:flex;justify-content:space-around">${headerCells}</div>
+      <div style="width:${TOTAL_W}px;flex-shrink:0"></div>
     </div>`;
 const rowsHtml = sorted.map((p, idx) => {
       const rank = idx + 1;
@@ -1517,18 +1531,18 @@ const rowsHtml = sorted.map((p, idx) => {
       const gameCells = d.games.map((v, i) => {
         const c = v === null ? '#aaa' : v > 0 ? '#4106F9' : v < 0 ? '#FC0303' : '#555';
         const s = v === null ? '—' : v > 0 ? '+' + parseFloat(v).toFixed(1) : parseFloat(v).toFixed(1);
-        return `<div style="flex:1;text-align:center;${i>0?'border-left:1px solid #e0e0e0;':''}">
-          <div style="font-size:${Math.round(FS*1.4)}px;font-weight:800;color:${c}">${s}</div>
+        return `<div style="width:${CELL_W}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;${i>0?'border-left:1px solid #e0e0e0;':''}">
+          <div style="font-size:${Math.round(FS*1.4)}px;font-weight:800;color:${c};font-variant-numeric:tabular-nums;text-align:center">${s}</div>
         </div>`;
       }).join('');
       return `<div style="display:flex;align-items:stretch;gap:6px;height:${ROW_H}px">
         <div style="flex:1;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden">
           <div style="transform:skewX(10deg);display:flex;align-items:center;height:100%;padding:0 12px;gap:10px;overflow:hidden">
-            <div style="min-width:80px;display:flex;align-items:center;font-size:${Math.round(FS*1.5)}px;font-weight:700;color:#1a1a2e;white-space:nowrap"><span style="overflow:hidden;text-overflow:ellipsis">${p}</span></div>
-            <div style="flex:1;display:flex;align-items:center;justify-content:space-evenly">${gameCells}</div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;border-left:1px solid #e0e0e0;padding-left:10px;min-width:80px">
+            <div style="width:${NAME_W}px;flex-shrink:0;display:flex;align-items:center;font-size:${Math.round(FS*1.5)}px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden"><span style="overflow:hidden;text-overflow:ellipsis">${p}</span></div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:space-around">${gameCells}</div>
+            <div style="width:${TOTAL_W}px;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;border-left:1px solid #e0e0e0;padding-left:10px">
               <div style="font-size:${Math.round(FS*.75)}px;color:#999;margin-bottom:1px">トータル</div>
-              <div style="font-size:${Math.round(FS*1.2)}px;font-weight:800;color:${totalC};white-space:nowrap">${totalS}</div>
+              <div style="font-size:${Math.round(FS*1.2)}px;font-weight:800;color:${totalC};white-space:nowrap;font-variant-numeric:tabular-nums">${totalS}</div>
             </div>
           </div>
         </div>
