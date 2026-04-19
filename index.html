@@ -991,17 +991,18 @@ function cancelPw() {
 
 // ===== 保存/読み込み =====
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxiB4TcM5GaxS_Ppua-vD-r3MWZA2jGCJCj2G9vPyS9NEFh6QnNybPGeHFFH5GA2QLE/exec';
+const IS_LOCAL = location.protocol === 'file:';
 
 function isPendingSync() { return localStorage.getItem('janki_pending') === '1'; }
 function setPendingSync(v) { localStorage.setItem('janki_pending', v ? '1' : '0'); }
 
 function save() {
-  // グループが0件の場合はGASを上書きしない（空データによるデータ消失を防止）
+  // グループが0件 or ローカルファイル起動の場合はGASを上書きしない
   if (groups.length === 0) return;
   const saveTs = Date.now();
   localStorage.setItem('janki_save_ts', String(saveTs));
   try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
-  if (navigator.onLine) {
+  if (navigator.onLine && !IS_LOCAL) {
     groups.filter(g => g.spreadsheetId).forEach(g => syncGroupToSpreadsheet(g));
     fetch(GAS_URL, {
       method: 'POST',
@@ -1112,7 +1113,7 @@ function load() {
 }
 
 async function loadFromGas(force = false) {
-  // 30秒以内に取得済みならスキップ（連打・頻繁な復帰対策）
+  if (IS_LOCAL) return false; // ローカルファイル起動時はGAS通信しない
   if (!force) {
     const lastFetch = parseInt(localStorage.getItem('janki_last_gas_fetch') || '0', 10);
     if (Date.now() - lastFetch < 10000) return false;
@@ -6023,6 +6024,7 @@ function saveHanzo(cont){
 
 
 function manualRefresh() {
+  if (IS_LOCAL) { showToast('ローカルファイルではGAS同期は無効です'); return; }
   const btn = document.getElementById('hdr-refresh');
   if (btn) { btn.textContent = '↻ 更新中…'; btn.disabled = true; }
   const restore = () => { if (btn) { btn.innerHTML = '↻ 更新'; btn.disabled = false; } };
@@ -6037,13 +6039,29 @@ function manualRefresh() {
     restore();
     return;
   }
-  // 強制的にGASから最新データを取得（キャッシュ・タイムスタンプをバイパス）
-  loadFromGas(true).then(ok => {
-    restore();
-    if (ok) {
-      refreshCurrentView();
-      const t = document.getElementById('toast');
-      if (t) { t.textContent = '✓ 最新データを取得しました'; t.style.opacity='1'; setTimeout(()=>{ t.style.opacity='0'; t.textContent='✓ 記録しました'; },2000); }
+  // GASから最新データを強制取得。GASが空の場合のみローカルを送信
+  fetch(GAS_URL).then(r => r.json()).then(json => {
+    const gasData = (json.ok && json.data) ? (() => { try { return JSON.parse(json.data); } catch(e) { return []; } })() : [];
+    if (gasData.length === 0 && groups.length > 0) {
+      // GASが空 → ローカルデータを復元送信
+      const saveTs = Date.now();
+      localStorage.setItem('janki_save_ts', String(saveTs));
+      fetch(GAS_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'text/plain'},
+        body: JSON.stringify({data: JSON.stringify(groups), ts: saveTs})
+      }).then(() => {
+        restore();
+        showToast('✓ ローカルデータをGASに復元しました');
+      }).catch(() => { restore(); showToast('⚠ GAS送信に失敗しました'); });
+    } else {
+      // 通常：GASから読み込む
+      localStorage.setItem('janki_last_gas_fetch', '0');
+      loadFromGas(true).then(ok => {
+        restore();
+        if (ok) { refreshCurrentView(); showToast('✓ 最新データを取得しました'); }
+        else { restore(); showToast('✓ データは最新です'); }
+      }).catch(() => restore());
     }
   }).catch(() => restore());
 }
