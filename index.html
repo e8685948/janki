@@ -1004,10 +1004,12 @@ function save() {
   try { localStorage.setItem('janki_v2', JSON.stringify(groups)); } catch(e) {}
   if (navigator.onLine && !IS_LOCAL) {
     groups.filter(g => g.spreadsheetId).forEach(g => syncGroupToSpreadsheet(g));
+    // GASへは画像データを除いて送信（データ肥大化防止）
+    const gasGroups = groups.map(g => Object.assign({}, g, {img:null, streamBg:null, streamLogo:null}));
     fetch(GAS_URL, {
       method: 'POST',
       headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({data: JSON.stringify(groups), ts: saveTs})
+      body: JSON.stringify({data: JSON.stringify(gasGroups), ts: saveTs})
     }).then(() => {
       setPendingSync(false);
       hideOfflineBadge();
@@ -1119,7 +1121,7 @@ async function loadFromGas(force = false) {
     if (Date.now() - lastFetch < 10000) return false;
   }
   try {
-    const res = await fetch(GAS_URL);
+    const res = await fetch(GAS_URL + (force ? '?t=' + Date.now() : ''));
     const json = await res.json();
     localStorage.setItem('janki_last_gas_fetch', String(Date.now()));
     if (json.ok && json.data) {
@@ -6039,29 +6041,23 @@ function manualRefresh() {
     restore();
     return;
   }
-  // GASから最新データを強制取得。GASが空の場合のみローカルを送信
-  fetch(GAS_URL).then(r => r.json()).then(json => {
+  // キャッシュバスティングでGAS最新データを取得しタイムスタンプで判定
+  fetch(GAS_URL + '?t=' + Date.now()).then(r => r.json()).then(json => {
     const gasData = (json.ok && json.data) ? (() => { try { return JSON.parse(json.data); } catch(e) { return []; } })() : [];
-    if (gasData.length === 0 && groups.length > 0) {
-      // GASが空 → ローカルデータを復元送信
-      const saveTs = Date.now();
-      localStorage.setItem('janki_save_ts', String(saveTs));
-      fetch(GAS_URL, {
-        method: 'POST',
-        headers: {'Content-Type': 'text/plain'},
-        body: JSON.stringify({data: JSON.stringify(groups), ts: saveTs})
-      }).then(() => {
-        restore();
-        showToast('✓ ローカルデータをGASに復元しました');
-      }).catch(() => { restore(); showToast('⚠ GAS送信に失敗しました'); });
-    } else {
-      // 通常：GASから読み込む
+    const gasTs   = parseInt(json.ts || '0', 10);
+    const localTs = parseInt(localStorage.getItem('janki_save_ts') || '0', 10);
+
+    // 更新ボタンはGASからの読み込みのみ（書き込みは行わない）
+    if (gasData.length > 0) {
       localStorage.setItem('janki_last_gas_fetch', '0');
       loadFromGas(true).then(ok => {
         restore();
         if (ok) { refreshCurrentView(); showToast('✓ 最新データを取得しました'); }
         else { restore(); showToast('✓ データは最新です'); }
       }).catch(() => restore());
+    } else {
+      restore();
+      showToast('✓ データは最新です');
     }
   }).catch(() => restore());
 }
