@@ -1431,29 +1431,43 @@ function exportDailyImage() {
     ? `background-image:url('${g.streamBg}');background-size:cover;background-position:center;`
     : 'background:linear-gradient(150deg,#0e0e0c 0%,#080808 55%,#0c0e0c 100%);';
 
+  const CELL_W = Math.round(fontSize * 5.5);
+  const NAME_W = Math.round(fontSize * 12);
+  const TOTAL_W = Math.round(fontSize * 7);
+  const headerCells = games.map((_, i) =>
+    `<div style="flex:1;text-align:center;${i>0?'border-left:1px solid rgba(255,255,255,.3);':''}font-size:${Math.round(fontSize*.8)}px;color:rgba(255,255,255,.85);font-weight:600">${i+1}試合目</div>`
+  ).join('');
+  const headerRow = `<div style="display:flex;align-items:center;padding:0 16px;gap:0;margin-bottom:6px">
+    <div style="width:${NAME_W}px;flex-shrink:0"></div>
+    <div style="flex:1;display:flex">${headerCells}</div>
+    <div style="width:${TOTAL_W}px;flex-shrink:0"></div>
+  </div>`;
   const rowsHtml = sorted.map((p, idx) => {
     const rank = idx + 1;
     const d = data[p] || { games: Array(games.length).fill(null), total: 0 };
     const z = _zoneInfo(dailyViewLeague, rank, sorted.length);
     const totalC = d.total > 0 ? '#4106F9' : d.total < 0 ? '#FC0303' : '#555';
-    const totalS = d.total > 0 ? `+ ${d.total} pt` : d.total < 0 ? `- ${Math.abs(d.total)} pt` : `0 pt`;
+    const totalFixed = parseFloat(d.total).toFixed(1);
+    const totalS = d.total > 0 ? `+ ${totalFixed} pt` : d.total < 0 ? `- ${Math.abs(parseFloat(d.total)).toFixed(1)} pt` : `0.0 pt`;
     const gameCells = d.games.map((v, i) => {
       const c = v === null ? '#aaa' : v > 0 ? '#4106F9' : v < 0 ? '#FC0303' : '#555';
-      const s = v === null ? '—' : v > 0 ? `+${v}` : String(v);
-      return `<div style="text-align:center;flex:1;${i>0?'border-left:1px solid #e0e0e0;':''}"
-      >
-        <div style="font-size:${Math.round(fontSize*.82)}px;color:#888;margin-bottom:4px;font-weight:600">${i+1}試合目</div>
-        <div style="font-size:${Math.round(fontSize*1.2)}px;font-weight:800;color:${c}">${s}</div>
+      const s = v === null ? '—' : v > 0 ? '+' + parseFloat(v).toFixed(1) : parseFloat(v).toFixed(1);
+      return `<div style="flex:1;display:flex;align-items:center;justify-content:center;${i>0?'border-left:1px solid #e0e0e0;':''}">
+        <div style="font-size:${Math.round(fontSize*1.4)}px;font-weight:800;color:${c};font-variant-numeric:tabular-nums">${s}</div>
       </div>`;
     }).join('');
-    return `<div style="display:flex;align-items:stretch;gap:8px;height:${rowH}px">
+    return `<div style="display:flex;align-items:stretch;gap:0;height:${rowH}px">
+      <div style="width:${NAME_W}px;flex-shrink:0;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden;border-right:2px solid #e0e0e0">
+        <div style="transform:skewX(10deg);display:flex;align-items:center;justify-content:center;height:100%;padding:0 16px;overflow:visible">
+          <span style="font-size:${Math.round(fontSize*1.5)}px;font-weight:700;color:#1a1a2e;white-space:nowrap">${p}</span>
+        </div>
+      </div>
       <div style="flex:1;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden">
         <div style="transform:skewX(10deg);display:flex;align-items:center;height:100%;padding:0 16px;gap:14px;overflow:hidden">
-          <div style="min-width:${Math.round(fontSize*5)}px;display:flex;align-items:center;font-size:${fontSize}px;font-weight:700;color:#1a1a2e;white-space:nowrap"><span style="overflow:hidden;text-overflow:ellipsis">${p}</span></div>
-          <div style="flex:1;display:flex;align-items:center;justify-content:space-evenly">${gameCells}</div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;border-left:1px solid #e0e0e0;padding-left:14px;min-width:${Math.round(fontSize*7)}px">
+          <div style="flex:1;display:flex;align-items:center">${gameCells}</div>
+          <div style="width:${TOTAL_W}px;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;border-left:1px solid #e0e0e0;padding-left:14px">
             <div style="font-size:${Math.round(fontSize*.62)}px;color:#999;margin-bottom:2px">トータル</div>
-            <div style="font-size:${Math.round(fontSize*1.2)}px;font-weight:800;color:${totalC};white-space:nowrap">${totalS}</div>
+            <div style="font-size:${Math.round(fontSize*1.2)}px;font-weight:800;color:${totalC};white-space:nowrap;font-variant-numeric:tabular-nums">${totalS}</div>
           </div>
         </div>
       </div>
@@ -1473,6 +1487,7 @@ function exportDailyImage() {
       <div style="font-size:1.4rem;font-weight:800;color:#ffffff;letter-spacing:.05em;line-height:1.4;text-shadow:0 2px 6px rgba(0,0,0,.9)">${_seasonLbl}　${_fullName}${leagueLbl ? '　'+leagueLbl : ''}　${dateStr}</div>
       ${_logoHtml}
     </div>
+    ${headerRow}
     <div style="display:flex;flex-direction:column;gap:${ROW_GAP}px;overflow:hidden">${rowsHtml}</div>`;
 
   document.body.appendChild(wrapper);
@@ -1511,17 +1526,17 @@ function _renderDailyStream() {
     const BADGE_W = 38;
     const FS = 13;
     const CELL_W = 72;
-    const NAME_W = 80;
+    const NAME_W = 160;
     const TOTAL_W = 80;
     const headerCells = games.map((_, i) =>
-      `<div style="width:${CELL_W}px;flex-shrink:0;text-align:center;${i>0?'border-left:1px solid rgba(255,255,255,.3);':''}font-size:${Math.round(FS*.8)}px;color:rgba(255,255,255,.85);font-weight:600">${i+1}試合目</div>`
+      `<div style="flex:1;text-align:center;${i>0?'border-left:1px solid rgba(255,255,255,.3);':''}font-size:${Math.round(FS*.8)}px;color:rgba(255,255,255,.85);font-weight:600">${i+1}試合目</div>`
     ).join('');
-    const headerRow = `<div style="display:flex;align-items:center;padding:0 12px;gap:10px;margin-bottom:4px">
+    const headerRow = `<div style="display:flex;align-items:center;margin-bottom:4px;gap:0">
       <div style="width:${NAME_W}px;flex-shrink:0"></div>
-      <div style="flex:1;display:flex;justify-content:space-around">${headerCells}</div>
+      <div style="flex:1;display:flex;padding:0 12px">${headerCells}</div>
       <div style="width:${TOTAL_W}px;flex-shrink:0"></div>
     </div>`;
-const rowsHtml = sorted.map((p, idx) => {
+    const rowsHtml = sorted.map((p, idx) => {
       const rank = idx + 1;
       const d = data[p] || { games: Array(games.length).fill(null), total: 0 };
       const z = _zoneInfo(dailyViewLeague, rank, sorted.length);
@@ -1531,15 +1546,19 @@ const rowsHtml = sorted.map((p, idx) => {
       const gameCells = d.games.map((v, i) => {
         const c = v === null ? '#aaa' : v > 0 ? '#4106F9' : v < 0 ? '#FC0303' : '#555';
         const s = v === null ? '—' : v > 0 ? '+' + parseFloat(v).toFixed(1) : parseFloat(v).toFixed(1);
-        return `<div style="width:${CELL_W}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;${i>0?'border-left:1px solid #e0e0e0;':''}">
+        return `<div style="flex:1;display:flex;align-items:center;justify-content:center;${i>0?'border-left:1px solid #e0e0e0;':''}">
           <div style="font-size:${Math.round(FS*1.4)}px;font-weight:800;color:${c};font-variant-numeric:tabular-nums;text-align:center">${s}</div>
         </div>`;
       }).join('');
-      return `<div style="display:flex;align-items:stretch;gap:6px;height:${ROW_H}px">
+      return `<div style="display:flex;align-items:stretch;gap:0;height:${ROW_H}px">
+        <div style="width:${NAME_W}px;flex-shrink:0;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden;border-right:2px solid #e0e0e0">
+          <div style="transform:skewX(10deg);display:flex;align-items:center;justify-content:center;height:100%;padding:0 10px">
+            <span style="font-size:${Math.round(FS*1.5)}px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${p}</span>
+          </div>
+        </div>
         <div style="flex:1;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden">
           <div style="transform:skewX(10deg);display:flex;align-items:center;height:100%;padding:0 12px;gap:10px;overflow:hidden">
-            <div style="width:${NAME_W}px;flex-shrink:0;display:flex;align-items:center;font-size:${Math.round(FS*1.5)}px;font-weight:700;color:#1a1a2e;white-space:nowrap;overflow:hidden"><span style="overflow:hidden;text-overflow:ellipsis">${p}</span></div>
-            <div style="flex:1;display:flex;align-items:center;justify-content:space-around">${gameCells}</div>
+            <div style="flex:1;display:flex;align-items:center">${gameCells}</div>
             <div style="width:${TOTAL_W}px;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;border-left:1px solid #e0e0e0;padding-left:10px">
               <div style="font-size:${Math.round(FS*.75)}px;color:#999;margin-bottom:1px">トータル</div>
               <div style="font-size:${Math.round(FS*1.2)}px;font-weight:800;color:${totalC};white-space:nowrap;font-variant-numeric:tabular-nums">${totalS}</div>
