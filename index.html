@@ -287,7 +287,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   
 <div id="hdr">
   <div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div>
-  <button id="hdr-refresh" onclick="manualRefresh()" style="background:none;border:1px solid rgba(255,255,255,.15);color:var(--tx2);border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">↺ 更新</button>
+  <button id="hdr-refresh" onclick="manualRefresh()" style="background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.5);color:var(--gold);border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700">↺ 更新</button>
 </div>
 
 <div id="tabs" style="display:none">
@@ -731,7 +731,9 @@ if (d.action === 'getFormData') {
       <select id="daily-date-select" onchange="dailySelectDate(this.value)" class="fs" style="width:100%;text-align:center;font-size:.9rem;font-weight:700;letter-spacing:.04em"></select>
     </div>
     <!-- リーグタブ -->
-    <div class="ltabs" id="daily-ltabs" style="margin-bottom:10px"></div>
+    <div class="ltabs" id="daily-ltabs" style="margin-bottom:6px"></div>
+    <!-- セッションタブ -->
+    <div class="ltabs" id="daily-stabs" style="margin-bottom:10px"></div>
     <!-- テーブル -->
     <div id="daily-table" style="min-height:80px"></div>
     <div class="mbtns" style="margin-top:14px">
@@ -859,6 +861,14 @@ if (d.action === 'getFormData') {
       </div>
       <div id="penalty-list"></div>
     </div>
+    <div class="fg" id="mh-session-wrap">
+      <label class="fl">セッション（任意）</label>
+      <div style="display:flex;gap:6px">
+        <div class="ltab on" id="msb-none" onclick="setMhSession('')" style="flex:1">指定なし</div>
+        <div class="ltab" id="msb-am" onclick="setMhSession('前半')" style="flex:1">前半</div>
+        <div class="ltab" id="msb-pm" onclick="setMhSession('後半')" style="flex:1">後半</div>
+      </div>
+    </div>
     <div class="fg">
       <label class="fl">YouTube URL（任意）</label>
       <input class="fi" id="mh-youtube" placeholder="https://youtube.com/watch?v=..." type="url">
@@ -939,6 +949,7 @@ let pgRuleFilter = 'all';
 let gLeague = 'A1';
 let hzLeague = '_all';
 let mhLeague = 'A1';
+let mhSession = '';
 let lChart = null, rChart = null, aChart = null;
 let _graphAttendData = null;
 
@@ -1115,7 +1126,7 @@ function load() {
 }
 
 async function loadFromGas(force = false) {
-  if (IS_LOCAL) return false; // ローカルファイル起動時はGAS通信しない
+  // IS_LOCALでも受信は許可（送信のみ禁止）
   if (!force) {
     const lastFetch = parseInt(localStorage.getItem('janki_last_gas_fetch') || '0', 10);
     if (Date.now() - lastFetch < 10000) return false;
@@ -1273,6 +1284,7 @@ function getDok(league) {
 // ===== 配信 =====
 let dailyViewDate = '';
 let dailyViewLeague = '';
+let dailyViewSession = ''; // '' | '前半' | '後半'
 let broadcastMode = 'daily'; // 'daily' | 'total'
 
 function _getDailyLeagues() {
@@ -1291,11 +1303,11 @@ function _getDailyDates(league) {
   )].sort();
 }
 
-function _getDailyData(date, league) {
+function _getDailyData(date, league, session) {
   if (!curGroup || !date) return null;
   const g = curGroup;
   const tgt = league === '_default' ? '' : league;
-  const games = g.hanzos.filter(h => h.date === date && (h.league || '') === tgt).sort((a, b) => a.id - b.id);
+  const games = g.hanzos.filter(h => h.date === date && (h.league || '') === tgt && (!session || (h.session || '') === session)).sort((a, b) => a.id - b.id);
   if (!games.length) return { players: [], games: [], data: {} };
   // その日に出場した選手のみ（リーグ登録順を維持し、未登録は末尾）
   const allPlayers = league === '_default' ? (g._players || []) : (g.players[league] || []);
@@ -1364,8 +1376,15 @@ function dailySelectDate(val) {
 
 function dailySetLeague(l) {
   dailyViewLeague = l;
+  dailyViewSession = '';
   const dates = _getDailyDates(l);
   if (dates.length && !dates.includes(dailyViewDate)) dailyViewDate = dates[dates.length - 1];
+  if (document.getElementById('stream-overlay').style.display === 'flex') { renderStreamContent(); return; }
+  _renderDailyModal();
+}
+
+function dailySetSession(s) {
+  dailyViewSession = s;
   if (document.getElementById('stream-overlay').style.display === 'flex') { renderStreamContent(); return; }
   _renderDailyModal();
 }
@@ -1391,10 +1410,19 @@ function _renderDailyModal() {
   // 日付プルダウン
   const dates = _getDailyDates(dailyViewLeague);
   _buildDateSelect(document.getElementById('daily-date-select'), dates);
+  // セッションタブ（前半/後半が存在する日のみ表示）
+  const stabs = document.getElementById('daily-stabs');
+  if (stabs) {
+    const allForDate = curGroup ? curGroup.hanzos.filter(h => h.date === dailyViewDate && (h.league||'') === (dailyViewLeague==='_default'?'':dailyViewLeague)) : [];
+    const hasSessions = allForDate.some(h => h.session === '前半' || h.session === '後半');
+    stabs.innerHTML = hasSessions
+      ? ['','前半','後半'].map(s => `<div class="ltab ${dailyViewSession===s?'on':''}" onclick="dailySetSession('${s}')">${s||'全体'}</div>`).join('')
+      : '';
+  }
   // テーブル
   const el = document.getElementById('daily-table');
   if (!el) return;
-  const daily = _getDailyData(dailyViewDate, dailyViewLeague);
+  const daily = _getDailyData(dailyViewDate, dailyViewLeague, dailyViewSession);
   if (!daily || !daily.games.length) {
     el.innerHTML = '<div class="empty" style="padding:20px 0;font-size:.82rem">この日の試合はありません</div>';
     return;
@@ -1443,11 +1471,12 @@ function exportDailyImage() {
   if (!curGroup) return;
   if (typeof html2canvas === 'undefined') { alert('html2canvasライブラリの読み込み中です'); return; }
   const g = curGroup;
-  const daily = _getDailyData(dailyViewDate, dailyViewLeague);
+  const daily = _getDailyData(dailyViewDate, dailyViewLeague, dailyViewSession);
   if (!daily || !daily.games.length) { alert('この日の試合データがありません'); return; }
   const { players, games, data } = daily;
   const sorted = [...players].sort((a, b) => (data[b]?.total || 0) - (data[a]?.total || 0));
   const leagueLbl = dailyViewLeague === '_default' ? '' : `${dailyViewLeague}リーグ`;
+  const sessionLblExp = dailyViewSession ? `　${dailyViewSession}` : '';
   const dateStr = dailyViewDate.replace(/-/g, '/');
 
   const W = 1280, H = 720;
@@ -1515,7 +1544,7 @@ function exportDailyImage() {
   wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;${_bgStyle}padding:${PAD}px;box-sizing:border-box;font-family:'Yu Gothic','游ゴシック',YuGothic,'Noto Sans JP',sans-serif;overflow:hidden`;
   wrapper.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:14px">
-      <div style="font-size:1.4rem;font-weight:800;color:#ffffff;letter-spacing:.05em;line-height:1.4;text-shadow:0 2px 6px rgba(0,0,0,.9)">${_seasonLbl}　${_fullName}${leagueLbl ? '　'+leagueLbl : ''}　${dateStr}</div>
+      <div style="font-size:1.4rem;font-weight:800;color:#ffffff;letter-spacing:.05em;line-height:1.4;text-shadow:0 2px 6px rgba(0,0,0,.9)">${_seasonLbl}　${_fullName}${leagueLbl ? '　'+leagueLbl : ''}　${dateStr}${sessionLblExp}</div>
       ${_logoHtml}
     </div>
     ${headerRow}
@@ -1527,7 +1556,8 @@ function exportDailyImage() {
     const a = document.createElement('a');
     const dt = dailyViewDate.replace(/-/g, '');
     const lg = dailyViewLeague === '_default' ? '' : `_${dailyViewLeague}`;
-    a.download = `${g.name}_${dt}${lg}_日別.png`;
+    const ss = dailyViewSession ? `_${dailyViewSession}` : '';
+    a.download = `${g.name}_${dt}${lg}${ss}_日別.png`;
     a.href = canvas.toDataURL('image/png');
     a.click();
   }).catch(() => { if (document.body.contains(wrapper)) document.body.removeChild(wrapper); alert('画像出力に失敗しました'); });
@@ -1540,9 +1570,14 @@ function _renderDailyStream() {
   if (!inner || !curGroup) return;
   const g = curGroup;
   const ls = _getDailyLeagues();
-  const daily = _getDailyData(dailyViewDate, dailyViewLeague);
+  // セッションタブ表示用：その日前半/後半が存在するか確認
+  const tgtLeague = dailyViewLeague === '_default' ? '' : dailyViewLeague;
+  const allForDate = g.hanzos.filter(h => h.date === dailyViewDate && (h.league||'') === tgtLeague);
+  const hasSessions = allForDate.some(h => h.session === '前半' || h.session === '後半');
+  const daily = _getDailyData(dailyViewDate, dailyViewLeague, dailyViewSession);
   const dateStr = dailyViewDate ? dailyViewDate.replace(/-/g, '/') : '';
   const leagueLbl = dailyViewLeague === '_default' ? '' : `${dailyViewLeague}リーグ`;
+  const sessionLbl = dailyViewSession ? `　${dailyViewSession}` : '';
   const _seasonLbl = `第${g.season||1}期`;
   const _fullName = (g.org||'')+g.name;
   const _streamLogoHtml = g.streamLogo
@@ -1603,10 +1638,11 @@ function _renderDailyStream() {
 
   inner.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:10px">
-      <div style="font-size:1.1rem;font-weight:800;color:#ffffff;letter-spacing:.05em;text-shadow:0 2px 6px rgba(0,0,0,.9)">${_seasonLbl}　${_fullName}${leagueLbl ? '　'+leagueLbl : ''}　${dateStr}</div>
+      <div style="font-size:1.1rem;font-weight:800;color:#ffffff;letter-spacing:.05em;text-shadow:0 2px 6px rgba(0,0,0,.9)">${_seasonLbl}　${_fullName}${leagueLbl ? '　'+leagueLbl : ''}　${dateStr}${sessionLbl}</div>
       ${_streamLogoHtml}
     </div>
-    ${ls.length > 1 ? `<div class="ltabs" style="justify-content:center;margin-bottom:12px">${ls.map(l => `<div class="ltab ${l===dailyViewLeague?'on':''}" onclick="dailySetLeague('${l}')" style="flex:none;padding:7px 20px">${l==='_default'?'全体':l+'リーグ'}</div>`).join('')}</div>` : ''}
+    ${ls.length > 1 ? `<div class="ltabs" style="justify-content:center;margin-bottom:8px">${ls.map(l => `<div class="ltab ${l===dailyViewLeague?'on':''}" onclick="dailySetLeague('${l}')" style="flex:none;padding:7px 20px">${l==='_default'?'全体':l+'リーグ'}</div>`).join('')}</div>` : ''}
+    ${hasSessions ? `<div class="ltabs" style="justify-content:center;margin-bottom:12px">${['','前半','後半'].map(s => `<div class="ltab ${dailyViewSession===s?'on':''}" onclick="dailySetSession('${s}')" style="flex:none;padding:7px 20px">${s||'全体'}</div>`).join('')}</div>` : ''}
     <div style="display:flex;flex-direction:column;gap:10px">${cardsHtml}</div>`;
 }
 
@@ -1887,6 +1923,7 @@ function openGroup(id) {
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none">
       <div style="font-size:1.1rem;font-weight:700;color:var(--gold)">${curGroup.name}</div>
     </div>
+    <button id="hdr-refresh" onclick="manualRefresh()" style="background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.5);color:var(--gold);border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700">↺ 更新</button>
     `;
   document.getElementById('tabs').style.display = 'flex';
   document.getElementById('screen-top').classList.remove('on');
@@ -1900,7 +1937,7 @@ function openGroup(id) {
 
 function goTop() {
   curGroup = null;
-  document.getElementById('hdr').innerHTML = '<div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div>';
+  document.getElementById('hdr').innerHTML = '<div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div><button id="hdr-refresh" onclick="manualRefresh()" style="background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.5);color:var(--gold);border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:\'Noto Sans JP\',sans-serif;font-weight:700">↺ 更新</button>';
   document.getElementById('tabs').style.display = 'none';
   document.getElementById('screen-main').classList.remove('on');
   document.getElementById('screen-top').classList.add('on');
@@ -4902,7 +4939,7 @@ function renderHanzos() {
         <div class="hi-del" id="del-${h.id}">削除</div>
         <div class="hi" id="hi-${h.id}" ontouchstart="tsStart(event,${h.id})" ontouchmove="tsMove(event,${h.id})" ontouchend="tsEnd(event,${h.id})" onclick="tsClick(event,${h.id})">
           <div class="hi-head"><span class="drag-handle">⋮⋮</span><span class="hi-num">#${oi+1}</span>
-            <div style="flex:1"><div class="hi-top">${h.date}　<span style="font-size:.72rem;color:var(--tx2);font-weight:400">${new Date(h.id).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span></div></div>
+            <div style="flex:1"><div class="hi-top">${h.date}　<span style="font-size:.72rem;color:var(--tx2);font-weight:400">${new Date(h.id).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span>${h.session?`　<span style="font-size:.65rem;background:rgba(212,168,67,.2);border:1px solid rgba(212,168,67,.5);color:var(--gold);padding:1px 5px;border-radius:4px">${h.session}</span>`:''}</div></div>
             <span style="font-size:.88rem;font-weight:700;color:var(--green)">+${pts[ti]}</span>
             <span style="font-size:.75rem;color:var(--tx2);margin-left:2px">${h.players[ti]}</span>
             ${h.youtubeUrl ? `<a href="${h.youtubeUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;background:rgba(255,0,0,.15);border:1px solid rgba(255,0,0,.35);color:#ff4444;border-radius:5px;font-size:.7rem;font-weight:700;padding:2px 6px;margin-left:4px;text-decoration:none;line-height:1.4">▶</a>` : ''}
@@ -5738,6 +5775,7 @@ function _editH(id) {
   document.getElementById('mh-ky').value = h.ky || 0;
   const ytEl = document.getElementById('mh-youtube');
   if (ytEl) ytEl.value = h.youtubeUrl || '';
+  setMhSession(h.session || '');
   penalties = h.penalties ? [...h.penalties] : [];
   renderPenalties();
   updateMhPreview();
@@ -5773,6 +5811,7 @@ function _openHanzoModal(){
   document.getElementById('mh-cont').style.display = '';
   const ytElNew = document.getElementById('mh-youtube');
   if (ytElNew) ytElNew.value = '';
+  setMhSession('');
   // 詳細入力リセット
   mhDetailOpen = false;
   mhDetailMode = 'manual';
@@ -5809,6 +5848,15 @@ function setMhLeague(l){
   const leagues=Object.keys(curGroup.players).filter(k=>curGroup.players[k].length>0);
   leagues.forEach(ll=>{ const el=document.getElementById('mlb-'+ll); if(el) el.classList.toggle('on',ll===l); });
   buildMhSelects(); updateMhPreview();
+}
+
+function setMhSession(s) {
+  mhSession = s;
+  ['','前半','後半'].forEach(v => {
+    const id = v === '' ? 'msb-none' : v === '前半' ? 'msb-am' : 'msb-pm';
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('on', v === s);
+  });
 }
 
 function getMhRule(){
@@ -5973,6 +6021,7 @@ function saveHanzo(cont){
         ...old,
         date: d,
         league: mhLeague === '_default' ? '' : mhLeague,
+        session: mhSession || undefined,
         players, scores, ky,
         rounds, detail,
         penalties: validPenalties,
@@ -5990,7 +6039,7 @@ function saveHanzo(cont){
     showToast();
     return;
   }
-  curGroup.hanzos.push({id:Date.now(), date:d, league:mhLeague==='_default'?'':mhLeague, players, scores, ky, rounds, detail,
+  curGroup.hanzos.push({id:Date.now(), date:d, league:mhLeague==='_default'?'':mhLeague, session:mhSession||undefined, players, scores, ky, rounds, detail,
     penalties: validPenalties,
     uma:[...r.uma], oka:r.oka, kaeshi:r.kaeshi,
     youtubeUrl: youtubeUrl || undefined});
@@ -6026,7 +6075,7 @@ function saveHanzo(cont){
 
 
 function manualRefresh() {
-  if (IS_LOCAL) { showToast('ローカルファイルではGAS同期は無効です'); return; }
+  // IS_LOCALでもGASからの受信は可能（送信は行わない）
   const btn = document.getElementById('hdr-refresh');
   if (btn) { btn.textContent = '↻ 更新中…'; btn.disabled = true; }
   const restore = () => { if (btn) { btn.innerHTML = '↻ 更新'; btn.disabled = false; } };
@@ -6036,7 +6085,7 @@ function manualRefresh() {
     if (t) { t.textContent = 'オフラインのため更新できません'; t.style.opacity='1'; setTimeout(()=>{ t.style.opacity='0'; t.textContent='✓ 記録しました'; },2000); }
     return;
   }
-  if (isPendingSync()) {
+  if (!IS_LOCAL && isPendingSync()) {
     syncPendingData();
     restore();
     return;
