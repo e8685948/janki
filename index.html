@@ -33,7 +33,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
 /* ヘッダー */
 #hdr{background:linear-gradient(90deg,#0d0d0f,#1a1a24,#0d0d0f);border-bottom:1px solid var(--bd);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100}
-.logo{font-family:'Shippori Mincho',serif;font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo{display:flex;align-items:center}.logo img{height:36px;object-fit:contain}
 .logo-sub{font-size:.6rem;color:var(--tx2);letter-spacing:.2em}
 .back-btn{background:none;border:none;color:var(--gold);font-size:.85rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;padding:6px 0}
 
@@ -66,6 +66,40 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .b2{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.68rem;font-weight:700;margin-right:5px;background:linear-gradient(135deg,#8a9ab0,#b0bec5);color:#0d0d0f}
 .b3{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.68rem;font-weight:700;margin-right:5px;background:linear-gradient(135deg,#a0622a,#c47d3a);color:#fff}
 .bx{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.68rem;font-weight:700;margin-right:5px;background:var(--bg3);color:var(--tx2)}
+.lg-btn{padding:5px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;border:1px solid var(--bd);background:rgba(255,255,255,.05);color:var(--tx2)}.lg-btn.on{border-color:var(--gold);background:rgba(212,168,67,.2);color:var(--gold)}
+
+/* ===== ボタン階層 ===== */
+.btn-danger{background:rgba(224,82,82,.12);border:1px solid rgba(224,82,82,.45);color:#ff8080;border-radius:8px;padding:10px 14px;font-family:'Noto Sans JP',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer}
+.btn-ghost{background:none;border:none;color:var(--gold);font-family:'Noto Sans JP',sans-serif;font-size:.78rem;cursor:pointer;padding:6px 10px}
+/* ===== ランキング カード（スマホ） ===== */
+.rk-card{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:11px 12px;margin-bottom:8px;cursor:pointer}
+.rk-card:active{opacity:.75}
+.rk-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.rk-card-stats{display:flex;gap:0;border-top:1px solid rgba(255,255,255,.06);padding-top:7px}
+.rk-stat{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}
+.rk-stat-v{font-size:.7rem;font-weight:700;color:var(--tx)}
+.rk-stat-l{font-size:.52rem;color:var(--tx2);margin-top:1px}
+/* ===== サマリー数値 ===== */
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.sum-item{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px}
+.sum-v{font-size:1.1rem;font-weight:700;color:var(--gold);line-height:1.2}
+.sum-l{font-size:.58rem;color:var(--tx2);margin-top:2px}
+/* ===== 下部ナビ（モバイル） ===== */
+#bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--bd);z-index:99;padding:0 0 env(safe-area-inset-bottom,0);display:none}
+#bottom-nav.show{display:flex;justify-content:center}
+#bottom-nav>div{display:flex;width:100%;max-width:500px}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 2px 5px;background:none;border:none;color:var(--tx2);font-family:'Noto Sans JP',sans-serif;font-size:.5rem;cursor:pointer;gap:2px;min-width:0;letter-spacing:.02em}
+.bnav-item.on{color:var(--gold)}
+.bnav-ico{font-size:1.05rem;line-height:1.2}
+.bnav-add .bnav-ico{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1200;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;margin-bottom:1px}
+/* スマホ切替 */
+@media(max-width:599px){
+  #tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  #tabs::-webkit-scrollbar{display:none}
+  #tabs .tab{flex:none;min-width:52px;font-size:.62rem;padding:10px 6px}
+  .wrap{padding-bottom:68px}
+}
+.lg-chip{display:inline-flex;align-items:center;padding:4px 9px;border-radius:20px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;border:2px solid transparent;background:rgba(255,255,255,.05);color:var(--tx2);white-space:nowrap;user-select:none;-webkit-user-select:none}
 .pp{color:var(--green);font-weight:700}.pm{color:var(--red)}.pz{color:var(--tx2)}
 .nm{font-weight:700}
 .bar-w{height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:3px}
@@ -286,14 +320,14 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <body>
   
 <div id="hdr">
-  <div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div>
+  <div><div class="logo"><img src="janki-logo.png" alt="雀記"></div></div>
   <button id="hdr-refresh" onclick="manualRefresh()" style="background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.5);color:var(--gold);border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700">↺ 更新</button>
 </div>
 
 <div id="tabs" style="display:none">
-  <button class="tab on" id="tab-ranking" onclick="showTab('ranking')">全体成績</button>
+  <button class="tab on" id="tab-ranking" onclick="showTab('ranking')">ランキング</button>
   <button class="tab" id="tab-players" onclick="showTab('players')">個人成績</button>
-  <button class="tab" id="tab-hanzos" onclick="showTab('hanzos')">半荘・試合結果</button>
+  <button class="tab" id="tab-hanzos" onclick="showTab('hanzos')">対局履歴</button>
   <button class="tab" id="tab-graph" onclick="showTab('graph')">グラフ</button>
   <button class="tab" id="tab-condition" onclick="showTab('condition')">条件計算</button>
   <button class="tab" id="tab-settings" onclick="showTab('settings')">設定</button>
@@ -301,7 +335,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
 <!-- トップ -->
 <div id="screen-top" class="screen on">
-  <div class="top-hero"><div class="top-title">雀記</div><div class="top-sub">MAHJONG SCORE MANAGER</div></div>
+  <div class="top-hero"><img src="janki-logo.png" alt="雀記" style="height:120px;object-fit:contain;display:block;margin:0 auto"><div class="top-sub">MAHJONG SCORE MANAGER</div></div>
   <div class="wrap">
     <div id="group-list"></div>
     <button class="add-gc-btn" onclick="openGroupModal()">＋ 新しい大会・グループを作成</button>
@@ -333,7 +367,19 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           </div>
         </div>
         <div id="gbody-line" style="display:none;padding:0 14px 14px">
-          <div class="chart-wrap" id="gwrap-line"><canvas id="gc-line"></canvas></div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+            <button class="lg-btn on" onclick="setLineMode('top5')">上位5</button>
+            <button class="lg-btn" onclick="setLineMode('bottom5')">下位5</button>
+            <button class="lg-btn" onclick="setLineMode('all')">全員</button>
+            <button class="lg-btn" onclick="setLineMode('select')">選手選択</button>
+          </div>
+          <div id="lg-chips-wrap" style="display:none;overflow-x:auto;margin-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:thin">
+            <div id="lg-chips" style="display:inline-flex;gap:5px;padding:2px 0"></div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:flex-start">
+            <div class="chart-wrap" id="gwrap-line" style="flex:1;min-width:0;height:clamp(260px,45vw,340px)"><canvas id="gc-line"></canvas></div>
+            <div id="lg-labels" style="display:flex;flex-direction:column;gap:5px;padding:8px 0;width:72px;flex-shrink:0;font-family:'Noto Sans JP',sans-serif"></div>
+          </div>
         </div>
       </div>
       <div class="card" style="padding:0;overflow:hidden">
@@ -345,7 +391,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           </div>
         </div>
         <div id="gbody-rank" style="display:none;padding:0 14px 14px">
-          <div class="chart-wrap" style="height:200px" id="gwrap-rank"><canvas id="gc-rank"></canvas></div>
+          <div id="rank-graph-body"></div>
         </div>
       </div>
       <div class="card" style="padding:0;overflow:hidden">
@@ -357,7 +403,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           </div>
         </div>
         <div id="gbody-attend" style="display:none;padding:0 14px 14px">
-          <div class="chart-wrap" style="height:200px" id="gwrap-attend"><canvas id="gc-attend"></canvas></div>
+          <div id="attend-graph-body"></div>
         </div>
       </div>
       <div class="card" style="padding:0;overflow:hidden">
@@ -557,9 +603,15 @@ if (d.action === 'getFormData') {
           </div>
         </div>
         <div style="font-size:.63rem;color:var(--tx2);margin-bottom:11px">1日あたりリーグごとにAM1卓・PM1卓で割り当てます。出席者が4名未満の枠はスキップされます。</div>
-        <div class="fg">
-          <label class="fl">半荘数</label>
-          <input class="fi" type="number" id="sched-hanzos" value="3" min="1" style="text-align:center">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px">
+          <div class="fg" style="margin-bottom:0">
+            <label class="fl">半荘数</label>
+            <input class="fi" type="number" id="sched-hanzos" value="3" min="1" style="text-align:center">
+          </div>
+          <div class="fg" style="margin-bottom:0">
+            <label class="fl">月最大出場数（卓）</label>
+            <input class="fi" type="number" id="sched-max-games" value="2" min="1" style="text-align:center">
+          </div>
         </div>
         <button onclick="schedGenerate()" class="sched-btn">試合日程を自動生成</button>
       </div>
@@ -951,6 +1003,13 @@ let hzLeague = '_all';
 let mhLeague = 'A1';
 let mhSession = '';
 let lChart = null, rChart = null, aChart = null;
+let _lineMode = 'top5';
+let _lineSelected = new Set();
+const LINE_COLORS = ['#d4a843','#4caf82','#e05252','#6fa8dc','#f0c96a','#81c995','#ff9a9a','#a0c4ff','#ffd166','#06d6a0','#ef476f','#118ab2'];
+let _rankSort = 'avg';
+let _attendSort = 'games';
+let _attendQuota = 20;
+let _attendQuotaLeague = null;
 let _graphAttendData = null;
 
 // ===== 認証 =====
@@ -1569,6 +1628,17 @@ function _renderDailyStream() {
   const inner = document.getElementById('stream-inner');
   if (!inner || !curGroup) return;
   const g = curGroup;
+  const overlay = document.getElementById('stream-overlay');
+  if (overlay) {
+    if (g.streamBg) {
+      overlay.style.backgroundImage = `url('${g.streamBg}')`;
+      overlay.style.backgroundSize = 'cover';
+      overlay.style.backgroundPosition = 'center';
+    } else {
+      overlay.style.backgroundImage = '';
+      overlay.style.background = '#0a0a0c';
+    }
+  }
   const ls = _getDailyLeagues();
   // セッションタブ表示用：その日前半/後半が存在するか確認
   const tgtLeague = dailyViewLeague === '_default' ? '' : dailyViewLeague;
@@ -1937,7 +2007,7 @@ function openGroup(id) {
 
 function goTop() {
   curGroup = null;
-  document.getElementById('hdr').innerHTML = '<div><div class="logo">雀記</div><div class="logo-sub">MAHJONG SCORE</div></div><button id="hdr-refresh" onclick="manualRefresh()" style="background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.5);color:var(--gold);border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:\'Noto Sans JP\',sans-serif;font-weight:700">↺ 更新</button>';
+  document.getElementById('hdr').innerHTML = '<div><div class="logo"><img src="janki-logo.png" alt="雀記" style="height:36px;object-fit:contain"></div></div><button id="hdr-refresh" onclick="manualRefresh()" style="background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.5);color:var(--gold);border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:\'Noto Sans JP\',sans-serif;font-weight:700">↺ 更新</button>';
   document.getElementById('tabs').style.display = 'none';
   document.getElementById('screen-main').classList.remove('on');
   document.getElementById('screen-top').classList.add('on');
@@ -2181,6 +2251,19 @@ function showTab(t) {
 // ===== 日程自動生成 =====
 let schedData = null;
 let schedResult = null;
+let schedFixed = new Set(); // 固定行のキー集合
+let schedLeagueTab = null; // 表示中リーグ（null=全体）
+
+function schedRowKey(r) { return r.date + '||' + r.slot + '||' + r.league; }
+function toggleFixRow(key) {
+  if (schedFixed.has(key)) schedFixed.delete(key);
+  else schedFixed.add(key);
+  schedRenderOutput();
+}
+function schedSetLeagueTab(league) {
+  schedLeagueTab = league;
+  schedRenderOutput();
+}
 
 // ===== 試合日程 UI helpers =====
 function schedFieldKey(key) {
@@ -2333,6 +2416,7 @@ function schedParseCsv(hideAvail = false) {
   } else {
     document.getElementById('sched-avail-card').style.display = 'none';
   }
+  schedFixed.clear();
   document.getElementById('sched-options-card').style.display = '';
   document.getElementById('sched-output-card').style.display  = 'none';
 }
@@ -2365,7 +2449,7 @@ function schedRenderAvail() {
   document.getElementById('sched-avail-content').innerHTML = html;
 }
 
-function schedGenerate() { schedShuffle(); }
+function schedGenerate() { schedFixed.clear(); schedLeagueTab = null; schedShuffle(); }
 
 function _shuffleArr(arr) {
   const a = [...arr];
@@ -2382,6 +2466,7 @@ function schedShuffle() {
   const amSlot = (document.getElementById('sched-slot-am').value || '').trim() || 'AM';
   const pmSlot = (document.getElementById('sched-slot-pm').value || '').trim() || 'PM';
   const hanzos = parseInt(document.getElementById('sched-hanzos').value) || 3;
+  const maxGames = parseInt(document.getElementById('sched-max-games').value) || 2;
   const leagues = [...new Set(players.map(p => p.league))].sort();
 
   // 各選手の出席可能日数（少ない人 = 機会が少ない → 優先度高）
@@ -2463,25 +2548,75 @@ function schedShuffle() {
 
   const schedule = [];
 
+  // 固定行のカウンターを先に反映（他リーグの行はタブ選択時に自動固定）
+  const effectiveFixed = new Set(schedFixed);
+  if (schedLeagueTab && schedResult) {
+    schedResult.forEach(r => { if (r.league !== schedLeagueTab) effectiveFixed.add(schedRowKey(r)); });
+  }
+  const fixedRows = {};
+  if (schedResult) {
+    schedResult.forEach(r => {
+      const key = schedRowKey(r);
+      if (effectiveFixed.has(key)) {
+        fixedRows[key] = r;
+        r.seats.forEach((p, si) => {
+          gameCount[p] = (gameCount[p] || 0) + 1;
+          if (!seatCount[p]) seatCount[p] = [0,0,0,0];
+          seatCount[p][si]++;
+        });
+        for (let i = 0; i < r.seats.length; i++)
+          for (let j = i+1; j < r.seats.length; j++) {
+            const k = coKey(r.seats[i], r.seats[j]);
+            coPlay[k] = (coPlay[k] || 0) + 1;
+          }
+      }
+    });
+  }
+
   dates.forEach(date => {
     leagues.forEach(league => {
+      const amKey = `${date}||${amSlot}||${league}`;
+      const pmKey = `${date}||${pmSlot}||${league}`;
+      const amFix = fixedRows[amKey];
+      const pmFix = fixedRows[pmKey];
+
+      if (amFix && pmFix) {
+        schedule.push(amFix);
+        schedule.push(pmFix);
+        return;
+      }
+
       const avail = players
-        .filter(p => p.league === league && p.available[date] && (gameCount[p.name] || 0) < 2)
+        .filter(p => p.league === league && p.available[date] && (gameCount[p.name] || 0) < maxGames)
         .map(p => p.name)
         .sort((a, b) => (availTotal[a] || 0) - (availTotal[b] || 0));
 
-      if (avail.length < 4) return;
-
-      // AM卓
-      const amGroup = bestTable(avail);
-      if (!amGroup) return;
-      recordTable(amGroup, date, amSlot, league);
-
-      // PM卓（8名以上いれば残りから選出）
-      if (avail.length >= 8) {
-        const remaining = avail.filter(p => !amGroup.includes(p));
-        const pmGroup = bestTable(remaining);
-        if (pmGroup) recordTable(pmGroup, date, pmSlot, league);
+      if (amFix) {
+        // AM固定・PM未固定
+        schedule.push(amFix);
+        const remaining = avail.filter(p => !amFix.seats.includes(p));
+        if (remaining.length >= 4) {
+          const pmGroup = bestTable(remaining);
+          if (pmGroup) recordTable(pmGroup, date, pmSlot, league);
+        }
+      } else if (pmFix) {
+        // AM未固定・PM固定
+        if (avail.length >= 4) {
+          const amGroup = bestTable(avail);
+          if (amGroup) recordTable(amGroup, date, amSlot, league);
+        }
+        schedule.push(pmFix);
+      } else {
+        // 両方未固定（元の処理）
+        if (avail.length < 4) return;
+        const amGroup = bestTable(avail);
+        if (!amGroup) return;
+        recordTable(amGroup, date, amSlot, league);
+        if (avail.length >= 8) {
+          const remaining = avail.filter(p => !amGroup.includes(p));
+          const pmGroup = bestTable(remaining);
+          if (pmGroup) recordTable(pmGroup, date, pmSlot, league);
+        }
       }
     });
   });
@@ -2495,41 +2630,66 @@ function schedShuffle() {
 function schedRenderOutput() {
   if (!schedResult) return;
   const winds = ['東家', '南家', '西家', '北家'];
+  const allLeagues = schedData ? [...new Set(schedData.players.map(p => p.league))].sort() : [];
 
-  // 日程テーブル
-  let html = `<table class="sched-tbl"><thead><tr>
+  // ── リーグタブ ──
+  let tabHtml = '';
+  if (allLeagues.length > 1) {
+    const tabBtn = (label, val) => {
+      const on = schedLeagueTab === val;
+      return `<button onclick="schedSetLeagueTab(${val === null ? 'null' : `'${val}'`})"
+        style="padding:5px 13px;border-radius:7px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;
+        ${on ? 'background:rgba(212,168,67,.2);border:1px solid rgba(212,168,67,.55);color:var(--gold)' : 'background:rgba(255,255,255,.06);border:1px solid var(--bd);color:var(--tx2)'}">${label}</button>`;
+    };
+    tabHtml = `<div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap">
+      ${tabBtn('全体', null)}
+      ${allLeagues.map(lg => tabBtn(lg, lg)).join('')}
+    </div>`;
+  }
+
+  // ── フィルタリング ──
+  const visibleRows = schedLeagueTab
+    ? schedResult.filter(r => r.league === schedLeagueTab)
+    : schedResult;
+  const showLeague = !schedLeagueTab;
+  const colSpan = showLeague ? 9 : 8;
+
+  let html = tabHtml + `<table class="sched-tbl"><thead><tr>
     <th style="text-align:left">日付</th>
     <th style="text-align:left">時間帯</th>
     <th>半荘</th>
-    <th>リーグ</th>
+    ${showLeague ? '<th>リーグ</th>' : ''}
     ${winds.map(w => `<th>${w}</th>`).join('')}
+    <th>FIX</th>
   </tr></thead><tbody>`;
 
   let lastDate = null;
-  schedResult.forEach(row => {
+  visibleRows.forEach(row => {
     if (row.date !== lastDate) {
       lastDate = row.date;
       html += `<tr style="background:rgba(212,168,67,.06)">
-        <td colspan="8" style="font-size:.72rem;font-weight:700;color:var(--gold);padding:6px 4px">${row.date}</td>
+        <td colspan="${colSpan}" style="font-size:.72rem;font-weight:700;color:var(--gold);padding:6px 4px">${row.date}</td>
       </tr>`;
     }
-    html += `<tr>
+    const rKey = schedRowKey(row);
+    const isFixed = schedFixed.has(rKey);
+    const rKeyEsc = rKey.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    html += `<tr${isFixed ? ' style="background:rgba(212,168,67,.07)"' : ''}>
       <td></td>
       <td>${row.slot}</td>
       <td style="text-align:center">${row.hanzos}</td>
-      <td style="text-align:center;font-size:.72rem">${row.league}</td>
+      ${showLeague ? `<td style="text-align:center;font-size:.72rem">${row.league}</td>` : ''}
       ${row.seats.map(n => `<td class="sched-seat">${n}</td>`).join('')}
       ${'<td></td>'.repeat(Math.max(0, 4 - row.seats.length))}
+      <td style="text-align:center"><button onclick="toggleFixRow('${rKeyEsc}')" style="padding:3px 8px;border-radius:5px;font-size:.65rem;cursor:pointer;font-family:inherit;${isFixed ? 'background:rgba(212,168,67,.25);border:1px solid rgba(212,168,67,.6);color:var(--gold);font-weight:700' : 'background:rgba(255,255,255,.06);border:1px solid var(--bd);color:var(--tx2)'}">${isFixed ? '🔒 固定' : '固定'}</button></td>
     </tr>`;
   });
   html += '</tbody></table>';
 
-  // 選手別出場回数・席回数サマリー（過去の試合記録 + 今回の日程）
+  // ── 選手別出場回数・席回数サマリー ──
   const normName = n => (n || '').replace(/[（(][^）)]*[）)]/g, '').trim();
   const gameCount = {};
   const seatCountDisp = {};
-
-  // 過去の試合記録から集計
   const pastCount = {};
   if (curGroup && curGroup.hanzos) {
     curGroup.hanzos.forEach(h => {
@@ -2544,21 +2704,20 @@ function schedRenderOutput() {
       });
     });
   }
-
-  // 今回の日程から集計
   const thisCount = {};
   schedResult.forEach(r => r.seats.forEach((p, i) => {
     const key = normName(p);
-    thisCount[key] = (thisCount[key] || 0) + 1;
-    gameCount[key] = (gameCount[key] || 0) + 1;
+    const hz = r.hanzos || 1;
+    thisCount[key] = (thisCount[key] || 0) + hz;
+    gameCount[key] = (gameCount[key] || 0) + hz;
     if (!seatCountDisp[key]) seatCountDisp[key] = [0,0,0,0];
     seatCountDisp[key][i]++;
   }));
 
   const windLabels = ['東','南','西','北'];
-  const leagues = schedData ? [...new Set(schedData.players.map(p => p.league))].sort() : [];
+  const summaryLeagues = schedLeagueTab ? [schedLeagueTab] : allLeagues;
   let summary = '<div style="margin-top:14px">';
-  leagues.forEach(league => {
+  summaryLeagues.forEach(league => {
     const lp = schedData.players.filter(p => p.league === league)
       .map(p => {
         const key = normName(p.name);
@@ -2729,12 +2888,13 @@ async function schedExportExcel() {
     });
   }
 
-  // 今回生成した日程から追加集計
+  // 今回生成した日程から追加集計（1出場 = r.hanzos試合）
   schedResult.forEach(r => {
+    const hz = r.hanzos || 1;
     r.seats.forEach((p, si) => {
       if (!p) return;
       const key = normName(p);
-      gameCount[key] = (gameCount[key] || 0) + 1;
+      gameCount[key] = (gameCount[key] || 0) + hz;
       if (!seatCount[key]) seatCount[key] = [0,0,0,0];
       seatCount[key][si]++;
     });
@@ -2743,10 +2903,11 @@ async function schedExportExcel() {
   // 今月出場数（schedResultから：今回生成した日程のみ）
   const thisMonthCount = {};
   schedResult.forEach(r => {
+    const hz = r.hanzos || 1;
     r.seats.forEach(p => {
       if (!p) return;
       const key = normName(p);
-      thisMonthCount[key] = (thisMonthCount[key] || 0) + 1;
+      thisMonthCount[key] = (thisMonthCount[key] || 0) + hz;
     });
   });
 
@@ -3553,20 +3714,50 @@ function renderRanking() {
 }
 
 function renderRankingTableHtml(entries, maxAbs, league) {
-  // 常に全員基準のmaxAbsを使う（引数で渡されたものをそのまま使用）
+  if (window.innerWidth <= 520) {
+    // スマホ：カード型
+    return entries.map(([name,s],i) => {
+      const ptColor = s.pt>0?'var(--green)':s.pt<0?'var(--red)':'var(--tx2)';
+      const bd = badge(i);
+      const topR = s.games?(s.ranks[0]/s.games*100).toFixed(1):'0.0';
+      const rentai = s.games?((s.ranks[0]+s.ranks[1])/s.games*100).toFixed(1):'0.0';
+      const las = s.games?((s.ranks[0]+s.ranks[1]+s.ranks[2])/s.games*100).toFixed(1):'0.0';
+      const avg = s.games?(s.rsum/s.games).toFixed(2):'-';
+      return `<div class="rk-card" onclick="goToPlayer('${name.replace(/'/g,"\\'")}','${league}')">
+        <div class="rk-card-top">
+          <div style="display:flex;align-items:center;gap:6px"><span class="${bd}">${i+1}</span><span style="font-size:.9rem;font-weight:700;color:var(--tx)">${name}</span></div>
+          <div style="font-size:1.05rem;font-weight:700;color:${ptColor}">${s.pt>0?'+':''}${s.pt}<span style="font-size:.6rem;font-weight:400;color:var(--tx2);margin-left:2px">PT</span></div>
+        </div>
+        <div class="rk-card-stats">
+          <div class="rk-stat"><div class="rk-stat-v">${s.games}</div><div class="rk-stat-l">試合</div></div>
+          <div class="rk-stat"><div class="rk-stat-v">${avg}</div><div class="rk-stat-l">平均</div></div>
+          <div class="rk-stat"><div class="rk-stat-v" style="color:#d4a843">${topR}%</div><div class="rk-stat-l">トップ</div></div>
+          <div class="rk-stat"><div class="rk-stat-v">${rentai}%</div><div class="rk-stat-l">連対</div></div>
+          <div class="rk-stat"><div class="rk-stat-v">${las}%</div><div class="rk-stat-l">ラス回避</div></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  // デスクトップ：テーブル（統計列追加）
   return `<table class="rtbl">
-    <thead><tr><th>選手</th><th>PT</th><th>試合</th><th>平均</th></tr></thead>
+    <thead><tr><th>選手</th><th>PT</th><th>試合</th><th>平均</th><th style="color:#d4a843">トップ%</th><th>連対%</th><th>ラス回避</th></tr></thead>
     <tbody>${entries.map(([name,s],i)=>{
       const pc = s.pt>0?'pp':s.pt<0?'pm':'pz';
       const bw = Math.min(Math.abs(s.pt)/maxAbs*100, 100);
       const bc = s.pt>=0?'var(--green)':'var(--red)';
       const bd = badge(i);
+      const topR = s.games?(s.ranks[0]/s.games*100).toFixed(1):'0.0';
+      const rentai = s.games?((s.ranks[0]+s.ranks[1])/s.games*100).toFixed(1):'0.0';
+      const las = s.games?((s.ranks[0]+s.ranks[1]+s.ranks[2])/s.games*100).toFixed(1):'0.0';
       return `<tr style="cursor:pointer" onclick="goToPlayer('${name.replace(/'/g,"\\'")}','${league}')">
         <td><div style="display:flex;align-items:center"><span class="${bd}">${i+1}</span><span class="nm">${name}</span><span style="font-size:.55rem;color:var(--tx2);margin-left:3px">▶</span></div>
         <div class="bar-w"><div class="bar" style="width:${bw}%;background:${bc}"></div></div></td>
         <td class="${pc}" style="font-size:.95rem;font-weight:700">${s.pt>0?'+':''}${s.pt}</td>
         <td style="color:var(--tx2)">${s.games}</td>
         <td style="color:var(--tx2)">${(s.rsum/s.games).toFixed(2)}</td>
+        <td style="color:#d4a843">${topR}%</td>
+        <td style="color:var(--tx2)">${rentai}%</td>
+        <td style="color:var(--tx2)">${las}%</td>
       </tr>`;
     }).join('')}</tbody>
   </table>`;
@@ -4253,6 +4444,11 @@ function buildGraphData() {
   const leagues = Object.keys(g.players).filter(k => g.players[k].length > 0);
   if (!leagues.includes(gLeague)) gLeague = leagues[0] || '_default';
 
+  if (_attendQuotaLeague !== gLeague) {
+    _attendQuota = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : 20;
+    _attendQuotaLeague = gLeague;
+  }
+
   const stats = getStats(gLeague);
   const allPlayers = (gLeague === '_default' ? (g._players||[]) : (g.players[gLeague]||[]));
   const playersWithGames = allPlayers.filter(p => stats[p]?.games > 0);
@@ -4385,6 +4581,273 @@ function makeLineOptions(small) {
   };
 }
 
+const _lineEndPlugin = {
+  id: 'lineEndLabel',
+  afterDraw(chart) {
+    if (window.innerWidth < 420) return;
+    const ctx = chart.ctx;
+    ctx.save();
+    chart.data.datasets.forEach((ds, i) => {
+      const meta = chart.getDatasetMeta(i);
+      if (meta.hidden) return;
+      let li = -1;
+      for (let j = ds.data.length - 1; j >= 0; j--) {
+        if (ds.data[j] !== null && ds.data[j] !== undefined) { li = j; break; }
+      }
+      if (li < 0 || !meta.data[li]) return;
+      const pt = meta.data[li];
+      const val = ds.data[li];
+      ctx.font = "bold 10px 'Noto Sans JP',sans-serif";
+      ctx.fillStyle = ds.borderColor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${ds.label} ${val > 0 ? '+' : ''}${val}`, pt.x + 6, pt.y);
+    });
+    ctx.restore();
+  }
+};
+
+const _lineDimPlugin = {
+  id: 'lineDim',
+  afterEvent(chart, args) {
+    if (!chart._allMode) return;
+    const e = args.event;
+    if (e.type === 'mouseout' || e.type === 'mouseleave') {
+      if ((chart._hIdx ?? null) !== null) { chart._hIdx = null; args.changed = true; }
+      return;
+    }
+    if (e.type !== 'mousemove') return;
+    let minDist = Infinity, nearIdx = null;
+    chart.data.datasets.forEach((ds, i) => {
+      if (ds.hidden) return;
+      chart.getDatasetMeta(i).data.forEach(pt => {
+        const d = Math.abs(pt.y - e.y);
+        if (d < minDist) { minDist = d; nearIdx = i; }
+      });
+    });
+    const ni = minDist < 40 ? nearIdx : null;
+    if ((chart._hIdx ?? null) !== ni) { chart._hIdx = ni; args.changed = true; }
+  },
+  beforeDatasetDraw(chart, args) {
+    if (!chart._allMode || (chart._hIdx ?? null) === null || args.index === chart._hIdx) return;
+    chart.ctx.save();
+    chart.ctx.globalAlpha = 0.1;
+  },
+  afterDatasetDraw(chart, args) {
+    if (!chart._allMode || (chart._hIdx ?? null) === null || args.index === chart._hIdx) return;
+    chart.ctx.restore();
+  }
+};
+
+function _lineGetSorted() {
+  if (!_graphLineData) return [];
+  return [..._graphLineData.players].sort((a, b) => {
+    const da = _graphLineData.datasets.find(d => d.label === a);
+    const db = _graphLineData.datasets.find(d => d.label === b);
+    const af = da ? [...da.data].reverse().find(v => v !== null) ?? -Infinity : -Infinity;
+    const bf = db ? [...db.data].reverse().find(v => v !== null) ?? -Infinity : -Infinity;
+    return bf - af;
+  });
+}
+
+function _lineBuildDatasets() {
+  if (!_graphLineData) return [];
+  const sorted = _lineGetSorted();
+  let visSet;
+  if (_lineMode === 'top5') visSet = new Set(sorted.slice(0, 5));
+  else if (_lineMode === 'bottom5') visSet = new Set(sorted.slice(-5));
+  else if (_lineMode === 'all') visSet = new Set(sorted);
+  else visSet = _lineSelected.size > 0 ? new Set(_lineSelected) : new Set(sorted.slice(0, 5));
+  return sorted.map((p, i) => {
+    const orig = _graphLineData.datasets.find(d => d.label === p);
+    if (!orig) return null;
+    const c = LINE_COLORS[i % LINE_COLORS.length];
+    return { label: p, data: orig.data, borderColor: c, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, pointHoverRadius: 6, pointBackgroundColor: c, spanGaps: true, tension: 0, hidden: !visSet.has(p) };
+  }).filter(Boolean);
+}
+
+function setLineMode(mode) {
+  _lineMode = mode;
+  document.querySelectorAll('.lg-btn').forEach((b, i) => b.classList.toggle('on', ['top5','bottom5','all','select'][i] === mode));
+  const cw = document.getElementById('lg-chips-wrap');
+  if (cw) cw.style.display = mode === 'select' ? 'block' : 'none';
+  if (mode === 'select') _lineRenderChips();
+  _renderLineChart();
+}
+
+function toggleLinePlayer(p) {
+  if (_lineSelected.has(p)) _lineSelected.delete(p);
+  else _lineSelected.add(p);
+  _lineRenderChips();
+  _renderLineChart();
+}
+
+function _lineRenderChips() {
+  const el = document.getElementById('lg-chips');
+  if (!el || !_graphLineData) return;
+  const sorted = _lineGetSorted();
+  el.innerHTML = sorted.map((p, i) => {
+    const c = LINE_COLORS[i % LINE_COLORS.length];
+    const on = _lineSelected.has(p);
+    return `<span class="lg-chip" onclick="toggleLinePlayer('${p.replace(/'/g,"\\'")}')" style="border-color:${on?c:'transparent'};color:${on?c:'var(--tx2)'};background:${on?c+'22':'rgba(255,255,255,.05)'}"><span style="width:8px;height:8px;border-radius:50%;background:${c};display:inline-block;margin-right:4px;flex-shrink:0"></span>${p}</span>`;
+  }).join('');
+}
+
+function _renderLineChart() {
+  if (!_graphLineData) return;
+  if (lChart) { lChart.destroy(); lChart = null; }
+  const canvas = document.getElementById('gc-line');
+  if (!canvas) return;
+  const datasets = _lineBuildDatasets();
+  const isAll = _lineMode === 'all';
+  const isMob = window.innerWidth <= 480;
+  lChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels: _graphLineData.labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { filter: ci => !ci.dataset.hidden, callbacks: { label: c => ` ${c.dataset.label}  ${c.parsed.y > 0 ? '+' : ''}${c.parsed.y}` } }
+      },
+      scales: {
+        x: { ticks: { color: '#8888a0', font: { size: 10 }, maxTicksLimit: 10, maxRotation: 45, minRotation: 0 }, grid: { color: 'rgba(255,255,255,.05)' } },
+        y: { ticks: { color: '#8888a0', font: { size: 10 }, callback: v => v > 0 ? '+'+v : v }, grid: { color: 'rgba(255,255,255,.07)' } }
+      }
+    },
+    plugins: [_lineDimPlugin]
+  });
+  lChart._allMode = isAll;
+  lChart._hIdx = null;
+  _lineUpdateLabels(datasets);
+}
+
+function _lineUpdateLabels(datasets) {
+  const el = document.getElementById('lg-labels');
+  if (!el) return;
+  el.innerHTML = datasets.filter(ds => !ds.hidden).map(ds => {
+    const val = [...ds.data].reverse().find(v => v !== null) ?? null;
+    const valStr = val !== null ? (val > 0 ? '+' + val : '' + val) : '';
+    const valColor = val === null ? 'var(--tx2)' : val >= 0 ? 'var(--green)' : 'var(--red)';
+    return `<div style="display:flex;flex-direction:column;gap:1px">
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="width:9px;height:9px;border-radius:50%;background:${ds.borderColor};flex-shrink:0"></span>
+        <span style="font-size:.62rem;color:${ds.borderColor};font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:56px">${ds.label}</span>
+      </div>
+      <div style="font-size:.62rem;color:${valColor};font-weight:700;padding-left:13px">${valStr}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== 順位分布 =====
+const _RC = ['#d4a843','#8a9ab0','#a0622a','#e05252'];
+const _RL = ['1位','2位','3位','4位'];
+
+function _renderRankGraphTo(elId) {
+  const el = document.getElementById(elId);
+  if (!el || !curGroup) return;
+  const stats = getStats(gLeague);
+  const allP = gLeague === '_default' ? (curGroup._players||[]) : (curGroup.players[gLeague]||[]);
+  const players = allP.filter(p => stats[p]?.games > 0);
+  if (!players.length) { el.innerHTML = '<div style="color:var(--tx2);text-align:center;padding:20px;font-size:.8rem">データなし</div>'; return; }
+  const sorted = [...players].sort((a,b) => {
+    const sa=stats[a], sb=stats[b];
+    if (_rankSort==='avg') return (sa.rsum/sa.games)-(sb.rsum/sb.games);
+    if (_rankSort==='top') return (sb.ranks[0]/sb.games)-(sa.ranks[0]/sa.games);
+    if (_rankSort==='rentai') return ((sb.ranks[0]+sb.ranks[1])/sb.games)-((sa.ranks[0]+sa.ranks[1])/sa.games);
+    if (_rankSort==='las') return ((sb.ranks[0]+sb.ranks[1]+sb.ranks[2])/sb.games)-((sa.ranks[0]+sa.ranks[1]+sa.ranks[2])/sa.games);
+    if (_rankSort==='games') return sb.games-sa.games;
+    return 0;
+  });
+  el.innerHTML = `
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
+      ${[['avg','平均順位'],['top','トップ率'],['rentai','連対率'],['las','ラス回避'],['games','試合数']].map(([k,l])=>`<button class="lg-btn${_rankSort===k?' on':''}" onclick="setRankSort('${k}')">${l}</button>`).join('')}
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      ${_RC.map((c,i)=>`<div style="display:flex;align-items:center;gap:4px;font-size:.62rem;color:var(--tx2)"><span style="width:10px;height:10px;border-radius:2px;background:${c};display:inline-block;flex-shrink:0"></span>${_RL[i]}</div>`).join('')}
+    </div>
+    ${sorted.map(p => {
+      const s=stats[p], g=s.games, ref=g<5;
+      const pcts=s.ranks.map(r=>g?+(r/g*100).toFixed(1):0);
+      const avg=(s.rsum/g).toFixed(2), topR=(s.ranks[0]/g*100).toFixed(1);
+      const rentai=((s.ranks[0]+s.ranks[1])/g*100).toFixed(1);
+      const las=((s.ranks[0]+s.ranks[1]+s.ranks[2])/g*100).toFixed(1);
+      return `<div style="margin-bottom:16px${ref?';opacity:.6':''}">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
+          <span style="font-size:.78rem;font-weight:700;color:var(--tx)">${p}</span>
+          ${ref?'<span style="font-size:.55rem;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:var(--tx2)">参考記録</span>':''}
+        </div>
+        <div style="height:15px;border-radius:7px;overflow:hidden;display:flex">
+          ${s.ranks.map((r,i)=>{const w=pcts[i];return w>0?`<div style="width:${w}%;background:${_RC[i]};display:flex;align-items:center;justify-content:center;overflow:hidden" title="${_RL[i]}:${r}回(${w}%)">${w>=9?`<span style="font-size:.5rem;color:rgba(0,0,0,.7);font-weight:700;pointer-events:none">${w}%</span>`:''}</div>`:''}).join('')}
+        </div>
+        <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap">
+          ${[['試合',g+'戦'],['平均',avg],['トップ',topR+'%'],['連対',rentai+'%'],['ラス回避',las+'%']].map(([l,v])=>`<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:.55rem;color:var(--tx2)">${l}</span><span style="font-size:.7rem;font-weight:700;color:var(--tx)">${v}</span></div>`).join('')}
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+function _renderRankGraph() { _renderRankGraphTo('rank-graph-body'); }
+function setRankSort(key) {
+  _rankSort = key;
+  _renderRankGraph();
+  const fs = document.getElementById('__gfs_rank');
+  if (fs) _renderRankGraphTo('__gfs_rank');
+}
+
+// ===== 出場回数 =====
+function _renderAttendGraphTo(elId) {
+  const el = document.getElementById(elId);
+  if (!el || !curGroup) return;
+  const stats = getStats(gLeague);
+  const allP = gLeague === '_default' ? (curGroup._players||[]) : (curGroup.players[gLeague]||[]);
+  if (!allP.length) { el.innerHTML = '<div style="color:var(--tx2);text-align:center;padding:20px;font-size:.8rem">データなし</div>'; return; }
+  const gamesArr = allP.map(p => stats[p]?.games||0);
+  const avgG = gamesArr.reduce((a,b)=>a+b,0) / allP.length;
+  const maxG = Math.max(...gamesArr, _attendQuota, 1);
+  let sorted = [...allP];
+  if (_attendSort==='games') sorted.sort((a,b)=>(stats[b]?.games||0)-(stats[a]?.games||0));
+  else if (_attendSort==='deficit') sorted.sort((a,b)=>Math.max(0,_attendQuota-(stats[b]?.games||0))-Math.max(0,_attendQuota-(stats[a]?.games||0)));
+  else if (_attendSort==='avgdiff') sorted.sort((a,b)=>(stats[b]?.games||0)-(stats[a]?.games||0));
+  else if (_attendSort==='name') sorted.sort((a,b)=>a.localeCompare(b,'ja'));
+  const qPct = Math.min(_attendQuota/maxG*100, 100);
+  el.innerHTML = `
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
+      ${[['games','出場回数'],['deficit','不足者優先'],['avgdiff','平均差'],['name','名前']].map(([k,l])=>`<button class="lg-btn${_attendSort===k?' on':''}" onclick="setAttendSort('${k}')">${l}</button>`).join('')}
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:8px 12px;background:rgba(212,168,67,.06);border:1px solid rgba(212,168,67,.2);border-radius:8px;flex-wrap:wrap">
+      <div><div style="font-size:.58rem;color:var(--tx2);margin-bottom:1px">平均出場回数</div><div style="font-size:.88rem;font-weight:700;color:var(--gold)">${avgG.toFixed(1)}戦</div></div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--tx2)">規定<input type="number" value="${_attendQuota}" min="1" max="999" style="width:46px;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);border-radius:5px;padding:3px 5px;font-size:.65rem;text-align:center;outline:none" onchange="setAttendQuota(this.value)">戦</div>
+    </div>
+    ${sorted.map(p => {
+      const g=stats[p]?.games||0, reached=g>=_attendQuota, deficit=Math.max(0,_attendQuota-g);
+      const diff=g-avgG, diffStr=(diff>=0?'+':'')+diff.toFixed(1);
+      const bPct=Math.min(g/maxG*100,100);
+      return `<div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
+          <span style="font-size:.78rem;font-weight:700;color:var(--tx);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${p}</span>
+          ${reached?'<span style="font-size:.55rem;padding:1px 6px;border-radius:3px;background:rgba(76,175,130,.12);border:1px solid rgba(76,175,130,.4);color:#4caf82;flex-shrink:0">規定到達</span>':`<span style="font-size:.6rem;color:var(--tx2);flex-shrink:0">あと${deficit}戦</span>`}
+        </div>
+        <div style="position:relative;height:12px;border-radius:6px;background:rgba(255,255,255,.06)">
+          <div style="position:absolute;inset:0;width:${bPct}%;background:${reached?'#4caf82':'#d4a843'};border-radius:6px"></div>
+          <div style="position:absolute;top:-3px;bottom:-3px;left:calc(${qPct}% - 1px);width:2px;background:rgba(255,255,255,.22);border-radius:1px" title="規定${_attendQuota}戦"></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:5px;flex-wrap:wrap">
+          ${[['出場',g+'戦'],['平均差',diffStr+'戦'],['残',deficit?deficit+'戦':'―']].map(([l,v])=>`<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:.55rem;color:var(--tx2)">${l}</span><span style="font-size:.7rem;font-weight:700;color:var(--tx)">${v}</span></div>`).join('')}
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+function _renderAttendGraph() { _renderAttendGraphTo('attend-graph-body'); }
+function setAttendSort(key) {
+  _attendSort = key; _renderAttendGraph();
+  const fs = document.getElementById('__gfs_attend'); if (fs) _renderAttendGraphTo('__gfs_attend');
+}
+function setAttendQuota(val) {
+  _attendQuota = Math.max(1, parseInt(val)||20); _renderAttendGraph();
+  const fs = document.getElementById('__gfs_attend'); if (fs) _renderAttendGraphTo('__gfs_attend');
+}
+
 function makeRankOptions(small) {
   return {
     responsive: true,
@@ -4491,34 +4954,11 @@ function _renderGraphCard(type) {
   const g = curGroup;
   if (!g) return;
   if (type === 'line') {
-    const lineCanvas = document.getElementById('gc-line');
-    if (lineCanvas && _graphLineData) {
-      if (lChart) { lChart.destroy(); lChart = null; }
-      lChart = new Chart(lineCanvas, { type: 'line', data: _graphLineData, options: makeLineOptions(true) });
-    }
+    if (_graphLineData) _renderLineChart();
   } else if (type === 'rank') {
-    const rankCanvas = document.getElementById('gc-rank');
-    if (rankCanvas && _graphRankData) {
-      if (rChart) { rChart.destroy(); rChart = null; }
-      const rankWrap = document.getElementById('gwrap-rank');
-      if (rankWrap) {
-        const h = Math.max(200, (_graphRankData.labels.length * 32) + 60);
-        rankWrap.style.height = h + 'px';
-      }
-      rChart = new Chart(rankCanvas, { type: 'bar', data: _graphRankData, options: makeRankOptions(true) });
-    }
+    _renderRankGraph();
   } else if (type === 'attend') {
-    const attendCanvas = document.getElementById('gc-attend');
-    if (attendCanvas && _graphAttendData) {
-      if (aChart) { aChart.destroy(); aChart = null; }
-      const attendWrap = document.getElementById('gwrap-attend');
-      if (attendWrap) {
-        const h = Math.max(200, (_graphAttendData.labels.length * 28) + 60);
-        attendWrap.style.height = h + 'px';
-      }
-      const _aMax = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : undefined;
-      aChart = new Chart(attendCanvas, { type: 'bar', data: _graphAttendData, options: makeAttendOptions(true, _aMax) });
-    }
+    _renderAttendGraph();
   } else if (type === 'wind') {
     const windWrap = document.getElementById('graph-wind-wrap');
     if (windWrap) windWrap.innerHTML = renderWindTable(true);
@@ -4544,18 +4984,38 @@ function expandGraph(type) {
     titleEl.textContent = 'ポイント推移';
     canvas.style.display = 'block';
     htmlBox.style.display = 'none';
-    fsChart = new Chart(canvas, { type: 'line', data: _graphLineData, options: makeLineOptions(false) });
+    if (!_graphLineData) return;
+    const fsDsets = _lineBuildDatasets();
+    fsChart = new Chart(canvas, {
+      type: 'line',
+      data: { labels: _graphLineData.labels, datasets: fsDsets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        layout: { padding: { right: 130 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { filter: ci => !ci.dataset.hidden, callbacks: { label: c => ` ${c.dataset.label}  ${c.parsed.y > 0 ? '+' : ''}${c.parsed.y}` } }
+        },
+        scales: {
+          x: { ticks: { color: '#8888a0', font: { size: 12 }, maxTicksLimit: 20, maxRotation: 45, minRotation: 0 }, grid: { color: 'rgba(255,255,255,.05)' } },
+          y: { ticks: { color: '#8888a0', font: { size: 12 }, callback: v => v > 0 ? '+'+v : v }, grid: { color: 'rgba(255,255,255,.07)' } }
+        }
+      },
+      plugins: [_lineEndPlugin]
+    });
   } else if (type === 'rank') {
     titleEl.textContent = '順位分布';
-    canvas.style.display = 'block';
-    htmlBox.style.display = 'none';
-    fsChart = new Chart(canvas, { type: 'bar', data: _graphRankData, options: makeRankOptions(false) });
+    if (canvas) canvas.style.display = 'none';
+    htmlBox.style.display = 'block';
+    htmlBox.innerHTML = '<div id="__gfs_rank" style="padding:4px 8px"></div>';
+    _renderRankGraphTo('__gfs_rank');
   } else if (type === 'attend') {
     titleEl.textContent = '出場回数';
-    canvas.style.display = 'block';
-    htmlBox.style.display = 'none';
-    const _aMaxFs = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : undefined;
-    fsChart = new Chart(canvas, { type: 'bar', data: _graphAttendData, options: makeAttendOptions(false, _aMaxFs) });
+    if (canvas) canvas.style.display = 'none';
+    htmlBox.style.display = 'block';
+    htmlBox.innerHTML = '<div id="__gfs_attend" style="padding:4px 8px"></div>';
+    _renderAttendGraphTo('__gfs_attend');
   } else if (type === 'wind') {
     titleEl.textContent = '家別集計';
     if (canvas) canvas.style.display = 'none';
