@@ -96,7 +96,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 @media(max-width:599px){
   #tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   #tabs::-webkit-scrollbar{display:none}
-  #tabs .tab{flex:none;min-width:52px;font-size:.62rem;padding:10px 6px}
+  #tabs .tab{flex:1;min-width:52px;font-size:.62rem;padding:10px 4px}
   .wrap{padding-bottom:68px}
 }
 .lg-chip{display:inline-flex;align-items:center;padding:4px 9px;border-radius:20px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;border:2px solid transparent;background:rgba(255,255,255,.05);color:var(--tx2);white-space:nowrap;user-select:none;-webkit-user-select:none}
@@ -3725,7 +3725,7 @@ function renderRankingTableHtml(entries, maxAbs, league) {
       const avg = s.games?(s.rsum/s.games).toFixed(2):'-';
       return `<div class="rk-card" onclick="goToPlayer('${name.replace(/'/g,"\\'")}','${league}')">
         <div class="rk-card-top">
-          <div style="display:flex;align-items:center;gap:6px"><span class="${bd}">${i+1}</span><span style="font-size:.9rem;font-weight:700;color:var(--tx)">${name}</span></div>
+          <div style="display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden"><span class="${bd}" style="flex-shrink:0">${i+1}</span><span style="font-size:.9rem;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span></div>
           <div style="font-size:1.05rem;font-weight:700;color:${ptColor}">${s.pt>0?'+':''}${s.pt}<span style="font-size:.6rem;font-weight:400;color:var(--tx2);margin-left:2px">PT</span></div>
         </div>
         <div class="rk-card-stats">
