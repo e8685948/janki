@@ -74,7 +74,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 /* ===== ランキング カード（スマホ） ===== */
 .rk-card{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:11px 12px;margin-bottom:8px;cursor:pointer}
 .rk-card:active{opacity:.75}
-.rk-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.rk-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;overflow:hidden}
 .rk-card-stats{display:flex;gap:0;border-top:1px solid rgba(255,255,255,.06);padding-top:7px}
 .rk-stat{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}
 .rk-stat-v{font-size:.7rem;font-weight:700;color:var(--tx)}
@@ -101,7 +101,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 }
 .lg-chip{display:inline-flex;align-items:center;padding:4px 9px;border-radius:20px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;border:2px solid transparent;background:rgba(255,255,255,.05);color:var(--tx2);white-space:nowrap;user-select:none;-webkit-user-select:none}
 .pp{color:var(--green);font-weight:700}.pm{color:var(--red)}.pz{color:var(--tx2)}
-.nm{font-weight:700}
+.nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bar-w{height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:3px}
 .bar{height:100%;border-radius:2px}
 
@@ -3714,7 +3714,7 @@ function renderRanking() {
 }
 
 function renderRankingTableHtml(entries, maxAbs, league) {
-  if (window.innerWidth <= 520) {
+  if (window.innerWidth <= 768) {
     // スマホ：カード型
     return entries.map(([name,s],i) => {
       const ptColor = s.pt>0?'var(--green)':s.pt<0?'var(--red)':'var(--tx2)';
