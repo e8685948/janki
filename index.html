@@ -3725,8 +3725,8 @@ function renderRankingTableHtml(entries, maxAbs, league) {
       const avg = s.games?(s.rsum/s.games).toFixed(2):'-';
       return `<div class="rk-card" onclick="goToPlayer('${name.replace(/'/g,"\\'")}','${league}')">
         <div class="rk-card-top">
-          <div style="display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden"><span class="${bd}" style="flex-shrink:0">${i+1}</span><span style="font-size:.9rem;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span></div>
-          <div style="font-size:1.05rem;font-weight:700;color:${ptColor}">${s.pt>0?'+':''}${s.pt}<span style="font-size:.6rem;font-weight:400;color:var(--tx2);margin-left:2px">PT</span></div>
+          <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;overflow:hidden"><span class="${bd}" style="flex-shrink:0">${i+1}</span><span style="font-size:.9rem;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span></div>
+          <div style="font-size:1.05rem;font-weight:700;color:${ptColor};flex-shrink:0;margin-left:8px">${s.pt>0?'+':''}${s.pt}<span style="font-size:.6rem;font-weight:400;color:var(--tx2);margin-left:2px">PT</span></div>
         </div>
         <div class="rk-card-stats">
           <div class="rk-stat"><div class="rk-stat-v">${s.games}</div><div class="rk-stat-l">試合</div></div>
