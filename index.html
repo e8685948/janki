@@ -3714,50 +3714,20 @@ function renderRanking() {
 }
 
 function renderRankingTableHtml(entries, maxAbs, league) {
-  if (window.innerWidth <= 768) {
-    // スマホ：カード型
-    return entries.map(([name,s],i) => {
-      const ptColor = s.pt>0?'var(--green)':s.pt<0?'var(--red)':'var(--tx2)';
-      const bd = badge(i);
-      const topR = s.games?(s.ranks[0]/s.games*100).toFixed(1):'0.0';
-      const rentai = s.games?((s.ranks[0]+s.ranks[1])/s.games*100).toFixed(1):'0.0';
-      const las = s.games?((s.ranks[0]+s.ranks[1]+s.ranks[2])/s.games*100).toFixed(1):'0.0';
-      const avg = s.games?(s.rsum/s.games).toFixed(2):'-';
-      return `<div class="rk-card" onclick="goToPlayer('${name.replace(/'/g,"\\'")}','${league}')">
-        <div class="rk-card-top">
-          <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;overflow:hidden"><span class="${bd}" style="flex-shrink:0">${i+1}</span><span style="font-size:.9rem;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</span></div>
-          <div style="font-size:1.05rem;font-weight:700;color:${ptColor};flex-shrink:0;margin-left:8px">${s.pt>0?'+':''}${s.pt}<span style="font-size:.6rem;font-weight:400;color:var(--tx2);margin-left:2px">PT</span></div>
-        </div>
-        <div class="rk-card-stats">
-          <div class="rk-stat"><div class="rk-stat-v">${s.games}</div><div class="rk-stat-l">試合</div></div>
-          <div class="rk-stat"><div class="rk-stat-v">${avg}</div><div class="rk-stat-l">平均</div></div>
-          <div class="rk-stat"><div class="rk-stat-v" style="color:#d4a843">${topR}%</div><div class="rk-stat-l">トップ</div></div>
-          <div class="rk-stat"><div class="rk-stat-v">${rentai}%</div><div class="rk-stat-l">連対</div></div>
-          <div class="rk-stat"><div class="rk-stat-v">${las}%</div><div class="rk-stat-l">ラス回避</div></div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-  // デスクトップ：テーブル（統計列追加）
   return `<table class="rtbl">
-    <thead><tr><th>選手</th><th>PT</th><th>試合</th><th>平均</th><th style="color:#d4a843">トップ%</th><th>連対%</th><th>ラス回避</th></tr></thead>
+    <thead><tr><th>選手</th><th>PT</th><th>試合</th><th>平均</th></tr></thead>
     <tbody>${entries.map(([name,s],i)=>{
       const pc = s.pt>0?'pp':s.pt<0?'pm':'pz';
       const bw = Math.min(Math.abs(s.pt)/maxAbs*100, 100);
       const bc = s.pt>=0?'var(--green)':'var(--red)';
       const bd = badge(i);
-      const topR = s.games?(s.ranks[0]/s.games*100).toFixed(1):'0.0';
-      const rentai = s.games?((s.ranks[0]+s.ranks[1])/s.games*100).toFixed(1):'0.0';
-      const las = s.games?((s.ranks[0]+s.ranks[1]+s.ranks[2])/s.games*100).toFixed(1):'0.0';
+      const avg = s.games?(s.rsum/s.games).toFixed(2):'-';
       return `<tr style="cursor:pointer" onclick="goToPlayer('${name.replace(/'/g,"\\'")}','${league}')">
         <td><div style="display:flex;align-items:center"><span class="${bd}">${i+1}</span><span class="nm">${name}</span><span style="font-size:.55rem;color:var(--tx2);margin-left:3px">▶</span></div>
         <div class="bar-w"><div class="bar" style="width:${bw}%;background:${bc}"></div></div></td>
-        <td class="${pc}" style="font-size:.95rem;font-weight:700">${s.pt>0?'+':''}${s.pt}</td>
+        <td class="${pc}" style="font-size:.95rem;font-weight:700;white-space:nowrap">${s.pt>0?'+':''}${s.pt}</td>
         <td style="color:var(--tx2)">${s.games}</td>
-        <td style="color:var(--tx2)">${(s.rsum/s.games).toFixed(2)}</td>
-        <td style="color:#d4a843">${topR}%</td>
-        <td style="color:var(--tx2)">${rentai}%</td>
-        <td style="color:var(--tx2)">${las}%</td>
+        <td style="color:var(--tx2)">${avg}</td>
       </tr>`;
     }).join('')}</tbody>
   </table>`;
