@@ -10,311 +10,1282 @@
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-:root{--bg:#0d0d0f;--bg2:#141418;--bg3:#1c1c22;--bd:#2a2a35;--gold:#d4a843;--gold2:#f0c96a;--red:#e05252;--green:#4caf82;--tx:#e8e8f0;--tx2:#8888a0}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px}
+/* ============================================
+   雀記 Janki — 和風デザイン（和紙×墨×朱×金）
+   UIはそのまま、質感だけ和風に
+   ============================================ */
 
-/* 半荘結果を横スワイプ */
-#cd-results {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  scroll-snap-type: x mandatory;
+:root{
+  /* 墨藍に少し温かみ — 夜の和紙の上の墨 */
+  --bg:      #12100d;
+  --bg2:     #1a1813;
+  --bg3:     #221f1a;
+  --bg-tint: #15130f;
+  --bd:      #33302a;
+  --bd2:     #47433b;
+
+  /* 文字（墨） */
+  --tx:      #f2ede2;     /* 生成り */
+  --tx2:     #9a9285;     /* 薄墨 */
+  --tx3:     #6b6458;
+
+  /* 金（金泥・薄金） */
+  --gold:    #c9a961;
+  --gold2:   #e6cc88;
+  --gold-dim:#8a7a44;
+
+  /* 朱（朱肉・赤漆） */
+  --red:     #c73e2e;     /* 朱 */
+  --red2:    #d75747;
+  --crimson: #8a2820;     /* 臙脂 */
+  --shu:     #c73e2e;
+
+  /* データ色 */
+  --green:   #7ba86c;     /* 若草 */
+  --blue:    #5a8fb8;     /* 納戸 */
+  --violet:  #9b7bb8;     /* 藤 */
+
+  /* Elevation */
+  --sh-1: 0 1px 0 rgba(255,240,210,.03) inset, 0 1px 2px rgba(0,0,0,.4);
+  --sh-2: 0 1px 0 rgba(255,240,210,.04) inset, 0 4px 18px -4px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.3);
+  --sh-3: 0 1px 0 rgba(255,240,210,.05) inset, 0 12px 40px -8px rgba(0,0,0,.7);
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+
+  --hairline: 1px solid rgba(201,169,97,.1);
 }
-#cd-results .cd-result-card {
-  min-width: 300px;
-  flex-shrink: 0;
-  scroll-snap-align: start;
+
+/* ===== 昼モード（白茶＋濃墨） ===== */
+html[data-theme="day"]{
+  --bg:      #ede4ce;     /* 生成り和紙 */
+  --bg2:     #f5ecd6;
+  --bg3:     #e6dcc0;
+  --bg-tint: #efe6cf;
+  --bd:      #cdbf9a;
+  --bd2:     #b9a878;
+
+  --tx:      #2a2418;     /* 濃墨 */
+  --tx2:     #6b5e44;     /* 中間 */
+  --tx3:     #998c70;
+
+  --gold:    #8a6f2e;     /* 金泥（暗め） */
+  --gold2:   #a68842;
+  --gold-dim:#6e5520;
+
+  --red:     #a82c1e;
+  --red2:    #b83a2a;
+  --crimson: #6e1c14;
+  --shu:     #a82c1e;
+
+  --green:   #4d7a3a;
+  --blue:    #3a6585;
+  --violet:  #6f4d8a;
+
+  --sh-1: 0 1px 0 rgba(255,255,255,.4) inset, 0 1px 2px rgba(60,40,20,.10);
+  --sh-2: 0 1px 0 rgba(255,255,255,.4) inset, 0 4px 14px -4px rgba(60,40,20,.18), 0 1px 3px rgba(60,40,20,.10);
+  --sh-3: 0 1px 0 rgba(255,255,255,.4) inset, 0 10px 30px -8px rgba(60,40,20,.25);
+
+  --hairline: 1px solid rgba(138,111,46,.18);
 }
+html[data-theme="day"] body{
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(ellipse 900px 520px at 50% 0%, rgba(168,111,46,.10), transparent 60%);
+}
+/* 昼モード：ハードコード色のオーバーライド */
+html[data-theme="day"] #hdr{
+  background:linear-gradient(180deg, rgba(245,236,214,.92), rgba(237,228,206,.95));
+  border-bottom-color:rgba(138,111,46,.25);
+}
+html[data-theme="day"] .card,
+html[data-theme="day"] .gc,
+html[data-theme="day"] .modal{
+  background:linear-gradient(180deg, rgba(255,250,235,.7), rgba(248,240,220,.55));
+  border-color:rgba(138,111,46,.20);
+}
+html[data-theme="day"] .tab{
+  color:var(--tx2);
+}
+html[data-theme="day"] .tab.on{
+  color:var(--gold);
+}
+html[data-theme="day"] #tabs{
+  background:linear-gradient(180deg, rgba(245,236,214,.85), rgba(237,228,206,.92));
+  border-top-color:rgba(138,111,46,.25);
+}
+html[data-theme="day"] .fi,
+html[data-theme="day"] .fs,
+html[data-theme="day"] input[type="text"],
+html[data-theme="day"] input[type="number"],
+html[data-theme="day"] input[type="date"],
+html[data-theme="day"] select,
+html[data-theme="day"] textarea{
+  background:rgba(255,250,235,.7);
+  border-color:rgba(138,111,46,.30);
+  color:var(--tx);
+}
+html[data-theme="day"] .ltab{
+  background:rgba(255,250,235,.5);
+  border-color:rgba(138,111,46,.20);
+  color:var(--tx2);
+}
+html[data-theme="day"] .ltab.on{
+  background:linear-gradient(180deg, rgba(168,111,46,.18), rgba(138,90,30,.10));
+  border-color:var(--gold);
+  color:var(--gold);
+}
+html[data-theme="day"] .lg-btn{
+  background:rgba(255,250,235,.5);
+  border-color:rgba(138,111,46,.20);
+  color:var(--tx2);
+}
+html[data-theme="day"] .lg-btn.on{
+  background:linear-gradient(180deg, rgba(168,111,46,.18), rgba(138,90,30,.10));
+  border-color:var(--gold);
+  color:var(--gold);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+::selection{background:rgba(199,62,46,.35);color:#fff}
+
+html,body{
+  font-family:'Noto Sans JP','Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;
+  background:var(--bg);
+  color:var(--tx);
+  min-height:100vh;
+  font-size:15.5px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  letter-spacing:.01em;
+}
+
+/* ===== 和風背景（単一レイヤー・スクロール最適化） ===== */
+body{
+  position:relative;
+  background-color:var(--bg);
+  /* 微かな金の光ひと筋のみ — fixedレイヤー廃止でスクロール軽量 */
+  background-image:
+    radial-gradient(ellipse 900px 520px at 50% 0%, rgba(201,169,97,.09), transparent 60%);
+  background-repeat:no-repeat;
+}
+body > *{position:relative;z-index:1}
 
 input[type=number]{-moz-appearance:textfield}
-input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 
-/* ヘッダー */
-#hdr{background:linear-gradient(90deg,#0d0d0f,#1a1a24,#0d0d0f);border-bottom:1px solid var(--bd);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100}
-.logo{display:flex;align-items:center}.logo img{height:36px;object-fit:contain}
-.logo-sub{font-size:.6rem;color:var(--tx2);letter-spacing:.2em}
-.back-btn{background:none;border:none;color:var(--gold);font-size:.85rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;padding:6px 0}
-
-/* タブ */
-#tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--bd)}
-.tab{flex:1;padding:10px 2px;background:none;border:none;color:var(--tx2);font-family:'Noto Sans JP',sans-serif;font-size:.7rem;cursor:pointer;border-bottom:2px solid transparent}
-.tab.on{color:var(--gold);border-bottom-color:var(--gold);background:rgba(212,168,67,.06)}
-
-/* 画面 */
-.screen{display:none}.screen.on{display:block}
-.page{display:none}.page.on{display:block}
-.wrap{padding:12px;max-width:500px;margin:0 auto}
-
-/* カード */
-.card{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
-.ctitle{font-size:.68rem;color:var(--gold);letter-spacing:.15em;margin-bottom:10px}
-
-/* リーグタブ */
-.ltabs{display:flex;gap:6px;margin-bottom:12px}
-.ltab{flex:1;padding:9px;border-radius:8px;text-align:center;font-size:.8rem;font-weight:700;cursor:pointer;border:1px solid var(--bd);color:var(--tx2);background:var(--bg3)}
-.ltab.on{border-color:var(--gold);color:var(--gold);background:rgba(212,168,67,.1)}
-
-/* テーブル */
-.rtbl{width:100%;border-collapse:collapse}
-.rtbl th{font-size:.6rem;color:var(--tx2);padding:4px 5px;text-align:right;font-weight:400}
-.rtbl th:first-child{text-align:left}
-.rtbl td{padding:7px 5px;border-top:1px solid var(--bd);font-size:.82rem}
-.rtbl td:not(:first-child){text-align:right}
-.b1{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.68rem;font-weight:700;margin-right:5px;background:linear-gradient(135deg,#d4a843,#f0c96a);color:#1a1200}
-.b2{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.68rem;font-weight:700;margin-right:5px;background:linear-gradient(135deg,#8a9ab0,#b0bec5);color:#0d0d0f}
-.b3{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.68rem;font-weight:700;margin-right:5px;background:linear-gradient(135deg,#a0622a,#c47d3a);color:#fff}
-.bx{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:.68rem;font-weight:700;margin-right:5px;background:var(--bg3);color:var(--tx2)}
-.lg-btn{padding:5px 10px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;border:1px solid var(--bd);background:rgba(255,255,255,.05);color:var(--tx2)}.lg-btn.on{border-color:var(--gold);background:rgba(212,168,67,.2);color:var(--gold)}
-
-/* ===== ボタン階層 ===== */
-.btn-danger{background:rgba(224,82,82,.12);border:1px solid rgba(224,82,82,.45);color:#ff8080;border-radius:8px;padding:10px 14px;font-family:'Noto Sans JP',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer}
-.btn-ghost{background:none;border:none;color:var(--gold);font-family:'Noto Sans JP',sans-serif;font-size:.78rem;cursor:pointer;padding:6px 10px}
-/* ===== ランキング カード（スマホ） ===== */
-.rk-card{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:11px 12px;margin-bottom:8px;cursor:pointer}
-.rk-card:active{opacity:.75}
-.rk-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;overflow:hidden}
-.rk-card-stats{display:flex;gap:0;border-top:1px solid rgba(255,255,255,.06);padding-top:7px}
-.rk-stat{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}
-.rk-stat-v{font-size:.7rem;font-weight:700;color:var(--tx)}
-.rk-stat-l{font-size:.52rem;color:var(--tx2);margin-top:1px}
-/* ===== サマリー数値 ===== */
-.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.sum-item{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px}
-.sum-v{font-size:1.1rem;font-weight:700;color:var(--gold);line-height:1.2}
-.sum-l{font-size:.58rem;color:var(--tx2);margin-top:2px}
-/* ===== 下部ナビ（モバイル） ===== */
-#bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--bd);z-index:99;padding:0 0 env(safe-area-inset-bottom,0);display:none}
-#bottom-nav.show{display:flex;justify-content:center}
-#bottom-nav>div{display:flex;width:100%;max-width:500px}
-.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 2px 5px;background:none;border:none;color:var(--tx2);font-family:'Noto Sans JP',sans-serif;font-size:.5rem;cursor:pointer;gap:2px;min-width:0;letter-spacing:.02em}
-.bnav-item.on{color:var(--gold)}
-.bnav-ico{font-size:1.05rem;line-height:1.2}
-.bnav-add .bnav-ico{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1200;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;margin-bottom:1px}
-/* スマホ切替 */
-@media(max-width:599px){
-  #tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-  #tabs::-webkit-scrollbar{display:none}
-  #tabs .tab{flex:1;min-width:52px;font-size:.62rem;padding:10px 4px}
-  .wrap{padding-bottom:68px}
+/* ============================================
+   半荘結果 横スワイプ
+============================================ */
+#cd-results{
+  display:flex;gap:14px;overflow-x:auto;padding:4px 4px 14px;
+  scroll-snap-type:x mandatory;
+  scrollbar-width:thin;scrollbar-color:var(--bd2) transparent;
 }
-.lg-chip{display:inline-flex;align-items:center;padding:4px 9px;border-radius:20px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;border:2px solid transparent;background:rgba(255,255,255,.05);color:var(--tx2);white-space:nowrap;user-select:none;-webkit-user-select:none}
-.pp{color:var(--green);font-weight:700}.pm{color:var(--red)}.pz{color:var(--tx2)}
-.nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bar-w{height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:3px}
-.bar{height:100%;border-radius:2px}
+#cd-results .cd-result-card{min-width:300px;flex-shrink:0;scroll-snap-align:start}
 
-/* 半荘リスト */
-.hi-wrap{position:relative;margin-bottom:8px;border-radius:10px;transition:opacity .15s}
+/* ============================================
+   ヘッダー
+============================================ */
+#hdr{
+  background:linear-gradient(180deg, rgba(26,24,19,.9), rgba(18,16,13,.95));
+  backdrop-filter:saturate(140%) blur(18px);
+  -webkit-backdrop-filter:saturate(140%) blur(18px);
+  border-bottom:1px solid rgba(201,169,97,.15);
+  padding:10px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;
+  min-height:64px;
+  position:sticky;top:0;z-index:100;
+  position:relative;
+}
+/* ヘッダー下に朱の細線 */
+#hdr::after{
+  content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  background:linear-gradient(90deg, transparent, rgba(199,62,46,.4) 30%, rgba(201,169,97,.4) 70%, transparent);
+}
+#hdr > div:first-child{display:flex;flex-direction:column;line-height:1.1;gap:3px;min-width:0}
+#hdr-refresh{white-space:nowrap;flex-shrink:0}
+
+.logo{
+  font-family:'Shippori Mincho','Yu Mincho','YuMincho',serif;
+  font-size:1.55rem;
+  font-weight:800;
+  color:var(--tx);
+  letter-spacing:.1em;
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  padding-right:8px;
+  height:34px;
+}
+.logo img{
+  height:34px;width:auto;display:block;
+  max-width:140px;object-fit:contain;
+}
+/* ロゴの朱丸（落款のような） */
+.logo::before{
+  content:'';position:absolute;right:-4px;top:4px;
+  width:14px;height:14px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%, #d75747, #c73e2e 55%, #8a2820);
+  box-shadow:0 0 0 1px rgba(255,200,180,.15), 0 2px 6px rgba(199,62,46,.3);
+  opacity:.92;
+}
+.logo-sub{
+  font-size:.56rem;color:var(--tx3);letter-spacing:.38em;
+  margin-top:3px;font-weight:500;
+  font-family:'Shippori Mincho',serif;
+}
+.back-btn{
+  background:none;border:none;color:var(--gold);
+  font-size:.88rem;cursor:pointer;
+  font-family:'Shippori Mincho',serif;padding:6px 2px;
+  letter-spacing:.08em;font-weight:700;
+}
+.back-btn:hover{color:var(--gold2)}
+
+/* ============================================
+   タブバー
+============================================ */
+#tabs{
+  display:flex;
+  background:linear-gradient(180deg, var(--bg2), var(--bg-tint));
+  border-bottom:1px solid rgba(201,169,97,.1);
+  padding:0 4px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+#tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex:1;min-width:0;
+  padding:14px 4px 13px;
+  background:none;border:none;
+  color:var(--tx2);
+  font-family:'Shippori Mincho',serif;font-size:.76rem;font-weight:700;
+  cursor:pointer;
+  border-bottom:2px solid transparent;
+  position:relative;
+  transition:color .2s ease;
+  letter-spacing:.08em;
+  white-space:nowrap;
+}
+.tab:hover{color:var(--tx)}
+.tab.on{
+  color:var(--gold);
+}
+.tab.on::after{
+  content:'';position:absolute;left:20%;right:20%;bottom:-1px;
+  height:2px;
+  background:linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold) 70%, transparent);
+  border-radius:2px;
+}
+
+/* ============================================
+   画面・ページ
+============================================ */
+.screen{display:none}
+.screen.on{display:block}
+.page{display:none}
+.page.on{display:block}
+.wrap{padding:16px 14px 48px;max-width:520px;margin:0 auto}
+
+/* ============================================
+   カード
+============================================ */
+.card{
+  background:
+    linear-gradient(180deg, rgba(255,245,220,.018), transparent),
+    var(--bg2);
+  border:1px solid rgba(201,169,97,.12);
+  border-radius:var(--r-lg);
+  padding:16px 16px;
+  margin-bottom:14px;
+  box-shadow:var(--sh-2);
+  position:relative;
+}
+
+.ctitle{
+  font-size:.7rem;
+  color:var(--gold);
+  letter-spacing:.24em;
+  margin-bottom:12px;
+  font-weight:700;
+  font-family:'Shippori Mincho',serif;
+  display:flex;align-items:center;gap:9px;
+}
+.ctitle::before{
+  content:'';display:inline-block;width:2px;height:14px;
+  background:linear-gradient(180deg, var(--gold2), var(--gold));
+  border-radius:1px;
+}
+
+/* ============================================
+   リーグタブ
+============================================ */
+.ltabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.ltab{
+  flex:1;min-width:68px;
+  padding:9px 10px;border-radius:var(--r-sm);
+  text-align:center;font-size:.82rem;font-weight:700;
+  cursor:pointer;
+  border:1px solid var(--bd);color:var(--tx2);
+  background:var(--bg3);
+  transition:all .2s ease;
+  letter-spacing:.06em;
+  font-family:'Shippori Mincho',serif;
+}
+.ltab:hover{color:var(--tx);border-color:var(--bd2)}
+.ltab.on{
+  border-color:var(--gold);
+  color:var(--gold);
+  background:linear-gradient(180deg, rgba(201,169,97,.14), rgba(201,169,97,.06));
+  box-shadow:0 0 0 1px rgba(201,169,97,.15);
+}
+
+/* グラフ用フィルタボタン（上位5／下位5／全員／選手選択）— 金色タブ */
+.lg-btn{
+  flex:1;min-width:64px;
+  padding:8px 12px;border-radius:var(--r-sm);
+  text-align:center;font-size:.85rem;font-weight:700;
+  cursor:pointer;
+  border:1px solid var(--bd);color:var(--tx2);
+  background:var(--bg3);
+  transition:all .18s ease;
+  letter-spacing:.06em;
+  font-family:'Shippori Mincho',serif;
+}
+.lg-btn:hover{color:var(--tx);border-color:var(--bd2)}
+.lg-btn.on{
+  border-color:var(--gold);
+  color:var(--gold);
+  background:linear-gradient(180deg, rgba(201,169,97,.14), rgba(201,169,97,.06));
+  box-shadow:0 0 0 1px rgba(201,169,97,.15);
+}
+
+/* ============================================
+   ランキングテーブル
+============================================ */
+.rtbl{width:100%;border-collapse:collapse;font-feature-settings:"tnum"}
+.rtbl th{
+  font-size:.6rem;color:var(--tx3);
+  padding:6px 6px 10px;text-align:right;
+  font-weight:500;letter-spacing:.14em;
+  font-family:'Shippori Mincho',serif;
+  border-bottom:1px solid rgba(201,169,97,.1);
+}
+.rtbl th:first-child{text-align:left}
+.rtbl td{
+  padding:10px 6px;
+  border-top:1px solid rgba(201,169,97,.06);
+  font-size:.86rem;
+  vertical-align:middle;
+}
+.rtbl td:not(:first-child){text-align:right}
+.rtbl tr:hover td{background:rgba(201,169,97,.02)}
+
+/* ランクバッジ（家紋風） */
+.b1,.b2,.b3,.b4,.b5,.b6,.bx{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:50%;
+  font-size:.72rem;font-weight:800;
+  margin-right:8px;
+  font-family:'Shippori Mincho',serif;
+  letter-spacing:0;
+  vertical-align:-4px;
+}
+.b1{
+  background:radial-gradient(circle at 30% 30%, #f0d891, #c9a961 55%, #8a7a44 95%);
+  color:#2a1f08;
+  box-shadow:0 0 0 1px rgba(201,169,97,.45), 0 2px 8px rgba(201,169,97,.3);
+}
+.b2{
+  background:radial-gradient(circle at 30% 30%, #e3e8ee, #a6b2c2 55%, #6f7c8f 95%);
+  color:#1a2030;
+  box-shadow:0 0 0 1px rgba(166,178,194,.3);
+}
+.b3{
+  background:radial-gradient(circle at 30% 30%, #dca17a, #b47146 55%, #7a4a2a 95%);
+  color:#2a1500;
+  box-shadow:0 0 0 1px rgba(180,113,70,.3);
+}
+/* 4位（薄い銅） */
+.b4{
+  background:radial-gradient(circle at 30% 30%, #e8c3a6, #c89878 55%, #8f6a4f 95%);
+  color:#2a1a0a;
+  box-shadow:0 0 0 1px rgba(200,152,120,.3);
+}
+/* 5位（藍：A2拡張） */
+.b5{
+  background:radial-gradient(circle at 30% 30%, #8ab0cf, #4a7ba0 55%, #294a68 95%);
+  color:#08131d;
+  box-shadow:0 0 0 1px rgba(74,123,160,.3);
+}
+/* 6位（紫鳶：A2拡張） */
+.b6{
+  background:radial-gradient(circle at 30% 30%, #c79bb9, #8f5e86 55%, #5a3957 95%);
+  color:#1a0d17;
+  box-shadow:0 0 0 1px rgba(143,94,134,.3);
+}
+.bx{
+  background:rgba(201,169,97,.06);
+  color:var(--tx3);
+  font-weight:700;
+  border:1px solid rgba(201,169,97,.15);
+}
+
+.pp{color:var(--green);font-weight:700}
+.pm{color:var(--red2);font-weight:600}
+.pz{color:var(--tx3)}
+.nm{font-weight:600;color:var(--tx);font-family:'Shippori Mincho',serif}
+
+.bar-w{
+  height:4px;background:rgba(201,169,97,.06);
+  border-radius:2px;margin-top:5px;overflow:hidden;
+}
+.bar{height:100%;border-radius:2px;transition:width .4s ease}
+
+/* ============================================
+   半荘リスト
+============================================ */
+.hi-wrap{position:relative;margin-bottom:10px;border-radius:var(--r-md);transition:opacity .15s}
 .hi-wrap.drag-over{outline:2px solid var(--gold);outline-offset:-2px}
-.drag-handle{cursor:grab;color:var(--tx2);padding:2px 6px;font-size:1rem;line-height:1;flex-shrink:0;touch-action:none;user-select:none;-webkit-user-select:none}
-.hi-del{position:absolute;right:0;top:0;bottom:0;width:80px;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;letter-spacing:.05em;border-radius:0 10px 10px 0;color:#fff;opacity:0;pointer-events:none}
-.hi{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;cursor:pointer;position:relative;z-index:1;touch-action:pan-y;will-change:transform;transition:transform .2s ease,border-color .2s}
-.hi.open{border-color:var(--gold)}
-.hi-head{display:flex;align-items:center;gap:8px}
-.hi-num{font-size:.62rem;color:var(--tx2);min-width:28px}
-.hi-top{font-size:.83rem;font-weight:700;flex:1}
-.hi-det{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)}
+.drag-handle{
+  cursor:grab;color:var(--tx3);
+  padding:4px 8px;font-size:1rem;line-height:1;flex-shrink:0;
+  touch-action:none;user-select:none;-webkit-user-select:none;
+}
+.drag-handle:active{cursor:grabbing}
+.hi-del{
+  position:absolute;right:0;top:0;bottom:0;width:80px;
+  background:linear-gradient(135deg, var(--crimson), var(--red));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.78rem;font-weight:700;letter-spacing:.08em;
+  border-radius:0 var(--r-md) var(--r-md) 0;color:#fff;
+  opacity:0;pointer-events:none;
+  font-family:'Shippori Mincho',serif;
+}
+.hi{
+  background:linear-gradient(180deg, rgba(255,245,220,.02), transparent), var(--bg3);
+  border:1px solid rgba(201,169,97,.1);
+  border-radius:var(--r-md);
+  padding:12px 14px;
+  cursor:pointer;position:relative;z-index:1;
+  touch-action:pan-y;will-change:transform;
+  transition:transform .2s ease, border-color .2s, background .2s;
+}
+.hi:hover{border-color:rgba(201,169,97,.22)}
+.hi.open{
+  border-color:rgba(201,169,97,.55);
+  background:linear-gradient(180deg, rgba(201,169,97,.04), transparent), var(--bg3);
+  box-shadow:0 0 0 1px rgba(201,169,97,.15), var(--sh-2);
+}
+.hi-head{display:flex;align-items:center;gap:10px}
+.hi-num{
+  font-size:.62rem;color:var(--tx3);min-width:30px;
+  letter-spacing:.14em;font-weight:700;
+  font-family:'Shippori Mincho',serif;
+}
+.hi-top{font-size:.88rem;font-weight:600;flex:1;color:var(--tx);font-family:'Shippori Mincho',serif}
+.hi-det{display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(201,169,97,.1)}
 .hi.open .hi-det{display:block}
-.hi-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:.8rem}
+.hi-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:5px 0;font-size:.82rem;
+}
 
-/* フォーム */
-.fl{font-size:.7rem;color:var(--gold);letter-spacing:.1em;margin-bottom:5px;display:block}
-.fi,.fs{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:9px 11px;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:.85rem}
-.fi:focus,.fs:focus{outline:none;border-color:var(--gold)}
-.fs option{background:var(--bg2)}
-.fg{margin-bottom:11px}
+/* ============================================
+   フォーム
+============================================ */
+.fl{
+  font-size:.68rem;color:var(--gold);
+  letter-spacing:.16em;margin-bottom:6px;
+  display:block;font-weight:700;
+  font-family:'Shippori Mincho',serif;
+}
+.fi,.fs{
+  width:100%;
+  background:rgba(0,0,0,.3);
+  border:1px solid var(--bd);
+  color:var(--tx);
+  padding:10px 12px;
+  border-radius:var(--r-sm);
+  font-family:inherit;
+  font-size:.9rem;
+  transition:all .18s ease;
+}
+.fi::placeholder{color:var(--tx3)}
+.fi:focus,.fs:focus{
+  outline:none;
+  border-color:var(--gold);
+  background:rgba(0,0,0,.45);
+  box-shadow:0 0 0 3px rgba(201,169,97,.12);
+}
+.fs option{background:var(--bg2);color:var(--tx)}
+.fg{margin-bottom:12px}
 
 /* 素点入力 */
-.sgrid{display:none;}
+.sgrid{display:none}
 .mh-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.mh-card{flex:1;min-width:180px;background:rgba(0,0,0,.35);border:1px solid var(--bd);border-radius:9px;padding:9px 10px}
-.mh-title{font-size:.62rem;color:var(--gold);margin-bottom:4px}
-.mh-name{font-size:.72rem;font-weight:700;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mh-input{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:6px 8px;border-radius:6px;font-size:.85rem;text-align:right}
-.mh-details{margin-top:6px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.mh-detail-item{font-size:.66rem;color:var(--tx2);display:flex;flex-direction:column;gap:2px}
-.mh-detail-item input{background:rgba(0,0,0,.4);border:1px solid var(--bd);border-radius:6px;color:var(--tx);padding:4px 6px;text-align:center;font-size:.75rem}
-.sc-wind{font-size:.62rem;color:var(--gold);margin-bottom:3px}
-.sc-name{font-size:.75rem;font-weight:700;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sc-inp{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:7px 8px;border-radius:6px;font-size:.95rem;font-weight:700;text-align:right}
+.mh-card{
+  flex:1;min-width:180px;
+  background:linear-gradient(180deg, rgba(255,245,220,.02), transparent), rgba(0,0,0,.25);
+  border:1px solid rgba(201,169,97,.1);border-radius:var(--r-md);
+  padding:10px 12px;
+  transition:border-color .18s;
+}
+.mh-card:focus-within{border-color:rgba(201,169,97,.45)}
+.mh-title{
+  font-size:.6rem;color:var(--gold);
+  margin-bottom:5px;letter-spacing:.16em;font-weight:700;
+  font-family:'Shippori Mincho',serif;
+}
+.mh-name{
+  font-size:.76rem;font-weight:700;margin-bottom:7px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:var(--tx);font-family:'Shippori Mincho',serif;
+}
+.mh-input{
+  width:100%;background:rgba(0,0,0,.35);
+  border:1px solid var(--bd);color:var(--tx);
+  padding:7px 10px;border-radius:var(--r-sm);
+  font-size:.95rem;font-weight:600;text-align:right;
+  font-family:inherit;
+}
+.mh-input:focus{outline:none;border-color:var(--gold)}
+.mh-details{margin-top:7px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.mh-detail-item{font-size:.64rem;color:var(--tx2);display:flex;flex-direction:column;gap:3px}
+.mh-detail-item input{
+  background:rgba(0,0,0,.35);border:1px solid var(--bd);
+  border-radius:6px;color:var(--tx);padding:4px 6px;
+  text-align:center;font-size:.75rem;font-family:inherit;
+}
+.sc-wind{font-size:.62rem;color:var(--gold);margin-bottom:4px;letter-spacing:.16em;font-weight:700;font-family:'Shippori Mincho',serif}
+.sc-name{font-size:.78rem;font-weight:700;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Shippori Mincho',serif}
+.sc-inp{
+  width:100%;background:rgba(0,0,0,.35);border:1px solid var(--bd);
+  color:var(--tx);padding:8px 10px;border-radius:var(--r-sm);
+  font-size:1rem;font-weight:700;text-align:right;
+  font-family:inherit;
+}
 .sc-inp:focus{outline:none;border-color:var(--gold)}
 
-/* ky棒 */
-.ky-row{display:flex;align-items:center;justify-content:space-between;background:rgba(212,168,67,.06);border:1px solid rgba(212,168,67,.2);border-radius:8px;padding:8px 12px;margin-bottom:10px}
-.ky-inp{width:55px;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:5px 6px;border-radius:6px;text-align:center;font-size:.9rem}
+/* 本場棒・リーチ棒 */
+.ky-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(135deg, rgba(201,169,97,.08), rgba(201,169,97,.02));
+  border:1px solid rgba(201,169,97,.25);
+  border-radius:var(--r-sm);padding:10px 14px;margin-bottom:10px;
+}
+.ky-inp{
+  width:60px;background:rgba(0,0,0,.35);border:1px solid var(--bd);
+  color:var(--tx);padding:6px 8px;border-radius:6px;
+  text-align:center;font-size:.9rem;font-family:inherit;font-weight:600;
+}
 .ky-inp:focus{outline:none;border-color:var(--gold)}
 
 /* エラー */
-.serr{display:none;background:rgba(224,82,82,.15);border:1px solid rgba(224,82,82,.5);border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:.78rem;color:#ff8080;line-height:1.6}
+.serr{
+  display:none;
+  background:linear-gradient(135deg, rgba(199,62,46,.12), rgba(199,62,46,.04));
+  border:1px solid rgba(199,62,46,.4);
+  border-left:3px solid var(--shu);
+  border-radius:var(--r-sm);
+  padding:10px 14px;margin-bottom:10px;
+  font-size:.78rem;color:#ffa89e;line-height:1.65;
+}
 
 /* プレビュー */
-.prev{background:rgba(0,0,0,.35);border:1px solid rgba(212,168,67,.3);border-radius:9px;padding:11px;margin-bottom:11px}
-.prev-title{font-size:.65rem;color:var(--gold);letter-spacing:.12em;margin-bottom:7px}
-.prev-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-.prev-item{background:rgba(0,0,0,.2);border-radius:7px;padding:7px 9px}
-.prev-name{font-size:.7rem;color:#9ba3b2;margin-bottom:2px}
-.prev-pt{font-size:1.05rem;font-weight:700}
+.prev{
+  background:linear-gradient(180deg, rgba(201,169,97,.04), transparent), rgba(0,0,0,.26);
+  border:1px solid rgba(201,169,97,.25);
+  border-radius:var(--r-md);padding:13px;margin-bottom:12px;
+}
+.prev-title{font-size:.66rem;color:var(--gold);letter-spacing:.18em;margin-bottom:9px;font-weight:700;font-family:'Shippori Mincho',serif}
+.prev-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.prev-item{background:rgba(0,0,0,.22);border-radius:8px;padding:8px 10px;border:1px solid rgba(201,169,97,.06)}
+.prev-name{font-size:.68rem;color:var(--tx2);margin-bottom:2px}
+.prev-pt{font-size:1.1rem;font-weight:700;font-feature-settings:"tnum"}
 
-/* グラフ */
+/* ============================================
+   チャート
+============================================ */
 .chart-wrap{position:relative;height:320px;margin-top:4px;touch-action:none}
 
-/* ボタン */
-.btn{width:100%;padding:12px;border-radius:9px;font-family:'Noto Sans JP',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;border:none;letter-spacing:.04em;margin-bottom:8px}
-.btn-g{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1200}
-.btn-gh{background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2)}
+/* ============================================
+   ボタン
+============================================ */
+.btn{
+  width:100%;padding:13px;border-radius:var(--r-sm);
+  font-family:'Shippori Mincho',serif;font-size:.92rem;font-weight:700;
+  cursor:pointer;border:none;
+  letter-spacing:.14em;margin-bottom:10px;
+  transition:all .18s ease;
+  position:relative;overflow:hidden;
+}
+.btn:active{transform:translateY(1px)}
+.btn-g{
+  background:linear-gradient(135deg, var(--gold2), var(--gold));
+  color:#1a1200;
+  box-shadow:0 1px 0 rgba(255,240,210,.35) inset, 0 4px 14px -4px rgba(201,169,97,.4);
+}
+.btn-g:hover{
+  box-shadow:0 1px 0 rgba(255,240,210,.45) inset, 0 6px 18px -4px rgba(201,169,97,.5);
+  filter:brightness(1.04);
+}
+.btn-gh{
+  background:rgba(201,169,97,.04);
+  border:1px solid var(--bd);
+  color:var(--tx2);
+}
+.btn-gh:hover{background:rgba(201,169,97,.08);color:var(--tx);border-color:var(--bd2)}
 
-/* オーバーレイ */
-.ovl{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:flex-end;justify-content:center}
+/* ============================================
+   オーバーレイ & モーダル
+============================================ */
+.ovl{
+  display:none;position:fixed;inset:0;
+  background:rgba(10,8,6,.92);
+  z-index:200;
+  align-items:flex-end;justify-content:center;
+}
 .ovl.open{display:flex}
-.modal{background:var(--bg2);border:1px solid var(--bd);border-top:2px solid var(--gold);border-radius:16px 16px 0 0;padding:18px 15px 36px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto}
-.mtitle{font-family:'Shippori Mincho',serif;font-size:1rem;color:var(--gold);text-align:center;margin-bottom:14px}
-.mbtns{display:flex;gap:8px;margin-top:13px}
-.mbtn{flex:1;padding:11px;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:.82rem;cursor:pointer}
-.mok{background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;color:#1a1200;font-weight:700}
-.mng{background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx2)}
+.modal{
+  background:linear-gradient(180deg, #1e1b16, #15130f);
+  border:1px solid rgba(201,169,97,.15);
+  border-top:1px solid rgba(201,169,97,.5);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;
+  padding:22px 18px 40px;
+  width:100%;max-width:520px;max-height:90vh;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  contain:layout paint;
+  transform:translateZ(0);
+  box-shadow:0 -20px 60px rgba(0,0,0,.65);
+  position:relative;
+}
+.modal::before{
+  content:'';position:absolute;left:50%;top:9px;transform:translateX(-50%);
+  width:40px;height:4px;border-radius:2px;
+  background:rgba(201,169,97,.25);
+}
+.mtitle{
+  font-family:'Shippori Mincho',serif;
+  font-size:1.15rem;color:var(--gold);
+  text-align:center;margin-bottom:18px;
+  font-weight:800;letter-spacing:.12em;
+  padding-top:6px;
+}
+.mbtns{display:flex;gap:10px;margin-top:16px}
+.mbtn{
+  flex:1;padding:12px;border-radius:var(--r-sm);
+  font-family:'Shippori Mincho',serif;font-size:.86rem;
+  cursor:pointer;font-weight:700;letter-spacing:.1em;
+  transition:all .18s;
+}
+.mok{
+  background:linear-gradient(135deg, var(--gold2), var(--gold));
+  border:none;color:#1a1200;
+  box-shadow:0 4px 14px -4px rgba(201,169,97,.4);
+}
+.mok:hover{filter:brightness(1.05)}
+.mng{
+  background:rgba(201,169,97,.04);
+  border:1px solid var(--bd);color:var(--tx2);
+}
+.mng:hover{background:rgba(201,169,97,.08);color:var(--tx)}
 
-/* 個人 */
-.stat-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
-.stat-n{background:rgba(0,0,0,.35);border-radius:9px;padding:9px 6px;text-align:center}
-.stat-v{font-size:1.05rem;font-weight:700;margin-bottom:2px}
-.stat-l{font-size:.58rem;color:var(--tx2)}
-.rank-bar{display:flex;gap:3px;margin-top:8px}
-.rb-item{flex:1;border-radius:4px;padding:6px 4px;text-align:center;font-size:.75rem;font-weight:700}
-.pm-hrow{display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;font-size:.8rem;margin-bottom:5px}
-/* 詳細統計テーブル */
-.stat-section-hd{font-size:.68rem;font-weight:700;color:var(--tx2);margin:12px 0 4px;letter-spacing:.06em;text-transform:uppercase}
-.stat-group{background:rgba(0,0,0,.3);border-radius:8px;padding:2px 10px;margin-bottom:8px}
-.stat-tbl{width:100%;border-collapse:collapse;font-size:.8rem;table-layout:fixed}
-.stat-tbl td{padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
+/* ============================================
+   個人成績
+============================================ */
+.stat-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat-n{
+  background:linear-gradient(180deg, rgba(255,245,220,.02), transparent), rgba(0,0,0,.24);
+  border:1px solid rgba(201,169,97,.08);
+  border-radius:var(--r-md);
+  padding:12px 6px;text-align:center;
+}
+.stat-v{
+  font-size:1.25rem;font-weight:700;margin-bottom:3px;
+  font-feature-settings:"tnum";
+  color:var(--tx);
+  line-height:1.2;
+  font-family:'Shippori Mincho',serif;
+}
+.stat-l{font-size:.6rem;color:var(--tx3);letter-spacing:.16em;font-weight:700;font-family:'Shippori Mincho',serif}
+.rank-bar{display:flex;gap:4px;margin-top:10px}
+.rb-item{
+  flex:1;border-radius:5px;padding:7px 4px;
+  text-align:center;font-size:.78rem;font-weight:700;
+  font-feature-settings:"tnum";
+}
+.pm-hrow{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(0,0,0,.18);
+  border:1px solid rgba(201,169,97,.05);
+  border-radius:var(--r-sm);padding:9px 12px;
+  font-size:.82rem;margin-bottom:6px;
+  transition:background .15s;
+}
+.pm-hrow:hover{background:rgba(201,169,97,.02)}
+
+/* 詳細統計 */
+.stat-section-hd{
+  font-size:.66rem;font-weight:700;color:var(--tx3);
+  margin:16px 0 6px;letter-spacing:.18em;
+  font-family:'Shippori Mincho',serif;
+}
+.stat-group{
+  background:rgba(0,0,0,.2);
+  border:1px solid rgba(201,169,97,.06);
+  border-radius:var(--r-md);padding:4px 14px;margin-bottom:10px;
+}
+.stat-tbl{width:100%;border-collapse:collapse;font-size:.82rem;table-layout:fixed;font-feature-settings:"tnum"}
+.stat-tbl td{padding:9px 0;border-bottom:1px solid rgba(201,169,97,.05);vertical-align:middle}
 .stat-tbl tr:last-child td{border-bottom:none}
-.stat-tbl td.lbl{width:52%;color:var(--tx2);font-size:.75rem;padding-right:6px}
-.stat-tbl td.val{width:28%;text-align:right;font-weight:700;white-space:nowrap;font-feature-settings:"tnum"}
-.stat-tbl td.sub{width:20%;text-align:right;color:var(--tx2);font-size:.68rem;white-space:nowrap}
+.stat-tbl td.lbl{width:52%;color:var(--tx2);font-size:.76rem;padding-right:6px}
+.stat-tbl td.val{width:28%;text-align:right;font-weight:700;white-space:nowrap}
+.stat-tbl td.sub{width:20%;text-align:right;color:var(--tx3);font-size:.68rem;white-space:nowrap}
 .stat-tbl td.pos{color:var(--green)}
-.stat-tbl td.neg{color:var(--red)}
-.stat-tbl td.dim{color:var(--tx2);font-weight:400}
-.stat-summary-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
-.stat-sum-card{background:rgba(0,0,0,.35);border-radius:9px;padding:9px 6px;text-align:center}
-.stat-sum-card .sv{font-size:1.05rem;font-weight:700;line-height:1.2;margin-bottom:2px}
-.stat-sum-card .sl{font-size:.58rem;color:var(--tx2)}
+.stat-tbl td.neg{color:var(--red2)}
+.stat-tbl td.dim{color:var(--tx3);font-weight:400}
+.stat-summary-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat-sum-card{
+  background:linear-gradient(180deg, rgba(255,245,220,.02), transparent), rgba(0,0,0,.24);
+  border:1px solid rgba(201,169,97,.08);
+  border-radius:var(--r-md);
+  padding:12px 6px;text-align:center;
+}
+.stat-sum-card .sv{font-size:1.2rem;font-weight:700;line-height:1.2;margin-bottom:3px;font-feature-settings:"tnum";font-family:'Shippori Mincho',serif}
+.stat-sum-card .sl{font-size:.6rem;color:var(--tx3);letter-spacing:.16em;font-weight:700;font-family:'Shippori Mincho',serif}
+
+/* 順位分布テーブル：列幅固定 */
+.rank-dist-tbl{table-layout:fixed;width:100%}
+.rank-dist-tbl col:nth-child(1){width:auto}
+.rank-dist-tbl col:nth-child(2),
+.rank-dist-tbl col:nth-child(3),
+.rank-dist-tbl col:nth-child(4),
+.rank-dist-tbl col:nth-child(5){width:14%}
+.rank-dist-tbl col:nth-child(6){width:18%}
+.rank-dist-tbl th,
+.rank-dist-tbl td{text-align:right;padding-left:2px;padding-right:6px}
+.rank-dist-tbl th:first-child,
+.rank-dist-tbl td:first-child{text-align:left}
+
+/* 詳細入力エリア全般の拡大 */
+#mh-detail-wrap{font-size:.9rem}
+#mh-detail-wrap button{font-size:.85rem !important;padding:7px 12px !important}
+#mh-detail-wrap input[type=number]{font-size:.95rem !important;padding:9px 10px !important}
+#mh-detail-wrap span{font-size:inherit}
+#mh-detail-wrap [style*="font-size:.6rem"],
+#mh-detail-wrap [style*="font-size:.62rem"],
+#mh-detail-wrap [style*="font-size:.58rem"]{font-size:.78rem !important}
+#mh-detail-wrap [style*="font-size:.65rem"]{font-size:.82rem !important}
+#mh-detail-wrap [style*="font-size:.68rem"]{font-size:.85rem !important}
+#mh-detail-wrap [style*="font-size:.7rem"]{font-size:.86rem !important}
+#mh-detail-wrap [style*="font-size:.73rem"]{font-size:.92rem !important}
+#mh-detail-wrap [style*="font-size:.8rem"]{font-size:.95rem !important}
+#mh-detail-wrap [style*="font-size:.82rem"]{font-size:.98rem !important}
 
 /* 同卓 */
 .dok-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
-/* 設定 */
-.rule-info{background:rgba(212,168,67,.06);border:1px solid rgba(212,168,67,.2);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:.78rem}
-.rule-row{display:flex;justify-content:space-between;padding:3px 0}
-.rule-key{color:var(--tx2)}.rule-val{color:var(--gold);font-weight:700}
-.uma-row{display:flex;gap:6px}
-.uma-inp{flex:1;min-width:0;background:rgba(0,0,0,.4);border:1px solid var(--bd);color:var(--tx);padding:8px 4px;border-radius:7px;font-size:.82rem;text-align:center}
-.uma-inp:focus{outline:none;border-color:var(--gold)}
-
-/* トップ */
-.top-hero{text-align:center;padding:28px 16px 20px;background:linear-gradient(180deg,rgba(212,168,67,.06),transparent)}
-.top-title{font-family:'Shippori Mincho',serif;font-size:2rem;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
-.top-sub{font-size:.72rem;color:var(--tx2);letter-spacing:.2em}
-.gc{background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;position:relative;overflow:hidden}
-.gc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold);border-radius:3px 0 0 3px}
-.gc-name{font-size:1.05rem;font-weight:700;margin-bottom:5px}
-.gc-meta{font-size:.7rem;color:var(--tx2);display:flex;gap:10px;flex-wrap:wrap}
-.gc-badge{font-size:.62rem;background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:2px 6px;border-radius:4px}
-.gc-acts{display:flex;gap:6px;margin-top:10px}
-.gc-btn{padding:5px 12px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;border:1px solid var(--bd);background:rgba(255,255,255,.05);color:var(--tx2)}
-.add-gc-btn{width:100%;padding:14px;border-radius:12px;background:rgba(212,168,67,.08);border:1px dashed rgba(212,168,67,.4);color:var(--gold);font-family:'Noto Sans JP',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;margin-bottom:8px}
-
-/* 日別配信 */
-#stream-overlay{position:fixed;inset:0;background:#0a0a0c;z-index:500;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:24px 16px 32px;overflow-y:auto}
-.stream-title{font-family:'Shippori Mincho',serif;font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:2px}
-.stream-date{font-size:.95rem;color:var(--tx2);text-align:center;margin-bottom:14px;letter-spacing:.12em}
-.stream-tbl{width:100%;border-collapse:collapse}
-.stream-tbl th{font-size:.7rem;color:var(--gold);padding:9px 10px;text-align:center;border-bottom:1px solid rgba(212,168,67,.25);letter-spacing:.05em;white-space:nowrap}
-.stream-tbl th:first-child{text-align:left}
-.stream-tbl td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.05);font-size:1rem;text-align:center;white-space:nowrap}
-.stream-tbl td:first-child{text-align:left;font-weight:700;font-size:.92rem;color:var(--tx)}
-.stream-tbl tr:last-child td{border-bottom:none}
-.stream-nav-btn{background:rgba(255,255,255,.07);border:1px solid var(--bd);color:var(--tx2);padding:7px 18px;border-radius:8px;font-size:.82rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700}
-.stream-nav-btn:active{background:rgba(255,255,255,.14)}
-#stream-ctrl{position:fixed;top:0;left:0;right:0;background:rgba(10,10,12,.95);border-bottom:1px solid rgba(255,255,255,.08);z-index:10;padding:8px 12px;display:flex;flex-direction:column;gap:6px}
-.stream-ctrl-row{display:flex;align-items:center;gap:6px}
-#stream-date-select{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 10px;border-radius:8px;font-size:.82rem;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;flex:1;min-width:0}
-@media(max-width:480px){
-  .stream-nav-btn{padding:6px 10px;font-size:.72rem}
-  #stream-date-select{font-size:.75rem;padding:5px 8px}
-  .stream-tbl th,.stream-tbl td{padding:8px 6px;font-size:.78rem}
-  .stream-tbl td:first-child{font-size:.8rem}
+/* ============================================
+   累計成績サマリー（.snums は ranking 専用）
+============================================ */
+.snums{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  margin:4px 0 14px;
+}
+.sn{
+  background:linear-gradient(180deg, rgba(255,245,220,.02), transparent), rgba(0,0,0,.26);
+  border:1px solid rgba(201,169,97,.08);
+  border-radius:var(--r-md);
+  padding:14px 8px;text-align:center;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  min-height:72px;
+}
+.snv{
+  font-size:1.35rem;font-weight:800;margin-bottom:4px;
+  font-feature-settings:"tnum";color:var(--tx);line-height:1.2;
+  font-family:'Shippori Mincho',serif;
+  display:flex;align-items:center;justify-content:center;
+  min-height:1.65rem;
+}
+.snl{font-size:.62rem;color:var(--tx3);letter-spacing:.16em;font-weight:700;font-family:'Shippori Mincho',serif}
+.uma-val{
+  color:var(--gold);
+  font-size:1.05rem;letter-spacing:.01em;
+  white-space:nowrap;
 }
 
-/* misc */
-.snums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
-.sn{background:rgba(0,0,0,.3);border-radius:8px;padding:8px;text-align:center}
-.snv{font-size:1.05rem;font-weight:700;margin-bottom:2px}
-.snl{font-size:.6rem;color:var(--tx2)}
-.rb-badge{display:inline-block;font-size:.65rem;background:rgba(212,168,67,.15);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:2px 7px;border-radius:4px;margin-left:6px}
-.empty{text-align:center;padding:36px 16px;color:var(--tx2);font-size:.85rem;line-height:2}
-.eico{font-size:2.5rem;margin-bottom:8px;display:block}
-#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;font-size:.82rem;font-weight:700;padding:8px 20px;border-radius:20px;z-index:300;opacity:0;transition:opacity .3s,background .3s;pointer-events:none;font-family:'Noto Sans JP',sans-serif}
-#sync-badge{position:fixed;top:64px;right:12px;max-width:calc(100vw - 24px);background:rgba(212,168,67,.92);color:#1a1200;font-size:.68rem;font-weight:700;padding:5px 12px;border-radius:16px;z-index:300;opacity:0;transition:opacity .3s;cursor:pointer;font-family:'Noto Sans JP',sans-serif;word-break:break-all}
+/* ルールフィルタバッジ（"全ルール"） */
+.rb-badge{
+  display:inline-block;
+  font-family:'Shippori Mincho',serif;
+  font-size:.68rem;font-weight:700;
+  color:var(--gold);
+  background:rgba(201,169,97,.08);
+  border:1px solid rgba(201,169,97,.35);
+  padding:3px 10px;border-radius:6px;
+  letter-spacing:.1em;margin-left:6px;vertical-align:2px;
+}
 
-/* 条件計算 */
-.cd-player-row{display:grid;grid-template-columns:80px 1fr 1fr auto;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
-.cd-player-row:last-child{border-bottom:none}
-.cd-col-header{display:grid;grid-template-columns:80px 1fr 1fr auto;gap:6px;padding:4px 0}
-.cd-col-h{font-size:.65rem;color:var(--tx2);text-align:center}
-.cd-dealer-btn{width:32px;height:32px;border-radius:50%;border:2px solid var(--bd);background:transparent;color:var(--tx2);font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:inherit;transition:all .2s;flex-shrink:0}
-.cd-dealer-btn.on{border-color:var(--gold);background:rgba(212,168,67,.15);color:var(--gold)}
-.cd-calc-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),#b8893a);border:none;border-radius:12px;color:#1a1200;font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:16px;letter-spacing:.05em}
-.cd-result-card{background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:10px}
-.cd-result-card.win{border-color:rgba(76,175,130,.4)}
-.cd-result-card.possible{border-color:rgba(212,168,67,.3)}
-.cd-result-card.impossible{border-color:rgba(224,82,82,.3);opacity:.7}
-.cd-result-name{font-size:.88rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.cd-rank-badge{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.08);color:var(--tx2)}
-.cd-rank-badge.r1{background:rgba(212,168,67,.2);color:var(--gold)}
-.cd-rank-badge.r2{background:rgba(138,154,176,.2);color:#8a9ab0}
-.cd-rank-badge.r3{background:rgba(160,98,42,.2);color:#c07840}
-.cd-rank-badge.r4{background:rgba(224,82,82,.15);color:var(--red)}
-.cd-hand-row{display:flex;align-items:baseline;gap:6px;padding:3px 0;flex-wrap:wrap}
-.cd-hand-type{font-size:.7rem;color:var(--tx2);min-width:28px}
-.cd-hand-pts{font-size:.92rem;font-weight:700;color:var(--gold)}
-.cd-hand-pts.ng{color:var(--red);font-size:.78rem}
-.cd-hand-pts.ok-small{font-size:.82rem;font-weight:700;color:var(--green)}
-.cd-hand-label{font-size:.78rem;color:var(--tx);background:rgba(255,255,255,.07);padding:1px 7px;border-radius:6px}
-.cd-hand-sub{font-size:.68rem;color:var(--tx2)}
-.cd-cs-title{font-size:.7rem;font-weight:700;color:var(--tx2);margin-bottom:4px;letter-spacing:.05em}
-.cd-cs-title.ok{color:var(--green)}
-.cd-cs-title.ng{color:var(--red)}
-.cd-cs-note{font-size:.68rem;color:var(--tx2)}
-.cd-condition-section{margin-bottom:8px}
-.cd-total-row{display:flex;justify-content:space-between;font-size:.72rem;color:var(--tx2);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.05)}
+/* empty state */
+.empty{
+  text-align:center;color:var(--tx3);
+  padding:20px 0;font-size:.82rem;
+  font-family:'Shippori Mincho',serif;letter-spacing:.06em;
+}
+.eico{display:block;font-size:1.6rem;margin-bottom:6px;opacity:.6}
+
+/* ============================================
+   設定
+============================================ */
+.rule-info{
+  background:linear-gradient(135deg, rgba(201,169,97,.06), rgba(201,169,97,.02));
+  border:1px solid rgba(201,169,97,.22);
+  border-left:3px solid var(--gold);
+  border-radius:var(--r-sm);padding:11px 14px;margin-bottom:12px;
+  font-size:.78rem;
+}
+.rule-row{display:flex;justify-content:space-between;padding:4px 0}
+.rule-key{color:var(--tx2)}
+.rule-val{color:var(--gold);font-weight:700;font-feature-settings:"tnum";font-family:'Shippori Mincho',serif}
+.uma-row{display:flex;gap:6px}
+.uma-inp{
+  flex:1;min-width:0;background:rgba(0,0,0,.35);
+  border:1px solid var(--bd);color:var(--tx);
+  padding:9px 4px;border-radius:var(--r-sm);
+  font-size:.86rem;text-align:center;font-family:inherit;font-weight:600;
+}
+.uma-inp:focus{outline:none;border-color:var(--gold)}
+
+/* ============================================
+   トップ画面（大会一覧）
+============================================ */
+.top-hero{
+  text-align:center;
+  padding:52px 16px 32px;
+  background:
+    radial-gradient(ellipse 560px 220px at 50% 0%, rgba(199,62,46,.08), transparent 70%),
+    radial-gradient(ellipse 600px 260px at 50% 40%, rgba(201,169,97,.05), transparent 70%);
+  position:relative;
+}
+/* 帯の装飾線 */
+.top-hero::after{
+  content:'';position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+  width:64px;height:1px;
+  background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity:.7;
+}
+.top-title{
+  font-family:'Shippori Mincho','Yu Mincho',serif;
+  font-size:2.8rem;font-weight:800;
+  color:var(--tx);
+  margin-bottom:8px;letter-spacing:.16em;
+  position:relative;
+  display:inline-block;
+  text-shadow:0 2px 24px rgba(201,169,97,.12);
+}
+/* タイトル脇の朱丸（落款） */
+.top-title::before{
+  content:'';position:absolute;left:-22px;top:50%;transform:translateY(-50%);
+  width:10px;height:10px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%, #d75747, #c73e2e 55%, #8a2820);
+  box-shadow:0 0 14px rgba(199,62,46,.4), 0 0 0 1px rgba(255,200,180,.12);
+}
+.top-sub{
+  font-size:.7rem;color:var(--tx3);
+  letter-spacing:.44em;font-weight:500;margin-top:6px;
+  font-family:'Shippori Mincho',serif;
+}
+
+/* Group cards */
+.gc{
+  background:
+    linear-gradient(135deg, rgba(255,245,220,.025), transparent 40%),
+    var(--bg2);
+  border:1px solid rgba(201,169,97,.12);
+  border-radius:var(--r-lg);
+  padding:18px 18px 16px 22px;
+  margin-bottom:12px;cursor:pointer;
+  position:relative;overflow:hidden;
+  transition:all .2s ease;
+  box-shadow:var(--sh-2);
+}
+.gc:hover{
+  border-color:rgba(201,169,97,.35);
+  transform:translateY(-1px);
+  box-shadow:var(--sh-3);
+}
+.gc::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg, var(--gold2), var(--gold));
+  border-radius:0;
+}
+/* 右上に和紙の朧光 */
+.gc::after{
+  content:'';position:absolute;right:-30px;top:-30px;
+  width:110px;height:110px;border-radius:50%;
+  background:radial-gradient(circle, rgba(201,169,97,.08), transparent 70%);
+  pointer-events:none;
+}
+.gc-name{
+  font-family:'Shippori Mincho',serif;
+  font-size:1.24rem;font-weight:800;margin-bottom:6px;
+  color:var(--tx);letter-spacing:.06em;
+}
+.gc-meta{font-size:.72rem;color:var(--tx2);display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.gc-meta > *{white-space:nowrap}
+.gc-badge{
+  font-size:.62rem;
+  background:rgba(201,169,97,.1);
+  border:1px solid rgba(201,169,97,.3);
+  color:var(--gold);
+  padding:3px 8px;border-radius:3px;
+  letter-spacing:.08em;font-weight:700;
+  white-space:nowrap;line-height:1.3;
+  font-family:'Shippori Mincho',serif;
+}
+.gc-acts{display:flex;gap:7px;margin-top:12px}
+.gc-btn{
+  padding:6px 12px;border-radius:6px;
+  font-size:.72rem;cursor:pointer;font-family:inherit;
+  border:1px solid var(--bd);
+  background:rgba(201,169,97,.03);color:var(--tx2);
+  transition:all .15s;font-weight:500;
+  white-space:nowrap;
+  display:inline-flex;align-items:center;gap:4px;
+}
+.gc-btn:hover{background:rgba(201,169,97,.08);color:var(--tx);border-color:var(--bd2)}
+
+.add-gc-btn{
+  width:100%;padding:20px;
+  border-radius:var(--r-lg);
+  background:linear-gradient(180deg, rgba(201,169,97,.05), rgba(201,169,97,.015));
+  border:1px dashed rgba(201,169,97,.4);
+  color:var(--gold);font-family:'Shippori Mincho',serif;
+  font-size:.96rem;font-weight:700;cursor:pointer;margin-bottom:10px;
+  letter-spacing:.12em;transition:all .18s;
+}
+.add-gc-btn:hover{
+  background:linear-gradient(180deg, rgba(201,169,97,.1), rgba(201,169,97,.03));
+  border-color:var(--gold);
+  color:var(--gold2);
+}
+
+/* ============================================
+   日別配信オーバーレイ
+============================================ */
+#stream-overlay{
+  position:fixed;inset:0;background:#0a0806;z-index:500;
+  display:none;flex-direction:column;
+  align-items:center;justify-content:flex-start;
+  padding:24px 16px 32px;overflow-y:auto;
+}
+.stream-title{
+  font-family:'Shippori Mincho',serif;
+  font-size:1.9rem;font-weight:800;
+  color:var(--gold);
+  text-align:center;margin-bottom:4px;letter-spacing:.14em;
+}
+.stream-date{font-size:1rem;color:var(--tx2);text-align:center;margin-bottom:16px;letter-spacing:.18em;font-weight:500;font-family:'Shippori Mincho',serif}
+.stream-tbl{width:100%;border-collapse:collapse;font-feature-settings:"tnum"}
+.stream-tbl th{
+  font-size:.72rem;color:var(--gold);padding:10px 10px;
+  text-align:center;border-bottom:1px solid rgba(201,169,97,.25);
+  letter-spacing:.1em;white-space:nowrap;font-weight:700;
+  font-family:'Shippori Mincho',serif;
+}
+.stream-tbl th:first-child{text-align:left}
+.stream-tbl td{
+  padding:12px 10px;
+  border-bottom:1px solid rgba(201,169,97,.05);
+  font-size:1rem;text-align:center;white-space:nowrap;
+}
+
+#stream-ctrl{position:fixed;top:0;left:0;right:0;padding:12px 16px;background:linear-gradient(180deg,rgba(10,8,6,.96),rgba(10,8,6,.8));z-index:5;backdrop-filter:blur(10px)}
+.stream-ctrl-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.stream-nav-btn{
+  background:rgba(201,169,97,.05);
+  border:1px solid var(--bd);color:var(--tx);
+  padding:7px 14px;border-radius:8px;
+  font-size:.8rem;cursor:pointer;font-family:'Shippori Mincho',serif;font-weight:700;
+  letter-spacing:.06em;
+}
+.stream-nav-btn:hover{background:rgba(201,169,97,.1)}
+#stream-date-select{
+  flex:1;background:rgba(0,0,0,.5);border:1px solid var(--bd);
+  color:var(--tx);padding:8px 12px;border-radius:8px;
+  font-family:inherit;font-size:.82rem;font-weight:600;
+}
+
+/* ============================================
+   Toast & Badge
+============================================ */
+#toast{
+  position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:linear-gradient(135deg, #25221b, #1a1813);
+  border:1px solid rgba(201,169,97,.4);
+  color:var(--gold);
+  padding:13px 24px;border-radius:100px;
+  font-size:.88rem;font-weight:700;
+  font-family:'Shippori Mincho',serif;
+  box-shadow:0 12px 40px rgba(0,0,0,.6), 0 0 0 1px rgba(201,169,97,.08);
+  opacity:0;pointer-events:none;z-index:1000;
+  transition:all .3s ease;letter-spacing:.08em;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+#sync-badge{
+  position:fixed;top:72px;right:14px;z-index:90;
+  background:rgba(123,168,108,.14);
+  border:1px solid rgba(123,168,108,.4);
+  color:var(--green);
+  padding:4px 10px;border-radius:100px;
+  font-size:.66rem;font-weight:700;
+  letter-spacing:.1em;
+  opacity:0;transition:opacity .2s;pointer-events:none;
+  font-family:'Shippori Mincho',serif;
+}
+#sync-badge.show{opacity:1}
+
+/* ============================================
+   条件計算ページ専用
+============================================ */
 .cd-fg2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.cd-sub-row{display:flex;gap:10px}
-.cd-sub-row .cd-fi-wrap{flex:1}
-.cd-fi-wrap label{display:block;font-size:.68rem;color:var(--tx2);margin-bottom:3px}
-.cd-honba-note{font-size:.65rem;color:var(--tx2);margin-top:4px}
+.cd-sub-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cd-fi-wrap label{font-size:.66rem;color:var(--tx2);display:block;margin-bottom:4px;letter-spacing:.1em;font-weight:600;font-family:'Shippori Mincho',serif}
+.cd-honba-note{font-size:.66rem;color:var(--tx3);margin-top:6px;line-height:1.6}
+.cd-col-header{display:grid;grid-template-columns:1.5fr 1fr 1fr .5fr;gap:6px;margin-bottom:6px;padding:0 2px}
+.cd-col-h{font-size:.62rem;color:var(--tx2);text-align:center;letter-spacing:.1em;font-weight:700;line-height:1.3;font-family:'Shippori Mincho',serif}
+/* 条件計算：選手行 */
+.cd-player-row{
+  display:grid;
+  grid-template-columns:1.5fr 1fr 1fr .5fr;
+  gap:6px;margin-bottom:6px;align-items:center;
+}
+.cd-dealer-btn{
+  padding:7px 0;border-radius:8px;
+  font-size:.78rem;font-weight:700;cursor:pointer;
+  font-family:'Shippori Mincho',serif;letter-spacing:.06em;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--bd);
+  color:var(--tx3);
+  transition:all .15s;
+}
+.cd-dealer-btn:hover{color:var(--tx2);border-color:var(--bd2)}
+.cd-dealer-btn.on{
+  background:linear-gradient(135deg, rgba(199,62,46,.22), rgba(199,62,46,.08));
+  border-color:rgba(199,62,46,.55);
+  color:#ff9086;
+  box-shadow:0 0 0 1px rgba(199,62,46,.15);
+}
 
-/* 半荘入力グリッド */
-.mh-col-h{font-size:.65rem;color:var(--tx2);text-align:center;}
-.mh-entry-hdr{display:grid;grid-template-columns:28px 1fr 80px;gap:6px;padding:4px 0;border-bottom:1px solid var(--bd);margin-bottom:2px}
-.mh-entry-row{display:grid;grid-template-columns:28px 1fr 80px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
-.mh-entry-row:last-child{border-bottom:none}
-.mh-wind{font-size:.78rem;font-weight:700;color:var(--gold);text-align:center}
+/* 半荘入力：行とヘッダー */
+.mh-entry-hdr{
+  display:grid;
+  grid-template-columns:40px 1.3fr 1fr;
+  gap:8px;margin-bottom:6px;padding:0 2px;
+}
+.mh-col-h{
+  font-size:.62rem;color:var(--tx2);text-align:center;
+  letter-spacing:.1em;font-weight:700;line-height:1.3;
+  font-family:'Shippori Mincho',serif;
+}
+.mh-entry-row{
+  display:grid;
+  grid-template-columns:40px 1.3fr 1fr;
+  gap:8px;margin-bottom:8px;align-items:center;
+}
+.mh-entry-row .fs,
+.mh-entry-row .fi{padding:9px 10px;font-size:.85rem}
+.mh-entry-row .fi{text-align:right;font-weight:700}
+.mh-wind{
+  display:flex;align-items:center;justify-content:center;
+  width:40px;height:38px;border-radius:8px;
+  background:linear-gradient(180deg, rgba(201,169,97,.12), rgba(201,169,97,.04));
+  border:1px solid rgba(201,169,97,.3);
+  color:var(--gold);
+  font-family:'Shippori Mincho',serif;
+  font-size:1.05rem;font-weight:800;
+  letter-spacing:.02em;
+}
+.cd-calc-btn{
+  width:100%;padding:15px;border-radius:var(--r-sm);
+  font-family:'Shippori Mincho',serif;font-size:.98rem;font-weight:700;
+  cursor:pointer;border:none;letter-spacing:.2em;
+  background:linear-gradient(135deg, var(--gold2), var(--gold));
+  color:#1a1200;margin-bottom:14px;
+  box-shadow:0 4px 16px -4px rgba(201,169,97,.4);
+  transition:all .18s;
+}
+.cd-calc-btn:hover{filter:brightness(1.05);box-shadow:0 6px 20px -4px rgba(201,169,97,.5)}
 
-/* 日程自動生成 */
-.sched-avail-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.sched-avail-tbl{border-collapse:collapse;font-size:.7rem;white-space:nowrap}
-.sched-avail-tbl th,.sched-avail-tbl td{padding:4px 7px;border:1px solid var(--bd);text-align:center}
-.sched-avail-tbl th{background:var(--bg3);font-size:.62rem;color:var(--tx2);font-weight:400}
-.sched-avail-tbl td:first-child{text-align:left;font-weight:700;min-width:80px}
-.sched-o{color:var(--green);font-weight:700}.sched-x{color:var(--red)}
-.sched-tbl{width:100%;border-collapse:collapse;font-size:.78rem}
-.sched-tbl th{font-size:.62rem;color:var(--tx2);padding:5px 4px;text-align:center;font-weight:400;border-bottom:1px solid var(--bd)}
-.sched-tbl td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.05);text-align:center;vertical-align:middle}
-.sched-tbl td:first-child{text-align:left;font-size:.7rem;white-space:nowrap}
-.sched-tbl td:nth-child(2){font-size:.68rem;color:var(--tx2);white-space:nowrap}
-.sched-seat{font-size:.78rem;font-weight:700}
-.sched-btn{padding:11px;background:linear-gradient(135deg,var(--gold),#b8893a);border:none;border-radius:10px;color:#1a1200;font-size:.88rem;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;width:100%;margin-bottom:0}
+/* ============================================
+   条件計算 結果カード（和風）
+============================================ */
+.cd-result-card{
+  background:linear-gradient(180deg, rgba(255,245,220,.02), transparent), var(--bg3);
+  border:1px solid rgba(201,169,97,.12);
+  border-radius:var(--r-md);
+  padding:14px 14px;
+  box-shadow:var(--sh-2);
+}
+.cd-result-card.rank1{
+  border-color:rgba(201,169,97,.4);
+  background:linear-gradient(180deg, rgba(201,169,97,.06), transparent 60%), var(--bg3);
+  box-shadow:0 0 0 1px rgba(201,169,97,.15), var(--sh-2);
+}
+.cd-result-card.rank2{border-color:rgba(166,178,194,.25)}
+.cd-result-card.rank3{border-color:rgba(180,113,70,.25)}
+.cd-result-card.rank4{border-color:rgba(199,62,46,.25)}
+.cd-result-name{
+  font-family:'Shippori Mincho',serif;
+  font-size:1rem;font-weight:800;
+  color:var(--tx);margin-bottom:10px;
+  display:flex;align-items:center;gap:6px;
+  letter-spacing:.04em;
+}
+.cd-rank-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border-radius:50%;
+  font-size:.72rem;font-weight:800;
+  font-family:'Shippori Mincho',serif;
+  margin-right:4px;
+}
+.cd-rank-badge.rank1{background:radial-gradient(circle at 30% 30%, #f0d891, #c9a961 55%, #8a7a44);color:#2a1f08;box-shadow:0 0 0 1px rgba(201,169,97,.4)}
+.cd-rank-badge.rank2{background:radial-gradient(circle at 30% 30%, #e3e8ee, #a6b2c2 55%, #6f7c8f);color:#1a2030}
+.cd-rank-badge.rank3{background:radial-gradient(circle at 30% 30%, #dca17a, #b47146 55%, #7a4a2a);color:#2a1500}
+.cd-rank-badge.rank4{background:radial-gradient(circle at 30% 30%, #d75747, #c73e2e 55%, #8a2820);color:#fff}
+.cd-condition-section{
+  background:rgba(0,0,0,.22);
+  border:1px solid rgba(201,169,97,.06);
+  border-radius:var(--r-sm);
+  padding:9px 12px;
+  margin-bottom:6px;
+}
+.cd-cs-title{
+  font-size:.78rem;font-weight:700;
+  color:var(--gold);
+  font-family:'Shippori Mincho',serif;
+  letter-spacing:.08em;
+  margin-bottom:6px;
+}
+.cd-cs-title.ok{color:var(--green)}
+.cd-cs-title.ng{color:var(--red2)}
+.cd-cs-note{font-size:.72rem;color:var(--tx2);margin-top:2px}
+.cd-hand-row{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;
+  padding:4px 0;
+  font-size:.78rem;
+  border-bottom:1px dotted rgba(201,169,97,.07);
+}
+.cd-hand-row:last-child{border-bottom:none}
+.cd-hand-type{color:var(--tx2);min-width:80px;font-size:.74rem}
+.cd-hand-pts{color:var(--gold);font-weight:700;font-feature-settings:"tnum"}
+.cd-hand-pts.ok-small{color:var(--green);font-size:.72rem}
+.cd-hand-pts.ng{color:var(--red2);font-weight:500}
+.cd-hand-label{color:var(--tx3);font-size:.7rem}
+.cd-hand-sub{color:var(--tx3);font-size:.68rem;margin-left:auto}
+.cd-total-row{
+  display:flex;justify-content:space-between;
+  margin-top:10px;padding-top:10px;
+  border-top:1px solid rgba(201,169,97,.1);
+  font-size:.76rem;color:var(--tx2);
+  font-feature-settings:"tnum";
+}
+.rb-badge{
+  font-size:.6rem;color:var(--gold);
+  background:rgba(201,169,97,.1);
+  border:1px solid rgba(201,169,97,.3);
+  padding:2px 7px;border-radius:3px;
+  letter-spacing:.08em;font-weight:700;
+  font-family:'Shippori Mincho',serif;
+  margin-left:6px;vertical-align:2px;
+}
+
+/* Sched */
+.sched-btn{
+  width:100%;padding:13px;border-radius:var(--r-sm);
+  background:linear-gradient(135deg, var(--gold2), var(--gold));
+  color:#1a1200;font-family:'Shippori Mincho',serif;font-size:.9rem;font-weight:700;
+  border:none;cursor:pointer;letter-spacing:.12em;
+  box-shadow:0 4px 14px -4px rgba(201,169,97,.4);
+}
+.sched-btn:hover{filter:brightness(1.05)}
+.sched-avail-wrap{overflow-x:auto}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:10px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:var(--bd2);background-clip:padding-box;border:2px solid transparent}
+
+details > summary{cursor:pointer}
+select{cursor:pointer}
+button{cursor:pointer}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible{
+  outline:2px solid rgba(201,169,97,.5);
+  outline-offset:2px;
+}
+
+/* 全体的な文字の底上げ（.rem 指定はベースフォントに追従） */
+.rtbl th{font-size:.7rem}
+.rtbl td{font-size:.92rem}
+.tab{font-size:.82rem}
+.ltab{font-size:.88rem}
+.fi,.fs{font-size:.95rem}
+.fl{font-size:.74rem}
+.ctitle{font-size:.8rem}
+.mtitle{font-size:1.25rem}
+.mbtn{font-size:.95rem}
+.btn{font-size:1rem}
+.hi-top{font-size:.95rem}
+.hi-num{font-size:.7rem}
+.hi-row{font-size:.9rem}
+.snv{font-size:1.5rem;min-height:1.9rem}
+.snl{font-size:.7rem}
+.uma-val{font-size:1.15rem}
+.gc-name{font-size:1.32rem}
+.gc-meta{font-size:.8rem}
+.gc-badge{font-size:.68rem}
+.gc-btn{font-size:.78rem}
+.stat-v{font-size:1.35rem}
+.stat-l{font-size:.66rem}
+.stat-sum-card .sv{font-size:1.3rem}
+.stat-sum-card .sl{font-size:.66rem}
+.stat-tbl{font-size:.9rem}
+.stat-tbl td.lbl{font-size:.84rem}
+.stat-tbl td.sub{font-size:.74rem}
+.pm-hrow{font-size:.9rem}
+.prev-title{font-size:.74rem}
+.prev-name{font-size:.76rem}
+.prev-pt{font-size:1.2rem}
+.mh-col-h,.cd-col-h{font-size:.7rem}
+.mh-entry-row .fs,.mh-entry-row .fi{font-size:.95rem;padding:10px 10px}
+.mh-wind{font-size:1.15rem}
+.cd-dealer-btn{font-size:.86rem}
+.stream-nav-btn{font-size:.88rem}
+.serr{font-size:.86rem}
+
+@media (min-width: 768px){
+  .wrap{padding:24px 20px 60px;max-width:620px}
+  .top-title{font-size:3.2rem}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important;animation:none !important}
+}
 </style>
 </head>
 <body>
@@ -870,7 +1841,7 @@ if (d.action === 'getFormData') {
 <div class="ovl" id="modal-hanzo">
   <div class="modal">
     <div class="mtitle">半荘を入力</div>
-    <div class="fg"><label class="fl">試合日</label><input class="fi" type="date" id="mh-date"></div>
+    <div class="fg"><label class="fl">試合日</label><input class="fi" type="date" id="mh-date" onclick="this.showPicker&&this.showPicker()" onfocus="this.showPicker&&this.showPicker()" onkeydown="event.preventDefault()" style="cursor:pointer"></div>
     <div class="fg"><label class="fl">ルール</label>
       <select class="fs" id="mh-rule" onchange="onMhRuleChange()">
         <option value="mleague">Mリーグ</option>
@@ -970,6 +1941,24 @@ if (d.action === 'getFormData') {
     <div id="mhc-results" style="margin-top:10px"></div>
     <div class="mbtns" style="margin-top:12px">
       <button class="mbtn mng" onclick="closeOvl('modal-mhcond')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 対局履歴 画像出力モード選択モーダル -->
+<div class="ovl" id="modal-hanzo-img">
+  <div class="modal" style="max-width:340px">
+    <div class="mtitle">画像出力</div>
+    <div id="hanzo-img-modes" style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+      <button onclick="_runExportHanzoImg('all')" style="padding:12px;border-radius:8px;background:rgba(92,155,224,.12);border:1px solid rgba(92,155,224,.4);color:#5c9be0;font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">📷 全て</button>
+      <button onclick="_showHanzoImgDateMode()" style="padding:12px;border-radius:8px;background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.4);color:var(--gold);font-size:.85rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">📅 日付別</button>
+    </div>
+    <div id="hanzo-img-dates" style="display:none">
+      <div style="font-size:.72rem;color:var(--tx2);margin-bottom:8px;text-align:center">出力する日付を選択</div>
+      <div id="hanzo-img-date-list" style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto"></div>
+    </div>
+    <div class="mbtns" style="margin-top:12px">
+      <button class="mbtn mng" onclick="closeOvl('modal-hanzo-img')">閉じる</button>
     </div>
   </div>
 </div>
@@ -1552,29 +2541,28 @@ function exportDailyImage() {
 
   const CELL_W = Math.round(fontSize * 5.5);
   const NAME_W = Math.round(fontSize * 12);
-  const TOTAL_W = Math.round(fontSize * 7);
   const headerCells = games.map((_, i) =>
     `<div style="flex:1;text-align:center;${i>0?'border-left:1px solid rgba(255,255,255,.3);':''}font-size:${Math.round(fontSize*.8)}px;color:rgba(255,255,255,.85);font-weight:600">${i+1}試合目</div>`
-  ).join('');
+  ).join('') + `<div style="flex:1;text-align:center;border-left:1px solid rgba(255,255,255,.3);font-size:${Math.round(fontSize*.8)}px;color:#d4a843;font-weight:700">トータル</div>`;
   const headerRow = `<div style="display:flex;align-items:center;padding:0 16px;gap:0;margin-bottom:6px">
     <div style="width:${NAME_W}px;flex-shrink:0"></div>
     <div style="flex:1;display:flex">${headerCells}</div>
-    <div style="width:${TOTAL_W}px;flex-shrink:0"></div>
   </div>`;
   const rowsHtml = sorted.map((p, idx) => {
     const rank = idx + 1;
     const d = data[p] || { games: Array(games.length).fill(null), total: 0 };
     const z = _zoneInfo(dailyViewLeague, rank, sorted.length);
     const totalC = d.total > 0 ? '#4106F9' : d.total < 0 ? '#FC0303' : '#555';
-    const totalFixed = parseFloat(d.total).toFixed(1);
-    const totalS = d.total > 0 ? `+ ${totalFixed} pt` : d.total < 0 ? `- ${Math.abs(parseFloat(d.total)).toFixed(1)} pt` : `0.0 pt`;
+    const totalS = d.total > 0 ? '+' + parseFloat(d.total).toFixed(1) : parseFloat(d.total).toFixed(1);
     const gameCells = d.games.map((v, i) => {
       const c = v === null ? '#aaa' : v > 0 ? '#4106F9' : v < 0 ? '#FC0303' : '#555';
       const s = v === null ? '—' : v > 0 ? '+' + parseFloat(v).toFixed(1) : parseFloat(v).toFixed(1);
       return `<div style="flex:1;display:flex;align-items:center;justify-content:center;${i>0?'border-left:1px solid #e0e0e0;':''}">
         <div style="font-size:${Math.round(fontSize*1.4)}px;font-weight:800;color:${c};font-variant-numeric:tabular-nums">${s}</div>
       </div>`;
-    }).join('');
+    }).join('') + `<div style="flex:1;display:flex;align-items:center;justify-content:center;border-left:1px solid #e0e0e0">
+      <div style="font-size:${Math.round(fontSize*1.4)}px;font-weight:800;color:${totalC};font-variant-numeric:tabular-nums">${totalS}</div>
+    </div>`;
     return `<div style="display:flex;align-items:stretch;gap:0;height:${rowH}px">
       <div style="width:${NAME_W}px;flex-shrink:0;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden;border-right:2px solid #e0e0e0">
         <div style="transform:skewX(10deg);display:flex;align-items:center;justify-content:center;height:100%;padding:0 16px;overflow:visible">
@@ -1582,12 +2570,8 @@ function exportDailyImage() {
         </div>
       </div>
       <div style="flex:1;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden">
-        <div style="transform:skewX(10deg);display:flex;align-items:center;height:100%;padding:0 16px;gap:14px;overflow:hidden">
+        <div style="transform:skewX(10deg);display:flex;align-items:center;height:100%;padding:0 16px;overflow:hidden">
           <div style="flex:1;display:flex;align-items:center">${gameCells}</div>
-          <div style="width:${TOTAL_W}px;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;border-left:1px solid #e0e0e0;padding-left:14px">
-            <div style="font-size:${Math.round(fontSize*.62)}px;color:#999;margin-bottom:2px">トータル</div>
-            <div style="font-size:${Math.round(fontSize*1.2)}px;font-weight:800;color:${totalC};white-space:nowrap;font-variant-numeric:tabular-nums">${totalS}</div>
-          </div>
         </div>
       </div>
     </div>`;
@@ -1666,26 +2650,26 @@ function _renderDailyStream() {
     const TOTAL_W = 80;
     const headerCells = games.map((_, i) =>
       `<div style="flex:1;text-align:center;${i>0?'border-left:1px solid rgba(255,255,255,.3);':''}font-size:${Math.round(FS*.8)}px;color:rgba(255,255,255,.85);font-weight:600">${i+1}試合目</div>`
-    ).join('');
+    ).join('') + `<div style="flex:1;text-align:center;border-left:1px solid rgba(255,255,255,.3);font-size:${Math.round(FS*.8)}px;color:var(--gold);font-weight:700">トータル</div>`;
     const headerRow = `<div style="display:flex;align-items:center;margin-bottom:4px;gap:0">
       <div style="width:${NAME_W}px;flex-shrink:0"></div>
       <div style="flex:1;display:flex;padding:0 12px">${headerCells}</div>
-      <div style="width:${TOTAL_W}px;flex-shrink:0"></div>
     </div>`;
     const rowsHtml = sorted.map((p, idx) => {
       const rank = idx + 1;
       const d = data[p] || { games: Array(games.length).fill(null), total: 0 };
       const z = _zoneInfo(dailyViewLeague, rank, sorted.length);
       const totalC = d.total > 0 ? '#4106F9' : d.total < 0 ? '#FC0303' : '#555';
-      const totalFixed = parseFloat(d.total).toFixed(1);
-      const totalS = d.total > 0 ? `+ ${totalFixed} pt` : d.total < 0 ? `- ${Math.abs(parseFloat(d.total)).toFixed(1)} pt` : `0.0 pt`;
+      const totalS = d.total > 0 ? '+' + parseFloat(d.total).toFixed(1) : parseFloat(d.total).toFixed(1);
       const gameCells = d.games.map((v, i) => {
         const c = v === null ? '#aaa' : v > 0 ? '#4106F9' : v < 0 ? '#FC0303' : '#555';
         const s = v === null ? '—' : v > 0 ? '+' + parseFloat(v).toFixed(1) : parseFloat(v).toFixed(1);
         return `<div style="flex:1;display:flex;align-items:center;justify-content:center;${i>0?'border-left:1px solid #e0e0e0;':''}">
           <div style="font-size:${Math.round(FS*1.4)}px;font-weight:800;color:${c};font-variant-numeric:tabular-nums;text-align:center">${s}</div>
         </div>`;
-      }).join('');
+      }).join('') + `<div style="flex:1;display:flex;align-items:center;justify-content:center;border-left:1px solid #e0e0e0">
+        <div style="font-size:${Math.round(FS*1.4)}px;font-weight:800;color:${totalC};font-variant-numeric:tabular-nums;text-align:center">${totalS}</div>
+      </div>`;
       return `<div style="display:flex;align-items:stretch;gap:0;height:${ROW_H}px">
         <div style="width:${NAME_W}px;flex-shrink:0;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden;border-right:2px solid #e0e0e0">
           <div style="transform:skewX(10deg);display:flex;align-items:center;justify-content:center;height:100%;padding:0 10px">
@@ -1693,12 +2677,8 @@ function _renderDailyStream() {
           </div>
         </div>
         <div style="flex:1;transform:skewX(-10deg);background:#ffffff;box-sizing:border-box;overflow:hidden">
-          <div style="transform:skewX(10deg);display:flex;align-items:center;height:100%;padding:0 12px;gap:10px;overflow:hidden">
+          <div style="transform:skewX(10deg);display:flex;align-items:center;height:100%;padding:0 12px;overflow:hidden">
             <div style="flex:1;display:flex;align-items:center">${gameCells}</div>
-            <div style="width:${TOTAL_W}px;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;border-left:1px solid #e0e0e0;padding-left:10px">
-              <div style="font-size:${Math.round(FS*.75)}px;color:#999;margin-bottom:1px">トータル</div>
-              <div style="font-size:${Math.round(FS*1.2)}px;font-weight:800;color:${totalC};white-space:nowrap;font-variant-numeric:tabular-nums">${totalS}</div>
-            </div>
           </div>
         </div>
       </div>`;
@@ -1911,6 +2891,48 @@ function showToast(msg, bg) {
     t.style.opacity = '0';
     setTimeout(() => { t.textContent = '✓ 記録しました'; t.style.background = ''; }, 350);
   }, 2000);
+  // 保存系（msgなし or 既定メッセージ）のみ落款アニメ
+  if (!msg || msg === '✓ 記録しました' || /記録|保存/.test(msg)) {
+    showRakkanStamp();
+  }
+}
+
+// ===== 落款スタンプアニメーション =====
+function showRakkanStamp() {
+  // 既存があれば削除
+  const old = document.getElementById('rakkan-stamp');
+  if (old) old.remove();
+  const stamp = document.createElement('div');
+  stamp.id = 'rakkan-stamp';
+  stamp.innerHTML = `
+    <svg viewBox="0 0 100 100" width="100" height="100">
+      <defs>
+        <filter id="rk-rough"><feTurbulence baseFrequency="0.9" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="1.5"/></filter>
+      </defs>
+      <rect x="6" y="6" width="88" height="88" rx="3" fill="#c83838" filter="url(#rk-rough)"/>
+      <rect x="6" y="6" width="88" height="88" rx="3" fill="none" stroke="#7a1818" stroke-width="2" filter="url(#rk-rough)"/>
+      <text x="50" y="36" text-anchor="middle" font-family="'Shippori Mincho',serif" font-weight="900" font-size="28" fill="#fff5e6" filter="url(#rk-rough)">記</text>
+      <text x="50" y="74" text-anchor="middle" font-family="'Shippori Mincho',serif" font-weight="900" font-size="28" fill="#fff5e6" filter="url(#rk-rough)">録</text>
+    </svg>`;
+  Object.assign(stamp.style, {
+    position:'fixed', top:'50%', left:'50%', zIndex:'9999',
+    transform:'translate(-50%, -50%) scale(2.4) rotate(-12deg)',
+    opacity:'0', pointerEvents:'none',
+    filter:'drop-shadow(0 6px 14px rgba(200,56,56,.45))',
+    transition:'transform .18s cubic-bezier(.2,1.5,.3,1), opacity .18s ease-out'
+  });
+  document.body.appendChild(stamp);
+  // 押印アニメ：大→小→定位置→フェードアウト
+  requestAnimationFrame(() => {
+    stamp.style.transform = 'translate(-50%, -50%) scale(1) rotate(-8deg)';
+    stamp.style.opacity = '1';
+  });
+  setTimeout(() => {
+    stamp.style.transition = 'opacity .55s ease-out, transform .55s ease-out';
+    stamp.style.opacity = '0';
+    stamp.style.transform = 'translate(-50%, -50%) scale(1.05) rotate(-8deg)';
+    setTimeout(() => stamp.remove(), 600);
+  }, 750);
 }
 let _syncBadgeTimer = null;
 function showSyncBadge(msg, bg) {
@@ -3490,10 +4512,49 @@ function cdCalculate() {
 function cdRenderResults(results, players, honba, riichi, uma, oka, kaeshi) {
   const rankLabels = ['１位','２位','３位','４位'];
   const rankClasses = ['r1','r2','r3','r4'];
+  // 自然言語サマリー生成
+  const buildSummary = (r) => {
+    if (r.alreadyWins) {
+      const minSafe = Math.min(...r.rivals.map(pj => {
+        const piIdx = players.findIndex(p=>p.name===r.name && p.score===r.score);
+        const ms = cdMaxSafeHouchu(piIdx, pj.idx, players, uma, oka, kaeshi);
+        return cdMaxRonUnder(ms, pj.isDealer);
+      }));
+      if (minSafe <= 0) return { text:'1位確定（放銃NG）', tone:'ok' };
+      return { text:`1位確定 — 放銃は${minSafe.toLocaleString()}点まで`, tone:'ok' };
+    }
+    if (r.impossible) return { text:'1位逆転は不可能', tone:'ng' };
+    // ツモ最小役 / ロン最小役を抽出
+    const tsumoLabel = r.tsumo ? r.tsumo.label : null;
+    const ronOptions = r.directRons
+      .filter(d => d.handNeeded !== null)
+      .map(d => ({ name: d.pj.name, h: cdFindMinRon(d.handNeeded, r.isDealer, r.threshold) }))
+      .filter(o => o.h);
+    const parts = [];
+    if (tsumoLabel) parts.push(`${tsumoLabel}ツモ`);
+    if (ronOptions.length) {
+      const minRon = ronOptions.reduce((a,b)=>a.h.pts<=b.h.pts?a:b);
+      parts.push(`${minRon.name}から${minRon.h.label}直撃`);
+    }
+    if (!parts.length) return { text:'役満直撃でも届かない', tone:'ng' };
+    return { text:`${parts.join(' / ')}で1位`, tone:'go' };
+  };
   const html = results.map(r => {
     const rankClass = rankClasses[r.currentOverallRank];
     const dealerStr = r.isDealer ? '　<span style="font-size:.65rem;color:var(--gold)">（親）</span>' : '';
     const cardClass = r.alreadyWins ? 'win' : r.impossible ? 'impossible' : 'possible';
+    const summary = buildSummary(r);
+    const sumColor = summary.tone==='ok' ? 'var(--green)'
+                   : summary.tone==='ng' ? 'var(--red)'
+                   : 'var(--gold)';
+    const sumBg = summary.tone==='ok' ? 'rgba(76,175,130,.10)'
+                : summary.tone==='ng' ? 'rgba(224,82,82,.08)'
+                : 'rgba(212,168,67,.10)';
+    const sumIcon = summary.tone==='ok' ? '✓' : summary.tone==='ng' ? '×' : '→';
+    const summaryHtml = `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin:6px 0 10px;border-radius:7px;background:${sumBg};border-left:3px solid ${sumColor};font-family:'Shippori Mincho',serif">
+      <span style="font-size:.95rem;color:${sumColor};font-weight:800;flex-shrink:0">${sumIcon}</span>
+      <span style="font-size:.84rem;color:var(--tx);font-weight:700;letter-spacing:.02em;line-height:1.4">${summary.text}</span>
+    </div>`;
     let body = '';
     if (r.alreadyWins) {
       body += `<div class="cd-condition-section"><div class="cd-cs-title ok">🏆 現在の総合トップ</div><div class="cd-cs-note">このままツモ/ロンされなければ1位確定</div></div>`;
@@ -3556,6 +4617,7 @@ function cdRenderResults(results, players, honba, riichi, uma, oka, kaeshi) {
     ).join('<br>');
     return `<div class="cd-result-card ${cardClass}">
       <div class="cd-result-name"><span class="cd-rank-badge ${rankClass}">${rankLabels[r.currentOverallRank]}</span>${r.name}${dealerStr}</div>
+      ${summaryHtml}
       ${body}
       <details style="margin-top:8px">
         <summary style="font-size:.65rem;color:var(--tx2);cursor:pointer">点差詳細</summary>
@@ -3661,7 +4723,7 @@ function renderRanking() {
   const sorted = Object.entries(stats).sort((a,b) => b[1].pt - a[1].pt);
   const activeSorted = sorted.filter(([,s]) => s.games > 0);
   const maxAbs = Math.max(...activeSorted.map(([,s]) => Math.abs(s.pt)), 1);
-  const total = g.hanzos.filter(h => {
+  const filteredHs = g.hanzos.filter(h => {
     if((h.league||'')!==_curLeagueTarget) return false;
     if(curRuleFilter!=='all'){
       const uma=h.uma||g.uma,oka=h.oka!==undefined?h.oka:g.oka,kaeshi=h.kaeshi||g.kaeshi;
@@ -3669,7 +4731,38 @@ function renderRanking() {
       return label===curRuleFilter;
     }
     return true;
-  }).length;
+  });
+  const total = filteredHs.length;
+  // 直近30日 / その前30日 を比較
+  const today = new Date(); today.setHours(23,59,59,999);
+  const d30 = new Date(today); d30.setDate(d30.getDate()-30);
+  const d60 = new Date(today); d60.setDate(d60.getDate()-60);
+  const inRange = (dateStr, from, to) => {
+    const d = new Date(dateStr+'T00:00:00');
+    return d >= from && d <= to;
+  };
+  const recent = filteredHs.filter(h=>inRange(h.date, d30, today));
+  const prev   = filteredHs.filter(h=>inRange(h.date, d60, d30));
+  const recentDays = new Set(recent.map(h=>h.date)).size;
+  const prevDays   = new Set(prev.map(h=>h.date)).size;
+  const dHanzo = recent.length - prev.length;
+  const dDays  = recentDays - prevDays;
+  // 前期比チップ
+  const trendChip = (delta) => {
+    if (delta === 0) return `<span style="font-size:.55rem;color:var(--tx3);font-weight:600;margin-top:2px">±0</span>`;
+    const positive = delta > 0;
+    const color = positive ? 'var(--green)' : 'var(--red)';
+    const arrow = positive ? '▲' : '▼';
+    return `<span title="直近30日 vs その前30日" style="font-size:.55rem;color:${color};font-weight:700;margin-top:2px;letter-spacing:.02em">${arrow}${positive?'+':''}${delta}</span>`;
+  };
+  const totalDays = new Set(filteredHs.map(h=>h.date)).size;
+
+  // ルールフィルタに応じたウマ・オカ（'all' はグループ既定）
+  let displayUma = g.uma, displayOka = g.oka;
+  if (curRuleFilter !== 'all') {
+    const rule = Object.values(RULES).find(r => r.label === curRuleFilter);
+    if (rule) { displayUma = rule.uma; displayOka = rule.oka; }
+  }
 
   el.innerHTML = `
     ${leagues.length > 1 ? `<div class="ltabs">${leagues.map(l=>`<div class="ltab ${curLeague===l?'on':''}" onclick="curLeague='${l}';curRuleFilter='all';renderRanking()">${l}リーグ</div>`).join('')}</div>` : ''}
@@ -3684,8 +4777,8 @@ function renderRanking() {
       </div>
       <div class="snums">
         <div class="sn"><div class="snv">${total}</div><div class="snl">半荘数</div></div>
-        <div class="sn"><div class="snv">${curLeague==='_default'?(g._players||[]).length:(g.players[curLeague]||[]).length}</div><div class="snl">選手数</div></div>
-        <div class="sn"><div class="snv" style="color:var(--gold);font-size:.78rem">${g.uma[0]}/${g.uma[1]}/${g.uma[2]}/${g.uma[3]}</div><div class="snl">ウマ</div></div>
+        <div class="sn"><div class="snv">${totalDays}</div><div class="snl">記録日</div></div>
+        <div class="sn"><div class="snv" style="color:var(--gold);font-size:1rem;line-height:1.2;flex-direction:column;gap:2px"><div>${displayUma[0]}/${displayUma[1]}/${displayUma[2]}/${displayUma[3]}</div><div style="font-size:.78rem;color:var(--tx2)">${displayOka>0?'+'+displayOka:displayOka}</div></div><div class="snl">ウマ/オカ</div></div>
       </div>
       ${sorted.every(([,s])=>s.games===0) ? '<div class="empty" style="padding:16px 0"><span class="eico">📊</span>半荘を入力してください</div>' : `
       <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:8px">
@@ -3714,20 +4807,29 @@ function renderRanking() {
 }
 
 function renderRankingTableHtml(entries, maxAbs, league) {
+  // 全体平均PT（平均線として参照）
+  const totalGames = entries.reduce((s,[,v])=>s+v.games,0);
+  const totalPt = entries.reduce((s,[,v])=>s+v.pt,0);
+  const avgPt = totalGames ? totalPt/entries.length : 0;
+  // 中央線のバー上での位置（中心50%基準で平均PTがどこに来るか）
+  const avgPos = 50 + (avgPt/maxAbs*50);
   return `<table class="rtbl">
-    <thead><tr><th>選手</th><th>PT</th><th>試合</th><th>平均</th></tr></thead>
+    <thead><tr><th>選手</th><th>PT</th><th>試合</th></tr></thead>
     <tbody>${entries.map(([name,s],i)=>{
       const pc = s.pt>0?'pp':s.pt<0?'pm':'pz';
-      const bw = Math.min(Math.abs(s.pt)/maxAbs*100, 100);
+      // バー：中央(50%)を0、左右にPTで伸ばす
+      const bw = Math.min(Math.abs(s.pt)/maxAbs*50, 50);
       const bc = s.pt>=0?'var(--green)':'var(--red)';
       const bd = badge(i);
-      const avg = s.games?(s.rsum/s.games).toFixed(2):'-';
       return `<tr style="cursor:pointer" onclick="goToPlayer('${name.replace(/'/g,"\\'")}','${league}')">
         <td><div style="display:flex;align-items:center"><span class="${bd}">${i+1}</span><span class="nm">${name}</span><span style="font-size:.55rem;color:var(--tx2);margin-left:3px">▶</span></div>
-        <div class="bar-w"><div class="bar" style="width:${bw}%;background:${bc}"></div></div></td>
+        <div class="bar-w" style="position:relative;background:linear-gradient(90deg,rgba(224,82,82,.06) 0%,rgba(224,82,82,.06) 50%,rgba(76,175,130,.06) 50%,rgba(76,175,130,.06) 100%)">
+          <div class="bar" style="position:absolute;top:0;height:100%;width:${bw}%;background:${bc};${s.pt>=0?`left:50%`:`right:50%`}"></div>
+          <div style="position:absolute;top:-1px;bottom:-1px;left:50%;width:1px;background:rgba(201,169,97,.45);transform:translateX(-50%);z-index:2"></div>
+          ${Math.abs(avgPt)>0.5 ? `<div title="平均 ${avgPt>=0?'+':''}${avgPt.toFixed(0)}PT" style="position:absolute;top:-3px;left:${avgPos}%;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;border-top:4px solid var(--gold);transform:translateX(-50%);z-index:3"></div>` : ''}
+        </div></td>
         <td class="${pc}" style="font-size:.95rem;font-weight:700;white-space:nowrap">${s.pt>0?'+':''}${s.pt}</td>
         <td style="color:var(--tx2)">${s.games}</td>
-        <td style="color:var(--tx2)">${avg}</td>
       </tr>`;
     }).join('')}</tbody>
   </table>`;
@@ -3758,13 +4860,24 @@ function renderRankDistHtml(entries) {
   if (!entries.length) return '';
   return `<table class="rtbl">
     <thead><tr><th>選手</th><th style="color:#f0c96a;min-width:28px">1位</th><th style="color:#b0bec5;min-width:28px">2位</th><th style="color:#c47d3a;min-width:28px">3位</th><th style="color:var(--red);min-width:28px">4位</th><th style="color:var(--tx2);min-width:36px">平均</th></tr></thead>
-    <tbody>${entries.map(([name,s],i)=>`<tr>
+    <tbody>${entries.map(([name,s],i)=>{
+      const av = s.rsum/s.games;
+      // 偏差色分けのみ（記号・背景塗りなし）
+      let avColor='var(--tx2)';
+      if (av <= 2.20)      avColor='var(--gold)';
+      else if (av <= 2.40) avColor='var(--gold2)';
+      else if (av <= 2.50) avColor='var(--green)';
+      else if (av <= 2.60) avColor='var(--tx2)';
+      else if (av <= 2.80) avColor='#e08868';
+      else                 avColor='var(--red)';
+      return `<tr>
       <td style="font-size:.78rem"><div style="display:flex;align-items:center"><span class="${badge(i)}" style="flex-shrink:0">${i+1}</span><span class="nm">${name}</span></div></td>
       <td style="color:#f0c96a;font-weight:700">${s.ranks[0]}</td>
       <td>${s.ranks[1]}</td><td>${s.ranks[2]}</td>
       <td style="color:var(--red)">${s.ranks[3]}</td>
-      <td style="color:var(--tx2)">${(s.rsum/s.games).toFixed(2)}</td>
-    </tr>`).join('')}</tbody>
+      <td style="color:${avColor};font-weight:700;text-align:center">${av.toFixed(2)}</td>
+    </tr>`;
+    }).join('')}</tbody>
   </table>`;
 }
 
@@ -3791,20 +4904,45 @@ function renderRankDist(val, league) {
 function renderDok(league, ps) {
   if (!ps.length) return '';
   const mx = getDok(league);
-  const maxV = Math.max(...ps.flatMap(a=>ps.filter(b=>b!==a).map(b=>mx[a]?.[b]||0)), 1);
+  const allValues = ps.flatMap(a=>ps.filter(b=>b!==a).map(b=>mx[a]?.[b]||0));
+  const maxV = Math.max(...allValues, 1);
+  const minV = Math.min(...allValues.filter(v=>v>0), 1);
   const sn = n => n.length>5 ? n.slice(0,5)+'…' : n;
-  const header = `<tr><th style="min-width:60px;font-size:.58rem;color:var(--tx2);padding:4px 3px;text-align:left"></th>${ps.map(p=>`<th style="min-width:28px;height:60px;vertical-align:bottom;padding:4px 2px;text-align:center"><div style="writing-mode:vertical-rl;font-size:.58rem;color:var(--tx2);white-space:nowrap;display:inline-block">${sn(p)}</div></th>`).join('')}</tr>`;
+  const header = `<tr><th style="min-width:60px;font-size:.58rem;color:var(--tx2);padding:4px 3px;text-align:left"></th>${ps.map(p=>`<th style="min-width:32px;height:64px;vertical-align:bottom;padding:4px 2px;text-align:center"><div style="writing-mode:vertical-rl;font-size:.6rem;color:var(--tx2);white-space:nowrap;display:inline-block;letter-spacing:.04em">${sn(p)}</div></th>`).join('')}</tr>`;
   const rows = ps.map(a => {
     const cells = ps.map(b => {
-      if (a===b) return `<td style="background:rgba(255,255,255,.04);text-align:center;padding:3px 2px"><span style="color:var(--tx2);font-size:.65rem">－</span></td>`;
+      if (a===b) return `<td style="background:rgba(255,255,255,.04);text-align:center;padding:3px 2px;border-radius:4px"><span style="color:var(--tx3);font-size:.65rem">／</span></td>`;
       const v = mx[a]?.[b]||0;
-      const bg = v===0 ? 'transparent' : `rgba(212,168,67,${0.08+v/maxV*0.35})`;
-      const tc = v===0 ? 'var(--tx2)' : v>=maxV*0.7 ? 'var(--gold2)' : 'var(--tx)';
-      return `<td style="text-align:center;padding:3px 2px;background:${bg};border-radius:3px"><span style="font-size:.72rem;color:${tc};font-weight:${v>0?'700':'400'}">${v||'·'}</span></td>`;
+      // ヒートマップ強度
+      const t = v / maxV;
+      let bg, tc, fw;
+      if (v === 0) {
+        bg = 'rgba(255,255,255,.02)';
+        tc = 'var(--tx3)';
+        fw = 400;
+      } else {
+        // 金グラデーション（深さで強調）
+        bg = `linear-gradient(135deg, rgba(201,169,97,${0.10+t*0.45}), rgba(168,141,73,${0.06+t*0.30}))`;
+        tc = t>=0.85 ? '#fff5d8' : t>=0.6 ? 'var(--gold2)' : t>=0.3 ? 'var(--gold)' : 'var(--tx)';
+        fw = t>=0.6 ? 800 : 700;
+      }
+      // 最大値セルに ◉ 印
+      const isMax = v===maxV && v>1;
+      return `<td style="text-align:center;padding:3px 2px;background:${bg};border-radius:4px;border:1px solid ${v===0?'transparent':`rgba(201,169,97,${0.12+t*0.18})`};position:relative">
+        <span style="font-size:.74rem;color:${tc};font-weight:${fw};font-feature-settings:'tnum';line-height:1.2">${v||'·'}</span>
+        ${isMax?'<span style="position:absolute;top:-2px;right:-2px;font-size:.5rem;color:var(--gold2);text-shadow:0 0 3px rgba(201,169,97,.6)">◉</span>':''}
+      </td>`;
     }).join('');
-    return `<tr><td style="font-size:.65rem;color:var(--tx);padding:4px 4px 4px 0;white-space:nowrap;font-weight:700">${sn(a)}</td>${cells}</tr>`;
+    return `<tr><td style="font-size:.66rem;color:var(--tx);padding:4px 6px 4px 0;white-space:nowrap;font-weight:700;font-family:'Shippori Mincho',serif">${sn(a)}</td>${cells}</tr>`;
   }).join('');
-  return `<table style="border-collapse:separate;border-spacing:2px;min-width:100%"><thead>${header}</thead><tbody>${rows}</tbody></table>`;
+  // 凡例
+  const legend = `<div style="display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px dashed rgba(201,169,97,.2);font-size:.62rem;color:var(--tx2);font-family:'Shippori Mincho',serif;letter-spacing:.04em">
+    <span>少</span>
+    ${[0.15,0.3,0.5,0.7,0.9].map(t=>`<span style="display:inline-block;width:18px;height:10px;border-radius:2px;background:linear-gradient(135deg, rgba(201,169,97,${0.10+t*0.45}), rgba(168,141,73,${0.06+t*0.30}));border:1px solid rgba(201,169,97,${0.12+t*0.18})"></span>`).join('')}
+    <span>多</span>
+    <span style="margin-left:auto;color:var(--gold2)">◉ 最多 ${maxV}回</span>
+  </div>`;
+  return `<table style="border-collapse:separate;border-spacing:3px;min-width:100%"><thead>${header}</thead><tbody>${rows}</tbody></table>${legend}`;
 }
 
 // ===== 個人 =====
@@ -4225,32 +5363,119 @@ function exportRankingImage() {
   if (!target) return;
   const g = curGroup;
 
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;background:#0d0d0f;padding:28px 20px 36px;box-sizing:border-box;font-family:Noto Sans JP,sans-serif';
+  // 季節判定
+  const m = new Date().getMonth() + 1;
+  const season = (m>=3&&m<=5)?'spring':(m>=6&&m<=8)?'summer':(m>=9&&m<=11)?'autumn':'winter';
+  const seasonData = {
+    spring: { name:'春', kanji:'春', color:'#d98aa8', accent:'#c66b8c', motif:'sakura',
+      sub:'桜花爛漫', bg:'linear-gradient(180deg,#1a1218 0%,#13100d 100%)' },
+    summer: { name:'夏', kanji:'夏', color:'#5ca8a0', accent:'#3e8a82', motif:'wave',
+      sub:'青葉若葉', bg:'linear-gradient(180deg,#0d1816 0%,#0d130f 100%)' },
+    autumn: { name:'秋', kanji:'秋', color:'#d49460', accent:'#b8743d', motif:'momiji',
+      sub:'紅葉狩り', bg:'linear-gradient(180deg,#1a140d 0%,#13100c 100%)' },
+    winter: { name:'冬', kanji:'冬', color:'#b8a868', accent:'#988645', motif:'ume',
+      sub:'寒梅清香', bg:'linear-gradient(180deg,#0e1116 0%,#0c0e10 100%)' }
+  }[season];
 
+  // 季節モチーフSVG
+  const motifSvg = {
+    sakura: `<svg width="100%" height="100%" viewBox="0 0 390 740" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;opacity:.15;pointer-events:none">
+      ${[...Array(14)].map((_,i)=>{
+        const x=Math.random()*390,y=Math.random()*740,r=8+Math.random()*16,rot=Math.random()*360;
+        return `<g transform="translate(${x},${y}) rotate(${rot}) scale(${0.4+Math.random()*0.7})"><g fill="${seasonData.color}">
+          ${[0,72,144,216,288].map(a=>`<ellipse cx="0" cy="-12" rx="6" ry="11" transform="rotate(${a})"/>`).join('')}
+        </g></g>`;
+      }).join('')}
+    </svg>`,
+    wave: `<svg width="100%" height="100%" viewBox="0 0 390 740" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;opacity:.10;pointer-events:none">
+      ${[...Array(8)].map((_,row)=>{
+        return [...Array(14)].map((_,col)=>{
+          const x=col*30+(row%2?15:0), y=row*60+30;
+          return `<g transform="translate(${x},${y})"><circle r="20" fill="none" stroke="${seasonData.color}" stroke-width="1.2"/><circle r="13" fill="none" stroke="${seasonData.color}" stroke-width="1"/><circle r="6" fill="none" stroke="${seasonData.color}" stroke-width="1"/></g>`;
+        }).join('');
+      }).join('')}
+    </svg>`,
+    momiji: `<svg width="100%" height="100%" viewBox="0 0 390 740" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;opacity:.18;pointer-events:none">
+      ${[...Array(12)].map((_,i)=>{
+        const x=Math.random()*390,y=Math.random()*740,rot=Math.random()*360,sc=0.5+Math.random()*0.8;
+        return `<g transform="translate(${x},${y}) rotate(${rot}) scale(${sc})" fill="${seasonData.color}">
+          <path d="M0,-15 L4,-5 L12,-7 L7,3 L14,8 L4,8 L6,18 L0,12 L-6,18 L-4,8 L-14,8 L-7,3 L-12,-7 L-4,-5 Z"/>
+        </g>`;
+      }).join('')}
+    </svg>`,
+    ume: `<svg width="100%" height="100%" viewBox="0 0 390 740" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;opacity:.14;pointer-events:none">
+      ${[...Array(16)].map((_,i)=>{
+        const x=Math.random()*390,y=Math.random()*740,sc=0.4+Math.random()*0.6,rot=Math.random()*72;
+        return `<g transform="translate(${x},${y}) rotate(${rot}) scale(${sc})" fill="${seasonData.color}">
+          ${[0,72,144,216,288].map(a=>`<circle cx="0" cy="-9" r="6.5" transform="rotate(${a})"/>`).join('')}
+          <circle r="2.5" fill="${seasonData.accent}"/>
+        </g>`;
+      }).join('')}
+    </svg>`
+  }[seasonData.motif];
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `position:fixed;left:-9999px;top:0;width:390px;background:${seasonData.bg};padding:32px 20px 36px;box-sizing:border-box;font-family:'Noto Sans JP',sans-serif;overflow:hidden`;
+
+  // 和紙テクスチャ + 季節モチーフ背景レイヤー
+  const bgLayer = document.createElement('div');
+  bgLayer.style.cssText = `position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(ellipse 600px 400px at 50% 0%, ${seasonData.color}1f, transparent 70%),repeating-linear-gradient(45deg, transparent 0 8px, rgba(255,240,210,.012) 8px 9px);`;
+  wrapper.appendChild(bgLayer);
+  // モチーフ層
+  const motifLayer = document.createElement('div');
+  motifLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none';
+  motifLayer.innerHTML = motifSvg;
+  wrapper.appendChild(motifLayer);
+
+  // ヘッダー（季節漢字 + タイトル + 副題）
   const header = document.createElement('div');
-  header.style.cssText = 'font-size:16px;font-weight:700;color:#d4a843;margin-bottom:12px;text-align:center';
-  header.textContent = `${g.name||'グループ'} 累計成績`;
+  header.style.cssText = 'position:relative;text-align:center;margin-bottom:18px;z-index:2';
+  header.innerHTML = `
+    <div style="display:inline-block;font-family:'Shippori Mincho',serif;font-size:48px;font-weight:900;color:${seasonData.color};line-height:1;letter-spacing:-.04em;text-shadow:0 2px 12px ${seasonData.color}55">${seasonData.kanji}</div>
+    <div style="font-family:'Shippori Mincho',serif;font-size:18px;font-weight:700;color:#f2ede2;margin-top:6px;letter-spacing:.18em">${g.name||'グループ'}</div>
+    <div style="font-family:'Shippori Mincho',serif;font-size:11px;color:${seasonData.color};margin-top:3px;letter-spacing:.4em">${seasonData.sub}</div>
+    <div style="display:inline-block;height:1px;width:60px;background:linear-gradient(90deg,transparent,${seasonData.color},transparent);margin-top:8px"></div>`;
   wrapper.appendChild(header);
 
   const clone = target.cloneNode(true);
+  clone.style.position = 'relative';
+  clone.style.zIndex = '2';
+  clone.style.background = 'rgba(15,12,9,.62)';
+  clone.style.backdropFilter = 'blur(2px)';
   // エクスポートボタン自体を非表示
   const btns = clone.querySelector('[style*="gap:5px"]');
   if (btns) btns.style.display = 'none';
   wrapper.appendChild(clone);
+
+  // フッター（落款）
+  const footer = document.createElement('div');
+  footer.style.cssText = 'position:relative;display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:0 4px;z-index:2;font-family:\'Shippori Mincho\',serif;font-size:9px;color:#9a9285;letter-spacing:.15em';
+  const dt = new Date();
+  footer.innerHTML = `
+    <span>${dt.getFullYear()}年${dt.getMonth()+1}月${dt.getDate()}日</span>
+    <span style="display:inline-flex;align-items:center;gap:5px">
+      <span style="display:inline-block;width:14px;height:14px;background:${seasonData.accent};border-radius:2px;color:#fff;font-size:8px;font-weight:900;text-align:center;line-height:14px;font-family:'Shippori Mincho',serif">記</span>
+      <span style="color:${seasonData.color}">雀記 JANKI</span>
+    </span>`;
+  wrapper.appendChild(footer);
+
   document.body.appendChild(wrapper);
 
-  html2canvas(wrapper, { backgroundColor:'#0d0d0f', scale:2, useCORS:true, logging:false, width:390, windowWidth:390 }).then(canvas => {
+  html2canvas(wrapper, { backgroundColor:null, scale:2, useCORS:true, logging:false, width:390, windowWidth:390 }).then(canvas => {
     document.body.removeChild(wrapper);
     const targetH = Math.max(canvas.height, canvas.width * 16/9);
     const out = document.createElement('canvas');
     out.width = canvas.width; out.height = targetH;
     const ctx = out.getContext('2d');
-    ctx.fillStyle = '#0d0d0f'; ctx.fillRect(0,0,out.width,out.height);
+    // 季節色の背景塗り
+    const grad = ctx.createLinearGradient(0,0,0,out.height);
+    grad.addColorStop(0, season==='spring'?'#1a1218':season==='summer'?'#0d1816':season==='autumn'?'#1a140d':'#0e1116');
+    grad.addColorStop(1, '#0c0a08');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,out.width,out.height);
     ctx.drawImage(canvas, 0, 0);
     const a = document.createElement('a');
-    const dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
-    a.download = `${g.name||'雀記'}_成績_${dt}.png`;
+    const dts = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    a.download = `${g.name||'雀記'}_${seasonData.name}成績_${dts}.png`;
     a.href = out.toDataURL('image/png');
     a.click();
   }).catch(()=>{ document.body.removeChild(wrapper); alert('画像出力に失敗しました'); });
@@ -4359,17 +5584,59 @@ function exportHanzosExcel() {
 
 function exportHanzosImage() {
   if (!curGroup) return;
-  if (typeof html2canvas === 'undefined') { alert('html2canvasライブラリの読み込み中です。少し待ってから再度お試しください。'); return; }
-  const target = document.getElementById('hanzo-list');
-  if (!target || !target.children.length) { alert('記録がありません'); return; }
   const g = curGroup;
+  if (!g.hanzos.length) { alert('記録がありません'); return; }
+  // モード選択モーダルを表示
+  document.getElementById('hanzo-img-modes').style.display = 'flex';
+  document.getElementById('hanzo-img-dates').style.display = 'none';
+  document.getElementById('modal-hanzo-img').classList.add('open');
+}
+
+function _showHanzoImgDateMode() {
+  if (!curGroup) return;
+  const g = curGroup;
+  const dates = [...new Set(g.hanzos.map(h => h.date))].sort((a,b) => b.localeCompare(a));
+  const list = document.getElementById('hanzo-img-date-list');
+  list.innerHTML = dates.map(d => {
+    const cnt = g.hanzos.filter(h => h.date === d).length;
+    return `<button onclick="_runExportHanzoImg('${d}')" style="padding:10px 12px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid var(--bd);color:var(--tx);font-size:.78rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;display:flex;justify-content:space-between;align-items:center"><span>${d.replace(/-/g,'/')}</span><span style="font-size:.7rem;color:var(--tx2)">${cnt}局</span></button>`;
+  }).join('');
+  document.getElementById('hanzo-img-modes').style.display = 'none';
+  document.getElementById('hanzo-img-dates').style.display = 'block';
+}
+
+function _runExportHanzoImg(target) {
+  closeOvl('modal-hanzo-img');
+  setTimeout(() => _doExportHanzosImage(target), 80);
+}
+
+function _doExportHanzosImage(dateFilter) {
+  if (!curGroup) return;
+  if (typeof html2canvas === 'undefined') { alert('html2canvasライブラリの読み込み中です。少し待ってから再度お試しください。'); return; }
+  const g = curGroup;
+
+  // 日付フィルタの場合は一時的に hanzos を絞り込んで再描画
+  let savedHanzos = null;
+  if (dateFilter && dateFilter !== 'all') {
+    savedHanzos = g.hanzos;
+    g.hanzos = savedHanzos.filter(h => h.date === dateFilter);
+    renderHanzos();
+  }
+
+  const target = document.getElementById('hanzo-list');
+  if (!target || !target.children.length) {
+    if (savedHanzos) { g.hanzos = savedHanzos; renderHanzos(); }
+    alert('記録がありません');
+    return;
+  }
 
   const wrapper = document.createElement('div');
   wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;background:#0d0d0f;padding:28px 20px 36px;box-sizing:border-box;font-family:Noto Sans JP,sans-serif';
 
   const header = document.createElement('div');
   header.style.cssText = 'font-size:16px;font-weight:700;color:#d4a843;margin-bottom:12px;text-align:center';
-  header.textContent = `${g.name||'グループ'} 半荘・試合結果`;
+  const titleSuffix = (dateFilter && dateFilter !== 'all') ? `　${dateFilter.replace(/-/g,'/')}` : '';
+  header.textContent = `${g.name||'グループ'} 半荘・試合結果${titleSuffix}`;
   wrapper.appendChild(header);
 
   // detailsを全部開いた状態でクローン
@@ -4378,29 +5645,51 @@ function exportHanzosImage() {
   wrapper.appendChild(clone);
   document.body.appendChild(wrapper);
 
+  const restore = () => {
+    if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+    if (savedHanzos) { g.hanzos = savedHanzos; renderHanzos(); }
+  };
+
   html2canvas(wrapper, { backgroundColor:'#0d0d0f', scale:2, useCORS:true, logging:false, width:390, windowWidth:390 }).then(canvas => {
-    document.body.removeChild(wrapper);
+    restore();
     const a = document.createElement('a');
-    const dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
-    a.download = `${g.name||'雀記'}_半荘結果_${dt}.png`;
+    const dt = (dateFilter && dateFilter !== 'all') ? dateFilter.replace(/-/g,'') : new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const suffix = (dateFilter && dateFilter !== 'all') ? '_日付別' : '_全て';
+    a.download = `${g.name||'雀記'}_半荘結果${suffix}_${dt}.png`;
     a.href = canvas.toDataURL('image/png');
     a.click();
-  }).catch(()=>{ document.body.removeChild(wrapper); alert('画像出力に失敗しました'); });
+  }).catch(()=>{ restore(); alert('画像出力に失敗しました'); });
 }
 
 function makeSvg(hist) {
   if (!hist||!hist.length) return '';
   const data = [0,...hist];
-  const W=340,H=120,PL=36,PR=10,PT=10,PB=24,gW=W-PL-PR,gH=H-PT-PB;
+  const W=340,H=140,PL=36,PR=10,PT=14,PB=28,gW=W-PL-PR,gH=H-PT-PB;
   const minV=Math.min(...data),maxV=Math.max(...data),range=maxV-minV||1;
   const tx=i=>PL+(i/(data.length-1))*gW, ty=v=>PT+(1-(v-minV)/range)*gH;
   const zl=(minV<0&&maxV>0)?`<line x1="${PL}" y1="${ty(0)}" x2="${PL+gW}" y2="${ty(0)}" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-dasharray="3,3"/>`:'';
   const pts=data.map((v,i)=>`${tx(i)},${ty(v)}`).join(' ');
   const lc=hist[hist.length-1]>=0?'#4caf82':'#e05252';
+
   const yL=[minV,(minV+maxV)/2,maxV].map(v=>`<text x="${PL-3}" y="${ty(v)+4}" font-size="8" fill="#8888a0" text-anchor="end">${v>=0?'+':''}${Math.round(v)}</text>`).join('');
   const xL=data.map((_,i)=>i===0?`<text x="${tx(0)}" y="${H-4}" font-size="8" fill="#8888a0" text-anchor="middle">開始</text>`:i===data.length-1?`<text x="${tx(i)}" y="${H-4}" font-size="8" fill="#8888a0" text-anchor="middle">第${i}戦</text>`:'').join('');
   const dots=data.map((v,i)=>`<circle cx="${tx(i)}" cy="${ty(v)}" r="3" fill="${lc}" stroke="var(--bg2)" stroke-width="1.5"/>`).join('');
-  return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible">${zl}<polyline points="${pts}" fill="none" stroke="${lc}" stroke-width="2" stroke-linejoin="round"/><polygon points="${PL},${PT+gH} ${pts} ${PL+gW},${PT+gH}" fill="${lc}" fill-opacity="0.12"/>${dots}${yL}${xL}</svg>`;
+
+  // 凡例
+  const legend = `
+    <g transform="translate(${PL+2}, 4)" font-family="'Shippori Mincho',serif" font-size="8.5">
+      <line x1="0" y1="0" x2="14" y2="0" stroke="${lc}" stroke-width="2"/>
+      <text x="18" y="3" fill="#b8b8c8">累計</text>
+    </g>`;
+
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible">
+    ${zl}
+    <polygon points="${PL},${PT+gH} ${pts} ${PL+gW},${PT+gH}" fill="${lc}" fill-opacity="0.10"/>
+    <polyline points="${pts}" fill="none" stroke="${lc}" stroke-width="2" stroke-linejoin="round"/>
+    ${dots}
+    ${yL}${xL}
+    ${legend}
+  </svg>`;
 }
 
 // ===== グラフ =====
@@ -5003,32 +6292,88 @@ function expandGraph(type) {
 
 function renderWindTable(small) {
   const d = window._graphWindData;
-  if (!d || !d.players.length) return '<div style="color:var(--tx2);text-align:center;padding:12px;font-size:.8rem">データなし</div>';
-  const WIND_LABELS = ['東家','南家','西家','北家'];
+  if (!d || !d.players.length) return '<div style="color:var(--tx2);text-align:center;padding:14px;font-size:.85rem">データなし</div>';
+  const WIND_LABELS = ['東','南','西','北'];
+  const WIND_NAMES  = ['東家','南家','西家','北家'];
   const WIND_COLORS = ['#e8a820','#4caf82','#5c9be0','#c46edd'];
-  const fs = small ? '.72rem' : '.85rem';
-  const hd = WIND_LABELS.map((w,i) =>
-    `<th style="padding:6px 10px;text-align:center;font-size:${fs};font-weight:700;color:${WIND_COLORS[i]};white-space:nowrap">${w}</th>`
-  ).join('');
+  const WIND_BG = ['rgba(232,168,32,.10)','rgba(76,175,130,.10)','rgba(92,155,224,.10)','rgba(196,110,221,.10)'];
+
+  const fs = small ? '.78rem' : '.92rem';
+  const fsLbl = small ? '.66rem' : '.74rem';
+
+  // ヘッダ
+  const hd = WIND_LABELS.map((w,i) => `
+    <th style="padding:8px 6px;text-align:center;font-family:'Shippori Mincho',serif">
+      <div style="display:inline-flex;flex-direction:column;align-items:center;gap:2px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${WIND_BG[i]};border:1px solid ${WIND_COLORS[i]}55;color:${WIND_COLORS[i]};font-size:.95rem;font-weight:800">${w}</span>
+        <span style="font-size:${fsLbl};color:${WIND_COLORS[i]};letter-spacing:.08em;font-weight:700">${WIND_NAMES[i]}</span>
+      </div>
+    </th>`).join('');
+
+  // 行
   const rows = d.players.map((p, pi) => {
     const wc = d.windCount[p] || [0,0,0,0];
     const total = wc.reduce((a,b)=>a+b,0);
+    // 偏り（標準偏差）：理想は均等
+    const exp = total/4;
+    const variance = total ? wc.reduce((s,n)=>s+Math.pow(n-exp,2),0)/4 : 0;
+    const sd = Math.sqrt(variance);
+    // バランススコア：0(完全均等)〜 sd/exp が大きいほど偏り
+    const skew = total ? sd/Math.max(exp,1) : 0; // 0〜
+    let balLabel, balColor;
+    if (total < 4) { balLabel='—'; balColor='var(--tx3)'; }
+    else if (skew < 0.18) { balLabel='均等'; balColor='var(--green)'; }
+    else if (skew < 0.40) { balLabel='やや偏'; balColor='var(--gold)'; }
+    else { balLabel='偏り'; balColor='var(--red)'; }
+
     const cells = wc.map((n,i) => {
       const pct = total ? Math.round(n/total*100) : 0;
-      return `<td style="padding:6px 10px;text-align:center;font-size:${fs};color:${WIND_COLORS[i]};font-weight:700">${n}</td>`;
+      const barW = total ? Math.round(n/Math.max(...wc,1)*100) : 0;
+      return `<td style="padding:7px 6px;vertical-align:middle">
+        <div style="display:flex;flex-direction:column;align-items:stretch;gap:3px;min-width:46px">
+          <div style="display:flex;align-items:baseline;justify-content:center;gap:4px">
+            <span style="font-size:${fs};color:${WIND_COLORS[i]};font-weight:800;font-feature-settings:'tnum'">${n}</span>
+            <span style="font-size:.62rem;color:${WIND_COLORS[i]}aa;font-weight:600">${total?pct+'%':''}</span>
+          </div>
+          <div style="height:3px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${barW}%;background:linear-gradient(90deg, ${WIND_COLORS[i]}, ${WIND_COLORS[i]}aa);border-radius:2px"></div>
+          </div>
+        </div>
+      </td>`;
     }).join('');
-    return `<tr style="background:${pi%2===0?'rgba(255,255,255,.03)':'transparent'}">
-      <td style="padding:6px 10px;font-size:${fs};font-weight:700;color:var(--tx);white-space:nowrap">${p}</td>
+
+    return `<tr style="border-bottom:1px solid rgba(255,255,255,.04);background:${pi%2===0?'rgba(201,169,97,.025)':'transparent'}">
+      <td style="padding:7px 8px;font-size:${fs};font-weight:700;color:var(--tx);white-space:nowrap;font-family:'Shippori Mincho',serif">${p}</td>
       ${cells}
+      <td style="padding:7px 8px;text-align:center;font-size:${fs};color:var(--tx2);font-feature-settings:'tnum';font-weight:700">${total}</td>
+      <td style="padding:7px 8px;text-align:center">
+        <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:${fsLbl};font-weight:700;letter-spacing:.04em;color:${balColor};border:1px solid ${balColor}55;background:${balColor}15;font-family:'Shippori Mincho',serif">${balLabel}</span>
+      </td>
     </tr>`;
   }).join('');
-  return `<table style="width:100%;border-collapse:collapse;min-width:260px">
-    <thead><tr style="border-bottom:1px solid rgba(212,168,67,.25)">
-      <th style="padding:6px 10px;text-align:left;font-size:${fs};color:var(--gold);font-weight:700">選手</th>
-      ${hd}
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
+
+  // 凡例
+  const legend = small ? '' : `
+    <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:.7rem;color:var(--tx2);margin-top:10px;padding-top:10px;border-top:1px dashed rgba(201,169,97,.2)">
+      <span><b style="color:var(--green)">●</b> 均等：偏差 18%未満</span>
+      <span><b style="color:var(--gold)">●</b> やや偏：偏差 18-40%</span>
+      <span><b style="color:var(--red)">●</b> 偏り：偏差 40%以上</span>
+    </div>`;
+
+  return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <table style="width:100%;border-collapse:collapse;min-width:360px">
+      <thead>
+        <tr style="border-bottom:1px solid rgba(201,169,97,.35)">
+          <th style="padding:8px 8px;text-align:left;font-size:${fsLbl};color:var(--gold);font-weight:700;letter-spacing:.1em;font-family:'Shippori Mincho',serif">選手</th>
+          ${hd}
+          <th style="padding:8px 6px;text-align:center;font-size:${fsLbl};color:var(--tx2);font-weight:700;letter-spacing:.1em;font-family:'Shippori Mincho',serif">合計</th>
+          <th style="padding:8px 6px;text-align:center;font-size:${fsLbl};color:var(--tx2);font-weight:700;letter-spacing:.1em;font-family:'Shippori Mincho',serif">バランス</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${legend}
+  </div>`;
 }
 
 function closeExpandGraph() {
@@ -5349,7 +6694,42 @@ function renderHanzos() {
     const monthLabel = `${y}年${parseInt(m)}月`;
     const entries = byMonth[month];
     const isOpen = false; // デフォルトは全月収納
-    const items = entries.map(({h, oi}) => {
+    // 日付ごとに更にグループ化（同日の半荘をまとめる）
+    const byDay = {};
+    entries.forEach(({h, oi}) => {
+      if (!byDay[h.date]) byDay[h.date] = [];
+      byDay[h.date].push({h, oi});
+    });
+    const dayKeys = Object.keys(byDay).sort((a,b)=>b.localeCompare(a));
+    const WEEKDAY = ['日','月','火','水','木','金','土'];
+    const items = dayKeys.map(date => {
+      const dayEntries = byDay[date];
+      const d = new Date(date+'T00:00:00');
+      const wIdx = d.getDay();
+      const wLabel = WEEKDAY[wIdx];
+      const wColor = wIdx===0?'var(--red)':wIdx===6?'#5c9be0':'var(--tx2)';
+      // 日合計PT（首位の累計）
+      const dayTopName = (() => {
+        const cum = {};
+        dayEntries.forEach(({h}) => {
+          const {pts, ranks} = calcPts(h.scores, h.ky, h.uma||g.uma, h.oka!==undefined?h.oka:g.oka, h.kaeshi||g.kaeshi);
+          h.players.forEach((p,i)=>{ cum[p] = (cum[p]||0)+pts[i]; });
+        });
+        const top = Object.entries(cum).sort((a,b)=>b[1]-a[1])[0];
+        return top ? `${top[0]} ${top[1]>=0?'+':''}${top[1].toFixed(0)}` : '';
+      })();
+      const [yy, mm, dd] = date.split('-');
+      const dayChip = `<div style="display:flex;align-items:center;gap:8px;padding:6px 4px 4px;margin-top:2px">
+        <span style="display:inline-flex;align-items:baseline;gap:4px;background:linear-gradient(135deg,rgba(201,169,97,.18),rgba(201,169,97,.06));border:1px solid rgba(201,169,97,.35);color:var(--gold);padding:3px 10px;border-radius:14px;font-family:'Shippori Mincho',serif;font-weight:700;letter-spacing:.04em;line-height:1.2">
+          <span style="font-size:.78rem">${parseInt(mm)}/${parseInt(dd)}</span>
+          <span style="font-size:.6rem;color:${wColor};margin-left:1px">（${wLabel}）</span>
+        </span>
+        <span style="font-size:.6rem;color:var(--tx2);letter-spacing:.05em">${dayEntries.length}局</span>
+        <span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(201,169,97,.25),transparent)"></span>
+        ${dayTopName?`<span style="font-size:.6rem;color:var(--gold);font-family:'Shippori Mincho',serif;letter-spacing:.04em">首位 ${dayTopName}</span>`:''}
+      </div>`;
+
+      const dayItems = dayEntries.map(({h, oi}) => {
       const {pts, ranks} = calcPts(h.scores, h.ky, h.uma||g.uma, h.oka!==undefined?h.oka:g.oka, h.kaeshi||g.kaeshi);
       const ti = ranks.indexOf(1);
       const rows = h.players.map((p,i) => ({p, i, rank:ranks[i], pt:pts[i], score:h.scores[i]}))
@@ -5368,8 +6748,8 @@ function renderHanzos() {
       return `<div class="hi-wrap" id="wrap-${h.id}" draggable="true" ondragstart="hanzoDragStart(event,${h.id})" ondragover="hanzoDragOver(event,${h.id})" ondragend="hanzoDragEnd()" ondrop="hanzoDrop(event,${h.id})">
         <div class="hi-del" id="del-${h.id}">削除</div>
         <div class="hi" id="hi-${h.id}" ontouchstart="tsStart(event,${h.id})" ontouchmove="tsMove(event,${h.id})" ontouchend="tsEnd(event,${h.id})" onclick="tsClick(event,${h.id})">
-          <div class="hi-head"><span class="drag-handle">⋮⋮</span><span class="hi-num">#${oi+1}</span>
-            <div style="flex:1"><div class="hi-top">${h.date}　<span style="font-size:.72rem;color:var(--tx2);font-weight:400">${new Date(h.id).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span>${h.session?`　<span style="font-size:.65rem;background:rgba(212,168,67,.2);border:1px solid rgba(212,168,67,.5);color:var(--gold);padding:1px 5px;border-radius:4px">${h.session}</span>`:''}</div></div>
+          <div class="hi-head"><span class="hi-num">#${oi+1}</span>
+            <div style="flex:1"><div class="hi-top"><span style="font-size:.72rem;color:var(--tx2);font-weight:400">${new Date(h.id).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}</span>${h.session?`　<span style="font-size:.65rem;background:rgba(212,168,67,.2);border:1px solid rgba(212,168,67,.5);color:var(--gold);padding:1px 5px;border-radius:4px">${h.session}</span>`:''}</div></div>
             <span style="font-size:.88rem;font-weight:700;color:var(--green)">+${pts[ti]}</span>
             <span style="font-size:.75rem;color:var(--tx2);margin-left:2px">${h.players[ti]}</span>
             ${h.youtubeUrl ? `<a href="${h.youtubeUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;justify-content:center;background:rgba(255,0,0,.15);border:1px solid rgba(255,0,0,.35);color:#ff4444;border-radius:5px;font-size:.7rem;font-weight:700;padding:2px 6px;margin-left:4px;text-decoration:none;line-height:1.4">▶</a>` : ''}
@@ -5379,6 +6759,8 @@ function renderHanzos() {
           <div class="hi-det"><div style="font-size:.65rem;color:var(--tx2);margin-bottom:6px">${h.league}${h.ky?'　供託'+h.ky+'本':''}${h.rounds&&h.rounds.length?`　[${h.rounds.join('・')}]`:''}</div>${rows}${detailLine}${h.penalties&&h.penalties.length?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">${h.penalties.map(p=>`<div style="font-size:.75rem;color:var(--red);padding:2px 0">⚠ ${p.player}：${p.pt}pt（ペナルティ）</div>`).join('')}</div>`:''}</div>
         </div>
       </div>`;
+      }).join('');
+      return dayChip + dayItems;
     }).join('');
 
     return `<details style="margin-bottom:8px;border-radius:10px;border:1px solid var(--bd);overflow:hidden" ${isOpen?'open':''}>
@@ -5476,6 +6858,27 @@ function tsEnd(e, id) {
 function tsClick(e, id) { if(_ts[id]?.swiped){_ts[id].swiped=false;return;} document.getElementById('hi-'+id)?.classList.toggle('open'); }
 
 
+// ===== 外観テーマ =====
+function setTheme(t) {
+  const theme = (t === 'day') ? 'day' : 'night';
+  if (theme === 'day') document.documentElement.setAttribute('data-theme', 'day');
+  else document.documentElement.removeAttribute('data-theme');
+  try { localStorage.setItem('janki_theme', theme); } catch(e) {}
+  // ボタンのアクティブ表示更新
+  const nb = document.getElementById('theme-btn-night');
+  const db = document.getElementById('theme-btn-day');
+  if (nb && db) {
+    nb.style.boxShadow = theme === 'night' ? '0 0 0 2px var(--gold)' : 'none';
+    db.style.boxShadow = theme === 'day' ? '0 0 0 2px #8a6f2e' : 'none';
+  }
+}
+function initTheme() {
+  const saved = (localStorage.getItem('janki_theme') === 'day') ? 'day' : 'night';
+  setTheme(saved);
+}
+// 初期化（DOM読み込み即時）
+try { initTheme(); } catch(e) {}
+
 // ===== 設定 =====
 function renderSettings() {
   const el=document.getElementById('page-settings'); if(!curGroup){el.innerHTML='';return;}
@@ -5489,6 +6892,21 @@ function renderSettings() {
     }
   }
   el.innerHTML=`
+  <div class="card">
+    <div class="ctitle">外観</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button onclick="setTheme('night')" id="theme-btn-night" style="padding:14px 10px;border-radius:9px;background:linear-gradient(135deg,#1a1813,#221f1a);border:1px solid var(--bd);color:var(--tx);font-family:'Shippori Mincho',serif;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:.78rem;font-weight:700;letter-spacing:.06em">
+        <span style="font-size:1.4rem;line-height:1">🌙</span>
+        <span>夜</span>
+        <span style="font-size:.6rem;color:var(--tx3);letter-spacing:.04em;font-weight:400">墨黒・標準</span>
+      </button>
+      <button onclick="setTheme('day')" id="theme-btn-day" style="padding:14px 10px;border-radius:9px;background:linear-gradient(135deg,#f3ead7,#e6d9b8);border:1px solid #d4c08a;color:#3a2e1c;font-family:'Shippori Mincho',serif;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:.78rem;font-weight:700;letter-spacing:.06em">
+        <span style="font-size:1.4rem;line-height:1">☀</span>
+        <span>昼</span>
+        <span style="font-size:.6rem;color:#7a6a4a;letter-spacing:.04em;font-weight:400">白茶・濃墨</span>
+      </button>
+    </div>
+  </div>
   ${Object.keys(g.players).length > 0 ?
     `<div class="card">
       <div class="ctitle">選手設定</div>
@@ -5525,6 +6943,9 @@ function renderSettings() {
     <button onclick="toggleScheduleSection(true)" style="width:100%;padding:10px;border-radius:8px;background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.3);color:var(--gold);font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">Googleフォームを取得</button>
   </div>
   `;
+
+  // テーマボタンのアクティブ表示を反映
+  try { setTheme(localStorage.getItem('janki_theme') === 'day' ? 'day' : 'night'); } catch(e) {}
 
   // YouTube設定カードをpage-settings-bottomに描画
   const btmEl = document.getElementById('page-settings-bottom');
@@ -6466,6 +7887,8 @@ function saveHanzo(cont){
     save();
     closeOvl('modal-hanzo');
     renderHanzos();
+    renderRanking();
+    renderPlayers();
     showToast();
     return;
   }
@@ -6475,6 +7898,10 @@ function saveHanzo(cont){
     youtubeUrl: youtubeUrl || undefined});
   addLog('記録', `${d} ${players.join('・')}`);
   save();
+  // 即時に各ビューを再描画（タブを開き直さなくても反映されるように）
+  renderHanzos();
+  renderRanking();
+  renderPlayers();
   if(cont){
     const rotated = [players[1], players[2], players[3], players[0]];
     const ps = curGroup.players[mhLeague]||[];
