@@ -8106,11 +8106,18 @@ if (navigator.onLine) {
     const commit = (past || flicked) && Math.sign(dx) === s.sign;
     animating = true;
     s.wrap.classList.add('animating');
-    const target = commit ? -s.sign * s.viewportW : 0;
+    // コミット時：current は指と同じ方向へ画面外まで進み、neighbor が 0 に着地
+    // 戻し時：両方 0 / -sign*W の初期位置へ戻す
+    const target = commit ? s.sign * s.viewportW : 0;
     s.currentEl.style.transform = `translate3d(${target}px,0,0)`;
     s.neighborEl.style.transform = `translate3d(${target - s.sign * s.viewportW}px,0,0)`;
 
     const cleanup = () => {
+      // 順序重要：showTab で .on を切替えてから .page-swipe-* を外す。
+      // これでクラス除去後も新ページが display:block を保ち、旧ページがチラ見えしない。
+      if (commit) {
+        showTab(s.neighborName);
+      }
       s.currentEl.classList.remove('page-swipe-current');
       s.neighborEl.classList.remove('page-swipe-neighbor');
       s.currentEl.style.transform = '';
@@ -8119,7 +8126,6 @@ if (navigator.onLine) {
       s.wrap.classList.remove('animating');
       s.wrap.style.minHeight = '';
       if (commit) {
-        showTab(s.neighborName);
         const tabEl = document.getElementById('tab-' + s.neighborName);
         if (tabEl && tabEl.scrollIntoView) tabEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
       }
