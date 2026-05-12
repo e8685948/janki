@@ -7997,6 +7997,73 @@ if (navigator.onLine) {
 } else {
   if (isPendingSync()) showOfflineBadge();
 }
+
+// ===== タブ横スワイプ切替（スマホ） =====
+(function initTabSwipe() {
+  const order = ['ranking','players','hanzos','graph','condition','settings'];
+  let startX = 0, startY = 0, startT = 0, blocked = false;
+
+  function currentTab() {
+    return order.find(n => document.getElementById('tab-'+n)?.classList.contains('on'));
+  }
+  function isHorizScrollable(el) {
+    if (!el) return false;
+    const s = getComputedStyle(el);
+    if ((s.overflowX === 'auto' || s.overflowX === 'scroll') && el.scrollWidth > el.clientWidth + 2) return true;
+    return false;
+  }
+  function shouldSkip(target) {
+    // タブバーが非表示（グループ未選択など）はスキップ
+    const tabs = document.getElementById('tabs');
+    if (!tabs || tabs.style.display === 'none') return true;
+    // モーダル表示中はスキップ
+    if (document.querySelector('.ovl.open')) return true;
+    // 入力系・スライダーはスキップ
+    const tag = (target.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) return true;
+    // 既存の横操作（半荘スワイプ削除・横スクロールリスト等）の中はスキップ
+    for (let el = target; el && el !== document.body; el = el.parentElement) {
+      if (el.classList && (
+        el.classList.contains('hi-wrap') ||
+        el.classList.contains('hi') ||
+        el.classList.contains('lg-chip') ||
+        el.id === 'cd-results' ||
+        el.id === 'graph-fullscreen'
+      )) return true;
+      if (isHorizScrollable(el)) return true;
+    }
+    return false;
+  }
+
+  document.addEventListener('touchstart', e => {
+    blocked = false;
+    if (e.touches.length !== 1) { blocked = true; return; }
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY; startT = Date.now();
+    blocked = shouldSkip(e.target);
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (blocked) { blocked = false; return; }
+    const t = e.changedTouches && e.changedTouches[0];
+    if (!t) return;
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    const dt = Date.now() - startT;
+    if (dt > 600) return;
+    if (Math.abs(dx) < 70) return;
+    if (Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    const cur = currentTab();
+    if (!cur) return;
+    const idx = order.indexOf(cur);
+    const next = dx < 0 ? idx + 1 : idx - 1;
+    if (next < 0 || next >= order.length) return;
+    showTab(order[next]);
+    // 切替後はタブを画面内にスクロール
+    const tabEl = document.getElementById('tab-' + order[next]);
+    if (tabEl && tabEl.scrollIntoView) tabEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, { passive: true });
+})();
 </script>
 </body>
 </html>
