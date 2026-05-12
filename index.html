@@ -1286,6 +1286,24 @@ textarea:focus-visible{
 @media (prefers-reduced-motion: reduce){
   *{transition:none !important;animation:none !important}
 }
+
+/* ===== タブ横スワイプ（ページめくり） ===== */
+.wrap.tab-swipe-wrap{position:relative;overflow:hidden;touch-action:pan-y}
+.wrap.tab-swipe-wrap > .page.page-swipe-current,
+.wrap.tab-swipe-wrap > .page.page-swipe-neighbor{
+  display:block !important;
+  position:absolute;
+  top:0;left:0;right:0;
+  width:100%;
+  will-change:transform;
+  padding-left:inherit;padding-right:inherit;
+}
+.wrap.tab-swipe-wrap > .page.page-swipe-current{z-index:1}
+.wrap.tab-swipe-wrap > .page.page-swipe-neighbor{z-index:2}
+.wrap.tab-swipe-wrap.animating > .page.page-swipe-current,
+.wrap.tab-swipe-wrap.animating > .page.page-swipe-neighbor{
+  transition:transform .26s cubic-bezier(.22,.61,.36,1);
+}
 </style>
 </head>
 <body>
@@ -7998,30 +8016,43 @@ if (navigator.onLine) {
   if (isPendingSync()) showOfflineBadge();
 }
 
-// ===== タブ横スワイプ切替（スマホ） =====
+// ===== タブ横スワイプ切替（指追従ページめくり） =====
 (function initTabSwipe() {
   const order = ['ranking','players','hanzos','graph','condition','settings'];
-  let startX = 0, startY = 0, startT = 0, blocked = false;
+  // 隣接ページの事前レンダリング関数
+  const renderers = {
+    ranking: () => typeof renderRanking === 'function' && renderRanking(),
+    players: () => typeof renderPlayers === 'function' && renderPlayers(),
+    hanzos:  () => typeof renderHanzos  === 'function' && renderHanzos(),
+    graph:   () => typeof renderGraph   === 'function' && renderGraph(),
+    condition: () => {
+      if (typeof cdRenderPlayers === 'function') cdRenderPlayers();
+      const r = document.getElementById('cd-results'); if (r) r.innerHTML = '';
+    },
+    settings: () => { /* 認証が絡むのでスワイプ中は仮レンダリングしない */ }
+  };
+
+  let startX = 0, startY = 0, startT = 0;
+  let blocked = false;        // この一連のタッチは無視
+  let decided = false;        // 横スワイプ確定済み
+  let state = null;           // {currentEl, neighborEl, neighborName, sign, viewportW, wrap}
+  let animating = false;
 
   function currentTab() {
     return order.find(n => document.getElementById('tab-'+n)?.classList.contains('on'));
   }
+  function pageEl(name) { return document.getElementById('page-' + name); }
   function isHorizScrollable(el) {
-    if (!el) return false;
     const s = getComputedStyle(el);
-    if ((s.overflowX === 'auto' || s.overflowX === 'scroll') && el.scrollWidth > el.clientWidth + 2) return true;
-    return false;
+    return (s.overflowX === 'auto' || s.overflowX === 'scroll') && el.scrollWidth > el.clientWidth + 2;
   }
   function shouldSkip(target) {
-    // タブバーが非表示（グループ未選択など）はスキップ
+    if (animating || state) return true;
     const tabs = document.getElementById('tabs');
     if (!tabs || tabs.style.display === 'none') return true;
-    // モーダル表示中はスキップ
     if (document.querySelector('.ovl.open')) return true;
-    // 入力系・スライダーはスキップ
     const tag = (target.tagName || '').toUpperCase();
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) return true;
-    // 既存の横操作（半荘スワイプ削除・横スクロールリスト等）の中はスキップ
     for (let el = target; el && el !== document.body; el = el.parentElement) {
       if (el.classList && (
         el.classList.contains('hi-wrap') ||
@@ -8035,33 +8066,120 @@ if (navigator.onLine) {
     return false;
   }
 
+  function beginSwipe(sign) {
+    const cur = currentTab();
+    if (!cur) return null;
+    const idx = order.indexOf(cur);
+    const nextIdx = sign < 0 ? idx + 1 : idx - 1;
+    if (nextIdx < 0 || nextIdx >= order.length) return null;
+    const neighborName = order[nextIdx];
+    const currentEl = pageEl(cur);
+    const neighborEl = pageEl(neighborName);
+    if (!currentEl || !neighborEl) return null;
+
+    try { renderers[neighborName] && renderers[neighborName](); } catch(e) {}
+
+    const wrap = currentEl.parentElement;
+    wrap.classList.add('tab-swipe-wrap');
+    currentEl.classList.add('page-swipe-current');
+    neighborEl.classList.add('page-swipe-neighbor');
+
+    const viewportW = wrap.clientWidth || window.innerWidth;
+    const h = Math.max(currentEl.scrollHeight, neighborEl.scrollHeight, wrap.clientHeight);
+    wrap.style.minHeight = h + 'px';
+
+    currentEl.style.transform = 'translate3d(0,0,0)';
+    neighborEl.style.transform = `translate3d(${-sign * viewportW}px,0,0)`;
+
+    return { currentEl, neighborEl, neighborName, sign, viewportW, wrap };
+  }
+
+  function moveSwipe(s, dx) {
+    // 端でのラバーバンドは扱わず単純追従
+    s.currentEl.style.transform = `translate3d(${dx}px,0,0)`;
+    s.neighborEl.style.transform = `translate3d(${-s.sign * s.viewportW + dx}px,0,0)`;
+  }
+
+  function endSwipe(s, dx, velocity) {
+    const past = Math.abs(dx) > s.viewportW * 0.25;
+    const flicked = Math.abs(velocity) > 0.5 && Math.sign(velocity) === s.sign;
+    const commit = (past || flicked) && Math.sign(dx) === s.sign;
+    animating = true;
+    s.wrap.classList.add('animating');
+    const target = commit ? -s.sign * s.viewportW : 0;
+    s.currentEl.style.transform = `translate3d(${target}px,0,0)`;
+    s.neighborEl.style.transform = `translate3d(${target - s.sign * s.viewportW}px,0,0)`;
+
+    const cleanup = () => {
+      s.currentEl.classList.remove('page-swipe-current');
+      s.neighborEl.classList.remove('page-swipe-neighbor');
+      s.currentEl.style.transform = '';
+      s.neighborEl.style.transform = '';
+      s.wrap.classList.remove('tab-swipe-wrap');
+      s.wrap.classList.remove('animating');
+      s.wrap.style.minHeight = '';
+      if (commit) {
+        showTab(s.neighborName);
+        const tabEl = document.getElementById('tab-' + s.neighborName);
+        if (tabEl && tabEl.scrollIntoView) tabEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+      animating = false;
+    };
+    let done = false;
+    const onEnd = () => { if (done) return; done = true; s.currentEl.removeEventListener('transitionend', onEnd); cleanup(); };
+    s.currentEl.addEventListener('transitionend', onEnd);
+    setTimeout(onEnd, 360);
+  }
+
+  let lastX = 0, lastT = 0, velocity = 0;
+
   document.addEventListener('touchstart', e => {
-    blocked = false;
+    blocked = false; decided = false; state = null;
     if (e.touches.length !== 1) { blocked = true; return; }
     const t = e.touches[0];
-    startX = t.clientX; startY = t.clientY; startT = Date.now();
+    startX = lastX = t.clientX; startY = t.clientY; startT = lastT = Date.now();
+    velocity = 0;
     blocked = shouldSkip(e.target);
   }, { passive: true });
 
-  document.addEventListener('touchend', e => {
-    if (blocked) { blocked = false; return; }
-    const t = e.changedTouches && e.changedTouches[0];
-    if (!t) return;
+  document.addEventListener('touchmove', e => {
+    if (blocked) return;
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
     const dx = t.clientX - startX;
     const dy = t.clientY - startY;
-    const dt = Date.now() - startT;
-    if (dt > 600) return;
-    if (Math.abs(dx) < 70) return;
-    if (Math.abs(dx) < Math.abs(dy) * 1.4) return;
-    const cur = currentTab();
-    if (!cur) return;
-    const idx = order.indexOf(cur);
-    const next = dx < 0 ? idx + 1 : idx - 1;
-    if (next < 0 || next >= order.length) return;
-    showTab(order[next]);
-    // 切替後はタブを画面内にスクロール
-    const tabEl = document.getElementById('tab-' + order[next]);
-    if (tabEl && tabEl.scrollIntoView) tabEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    if (!decided) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      if (Math.abs(dx) < Math.abs(dy) * 1.1) { blocked = true; return; } // 縦スクロール優先
+      decided = true;
+      const sign = dx < 0 ? -1 : 1;
+      state = beginSwipe(sign);
+      if (!state) { blocked = true; return; }
+    }
+    if (state) {
+      const now = Date.now();
+      const ddx = t.clientX - lastX;
+      const ddt = Math.max(1, now - lastT);
+      velocity = ddx / ddt; // px / ms
+      lastX = t.clientX; lastT = now;
+      moveSwipe(state, dx);
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchend', e => {
+    if (state) {
+      const t = e.changedTouches && e.changedTouches[0];
+      const dx = t ? t.clientX - startX : 0;
+      endSwipe(state, dx, velocity);
+      state = null;
+    }
+    blocked = false; decided = false;
+  }, { passive: true });
+
+  document.addEventListener('touchcancel', () => {
+    if (state) endSwipe(state, 0, 0);
+    state = null; blocked = false; decided = false;
   }, { passive: true });
 })();
 </script>
