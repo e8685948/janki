@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>麻雀 逆転条件ドリル</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f3efe4;--card:#fffdf6;--ink:#1d2b24;--sub:#5d6b63;--line:#d8d2bf;--felt:#1f5a43;--hit:#b3261e;--ans:#e4f0e8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13201a;--card:#1b2c24;--ink:#eee9d8;--sub:#9fb0a5;--line:#2f4639;--felt:#3f8a68;--hit:#ff8a80;--ans:#22392e}}
+:root[data-theme="dark"]{--bg:#13201a;--card:#1b2c24;--ink:#eee9d8;--sub:#9fb0a5;--line:#2f4639;--felt:#3f8a68;--hit:#ff8a80;--ans:#22392e}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Hiragino Sans","Noto Sans JP",sans-serif}
+main{max-width:520px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:4px 0 12px}
+.meta{color:var(--sub);font-size:14px;margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.row{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line)}
+.row:last-child{border:0}
+.row .n{flex:1;font-weight:600}
+.row .s{font-variant-numeric:tabular-nums;font-weight:600}
+.tag{font-size:12px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--sub);font-weight:400}
+.tag.d{background:var(--felt);color:#fff;border-color:var(--felt)}
+.tag.m{border-color:var(--hit);color:var(--hit)}
+.gap{padding:10px 12px;background:var(--ans);font-weight:600}
+.q{width:100%;text-align:left;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer}
+.q b{display:block}
+.q .a{display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.q.open .a{display:block}
+.q .hint{color:var(--sub);font-size:13px}
+.q.open .hint{display:none}
+.big{font-size:18px;font-weight:700;color:var(--felt)}
+.small{color:var(--sub);font-size:13px}
+button.next{width:100%;font:inherit;font-weight:700;padding:14px;border:0;border-radius:10px;background:var(--felt);color:#fff;cursor:pointer;margin-top:4px}
+button.next:focus-visible,.q:focus-visible{outline:3px solid var(--hit);outline-offset:2px}
+.tabs{display:flex;gap:8px;margin-bottom:12px}.tabs button{flex:1;font:inherit;padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer}.tabs button.on{background:var(--felt);color:#fff;border-color:var(--felt)}
+#in{width:100%;box-sizing:border-box;font:inherit;font-size:20px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);margin-bottom:10px}
+#res{min-height:1.6em;font-weight:700;margin:0 0 8px}[hidden]{display:none!important}
+.tabs{gap:4px}.in2{box-sizing:border-box;width:100%;font:inherit;font-size:18px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}.tabs button{font-size:12px;padding:9px 0}
+.ch{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px}.ch button{font:inherit;padding:12px 4px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer}.ch button.good{background:var(--felt);color:#fff;border-color:var(--felt)}.ch button.bad{border-color:var(--hit);color:var(--hit)}.cnt{color:var(--sub);font-size:13px;margin:6px 0}.two{display:flex;gap:8px;margin-bottom:8px}.two button{flex:1;margin-top:0}
+</style></head><body><main>
+<h1>麻雀 逆転条件ドリル</h1>
+<div class="tabs"><button id="b1" class="on">逆転条件</button><button id="b2">点差の暗算</button><button id="b3">早見表</button><button id="b4">符翻ドリル</button><button id="b5">逆算ドリル</button></div>
+<div id="m1">
+<p class="meta">1位を<b>上回る</b>ために必要な最小の手を求める（同点は逆転にならない）</p>
+<div id="t" class="card"></div>
+<div id="qs"></div>
+<button class="next" id="nx">次の問題</button></div>
+<div id="m2" hidden>
+<p class="meta">1位との差を百点単位で答える（例：32400と18700なら 324−187＝137）</p>
+<div class="card"><div class="row"><span class="n">1位</span><span class="s" id="ca"></span></div><div class="row"><span class="n">あなた</span><span class="s" id="cb"></span></div></div>
+<input id="in" inputmode="numeric" placeholder="差（百点単位）" autocomplete="off">
+<p id="res"></p>
+<button class="next" id="ck">答え合わせ</button>
+<button class="next" id="n2" style="background:var(--card);color:var(--ink);border:1px solid var(--line)">次の問題</button>
+</div>
+<div id="m3" hidden>
+<p class="meta">点差がこの範囲なら、必要な最小の手（同点は逆転にならない）。本場・供託は先に点差から引く。ツモの「子・親」は子と親の支払い</p>
+<div class="tabs" id="sg"></div>
+<div id="tb"></div>
+</div>
+<div id="m4" hidden>
+<p class="meta">点差を埋める最小の手の点数を答える（同点は逆転にならない・50符まで・切り上げ満貫あり）</p>
+<div class="card"><div class="row"><span class="n">点差</span><span class="s" id="qd"></span></div><div class="row"><span class="n">状況</span><span class="s" id="qs2"></span></div><div class="row"><span class="n">アガリ方</span><span class="s" id="qm"></span></div></div>
+<div id="qa"><div id="qr"></div></div>
+<div class="two" hidden><button class="next" id="ok">できた</button><button class="next" id="ng" style="background:var(--card);color:var(--ink);border:1px solid var(--line)">違った</button></div>
+<p id="r4" style="font-weight:700;margin:4px 0"></p>
+<p class="cnt" id="cn"></p>
+<button class="next" id="k4">答え合わせ</button>
+<button class="next" id="n4" style="background:var(--card);color:var(--ink);border:1px solid var(--line)">次の問題</button>
+</div>
+<div id="m5" hidden>
+<p class="meta">この手は何点差まで逆転できる？（同点も逆転にする）</p>
+<div class="card"><div class="row"><span class="n">手</span><span class="s" id="rh"></span></div><div class="row"><span class="n">状況</span><span class="s" id="rs"></span></div></div>
+<div class="card"><div class="row"><b>直撃ロン</b></div><div class="ch" id="ca2"></div></div>
+<div class="card"><div class="row"><b>ツモ</b></div><div class="ch" id="ct"></div></div>
+<p id="r5" style="font-weight:700;margin:4px 0"></p>
+<p class="cnt" id="c5"></p>
+<button class="next" id="k5">答え合わせ</button>
+<button class="next" id="n5" style="background:var(--card);color:var(--ink);border:1px solid var(--line)">次の問題</button>
+</div>
+</main>
+<script>
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const c=x=>Math.ceil(x/100)*100;
+const base=(h,f)=>h>=13?8000:h>=11?6000:h>=8?4000:h>=6?3000:h==5||(h==4&&f==30)?2000:Math.min(f*Math.pow(2,h+2),2000);
+const label=(h,f,b)=>b>=8000?"役満（数え）":b>=6000?"三倍満":b>=4000?"倍満":b>=3000?"跳満":b>=2000?"満貫":h+"翻"+f+"符";
+function hands(ts){const L=[],fus=ts?[20,25,30,40,50]:[25,30,40,50];
+for(let h=1;h<=13;h++)for(const f of fus){if(h==1&&(f==20||f==25))continue;if(h>=5&&f!=30)continue;L.push({h,f,b:base(h,f)})}
+return L.sort((x,y)=>x.b-y.b||x.h-y.h||x.f-y.f)}
+const HR=hands(false),HT=hands(true);
+let P;
+function gen(){for(;;){let s=[0,0,0,0].map(()=>25000+R(-200,250)*100);s[3]+=100000-s.reduce((a,b)=>a+b);
+if(s.some(v=>v<0||v>75000))continue;const mx=Math.max(...s),f=s.indexOf(mx);if(s.filter(v=>v==mx).length>1)continue;
+const me=R(0,3);if(me==f)continue;const d=mx-s[me];if(d<1000||d>20000)continue;
+return{s,f,me,d,dealer:R(0,3),h:R(0,3),k:R(0,2)}}}
+function solve(){const{d,f,me,dealer,h,k}=P,md=dealer==me,out=[];
+const fd=dealer==f;
+let x=HR.find(v=>{const p=c(v.b*(md?6:4));return 2*p+600*h+1000*k>d});
+out.push(x&&{x,p:c(x.b*(md?6:4)),ch:2*c(x.b*(md?6:4))+600*h+1000*k});
+x=HR.find(v=>c(v.b*(md?6:4))+300*h+1000*k>d);
+out.push(x&&{x,p:c(x.b*(md?6:4)),ch:c(x.b*(md?6:4))+300*h+1000*k});
+x=HT.find(v=>{const o=c(v.b*2),ko=c(v.b),tot=md?3*o:o+2*ko,fp=md?o:(fd?o:ko);return tot+300*h+fp+100*h+1000*k>d});
+if(x){const o=c(x.b*2),ko=c(x.b),tot=md?3*o:o+2*ko,fp=md?o:(fd?o:ko);
+out.push({x,o,ko,ch:tot+300*h+fp+100*h+1000*k})}else out.push(null);
+return out}
+function render(){P=gen();const{s,f,me,d,dealer,h,k}=P,names="ABCD";
+const rank=s.map(v=>s.filter(u=>u>v).length+1);
+document.getElementById("t").innerHTML=s.map((v,i)=>`<div class="row"><span class="n">${names[i]}</span>`+
+(i==dealer?'<span class="tag d">親</span>':'')+(i==me?'<span class="tag m">あなた</span>':'')+
+`<span class="tag">${rank[i]}位</span><span class="s">${v}</span></div>`).join("")+
+`<div class="gap">${h}本場・供託${k}本（${k*1000}点）</div>`;
+const A=solve(),me_d=dealer==me;
+const Q=[
+`${names[f]}（1位）からロン`,`${names[f]}以外からロン`,`ツモ`];
+const pt=(r,t)=>r?`<span class="big">${label(r.x.h,r.x.f,r.x.b)}${r.x.b<2000?"":""} ${r.p}点以上</span><br><span class="small">1位との点差：${d}点<br>供託・本場を考慮した点差：${d-t}点</span>`:"<span class='big'>役満でも届かない</span>";
+let ts="<span class='big'>役満でも届かない</span>";
+if(A[2]){const r=A[2],nm=label(r.x.h,r.x.f,r.x.b);
+ts=`<span class="big">${nm} ${me_d?"各"+r.o+"点（"+r.o+"オール）":"子"+r.ko+"・親"+r.o}</span><br><span class="small">1位との点差：${d}点<br>供託・本場を考慮した点差：${d-400*h-1000*k}点</span>`}
+const body=[pt(A[0],600*h+1000*k),pt(A[1],300*h+1000*k),ts];
+document.getElementById("qs").innerHTML=Q.map((q,i)=>`<button class="q"><b>${i+1}. ${q}で逆転するには？</b><span class="hint">タップで答え</span><div class="a">${body[i]}</div></button>`).join("");
+document.querySelectorAll(".q").forEach(e=>e.onclick=()=>e.classList.toggle("open"))}
+document.getElementById("nx").onclick=render;render();
+const $=i=>document.getElementById(i);let a,b,t0,on2=false;
+function gen2(){do{a=R(300,750)*100;b=a-R(10,300)*100}while(b<0);$("ca").textContent=a;$("cb").textContent=b;$("in").value="";$("res").textContent="";t0=Date.now();$("in").focus()}
+function chk(){const v=$("in").value.trim();if(!v)return;const ans=(a-b)/100,sec=((Date.now()-t0)/1000).toFixed(1);
+$("res").textContent=+v===ans?"正解（"+sec+"秒）":"不正解：答えは "+ans+"（"+(a-b)+"点）"}
+$("ck").onclick=chk;$("n2").onclick=gen2;$("in").onkeydown=e=>{if(e.key==="Enter")chk()};
+function tab(t){$("m1").hidden=t!=1;$("m2").hidden=t!=2;$("m3").hidden=t!=3;$("m4").hidden=t!=4;$("m5").hidden=t!=5;$("b5").className=t==5?"on":"";if(t==5&&!on5){on5=true;gen5()}$("b4").className=t==4?"on":"";if(t==4&&!on4){on4=true;gen4()}$("b3").className=t==3?"on":"";if(t==3)cs(sel);$("b1").className=t==1?"on":"";$("b2").className=t==2?"on":"";if(t==2&&!on2){on2=true;gen2()}}
+$("b1").onclick=()=>tab(1);$("b2").onclick=()=>tab(2);$("b3").onclick=()=>tab(3);$("b4").onclick=()=>tab(4);
+let okc=0,tot=0,on4=false,cur;
+function groups(kind,m,fd){const src=kind=="t"?HT:HR,out=[];for(const v of src){const p=c(v.b*(m?6:4)),o=c(v.b*2),k=c(v.b);const ch=kind=="a"?2*p:kind=="b"?p:(m?3*o:o+2*k)+((m||fd)?o:k);const lb=v.b<2000?v.f+"符"+v.h+"翻":label(v.h,v.f,v.b);const last=out[out.length-1];if(last&&last.ch==ch){if(!last.l.includes(lb))last.l.push(lb)}else if(!last||ch>last.ch)out.push({ch,l:[lb]})}return out}
+function gen4(){const m=R(0,1),fd=m?0:R(0,1),d=R(5,150)*100;
+const ga=groups("a",m,fd).find(x=>x.ch>d),gt=groups("t",m,fd).find(x=>x.ch>d);
+$("qd").textContent=d+"点";$("qs2").textContent=m?"あなた：親":"あなた：子 ／ 1位："+(fd?"親":"子");
+$("qm").textContent="直撃ロン と ツモ";
+$("qr").innerHTML=`<b>直撃ロン</b>　<span class="big">${ga.l.join("／")}</span><br><span class="small">この手で${ga.ch}点縮まる</span><br><b>ツモ</b>　<span class="big">${gt.l.join("／")}</span><br><span class="small">この手で${gt.ch}点縮まる</span>`;
+$("qa").classList.remove("open");$("cn").textContent=tot?okc+" / "+tot+" できた":""}
+$("qa").onclick=()=>$("qa").classList.toggle("open");$("ok").onclick=()=>{okc++;tot++;gen4()};$("ng").onclick=()=>{tot++;gen4()};
+let ok5=0,t5=0,on5=false;
+const lb5=v=>v.b<2000?v.f+"符"+v.h+"翻":label(v.h,v.f,v.b);
+const pool=[];HR.filter(v=>v.b<=4000).forEach(v=>{if(!pool.some(u=>lb5(u)==lb5(v)))pool.push(v)});
+function hv(kind,m,fd,v){const p=c(v.b*(m?6:4)),o=c(v.b*2),k=c(v.b);return kind=="a"?2*p:(m?3*o:o+2*k)+((m||fd)?o:k)}
+function mk(id,kind,m,fd,v){const vals=groups(kind,m,fd).map(g=>g.ch),ch0=hv(kind,m,fd,v),i=vals.indexOf(ch0),cor=ch0-100;
+let cand=[vals[i-1]-100,vals[i+1]-100,vals[i+2]-100,vals[i-2]-100,ch0].filter(x=>x>0&&x!==cor);cand=[...new Set(cand)].sort(()=>Math.random()-.5).slice(0,3);
+const os=[cor,...cand].sort((a,b)=>a-b);
+$(id).innerHTML=os.map(x=>`<button data-v="${x}">${x}点差まで</button>`).join("");
+let done=false;$(id).querySelectorAll("button").forEach(b=>b.onclick=()=>{if(done)return;done=true;t5++;const good=+b.dataset.v===cor;if(good)ok5++;
+$(id).querySelectorAll("button").forEach(e=>{if(+e.dataset.v===cor)e.classList.add("good")});if(!good)b.classList.add("bad");$("c5").textContent=ok5+" / "+t5+" 正解"})}
+function gen5(){const m=0,fd=R(0,1),v=pool[R(0,pool.length-1)];
+$("rh").textContent=lb5(v);$("rs").textContent=m?"あなた：親":"あなた：子 ／ 1位："+(fd?"親":"子");
+mk("ca2","a",m,fd,v);mk("ct","t",m,fd,v)}
+$("b5").onclick=()=>tab(5);$("n5").onclick=gen5;
+function groups(kind,m,fd){const src=kind=="t"?HT:HR,out=[];for(const v of src){const p=c(v.b*(m?6:4)),o=c(v.b*2),k=c(v.b);const ch=kind=="a"?2*p:kind=="b"?p:(m?3*o:o+2*k)+((m||fd)?o:k);const lb=lb5(v);const last=out[out.length-1];if(last&&last.ch==ch){if(!last.l.includes(lb))last.l.push(lb);last.hs.push(v)}else if(!last||ch>last.ch)out.push({ch,l:[lb],hs:[v]})}return out}
+let a4,d4=false,a5={},d5=false;
+const fhrow=(n,k)=>`<div class="row"><b style="flex:1">${n}</b><input class="in2" id="${k}f" inputmode="numeric" placeholder="符" style="width:72px"><input class="in2" id="${k}h" inputmode="numeric" placeholder="翻" style="width:72px"></div>`;
+function okFH(g,f,h){const b=g.hs[0].b;if(b>=2000){const w=b>=8000?[13]:b>=6000?[11,12]:b>=4000?[8,9,10]:b>=3000?[6,7]:[5];return w.includes(h)||(b==2000&&h==4&&f>=30)}return g.hs.some(x=>x.f==f&&x.h==h)}
+function gen4(){const m=R(0,1),fd=m?0:R(0,1),d=R(5,150)*100;a4={a:groups("a",m,fd).find(x=>x.ch>d),t:groups("t",m,fd).find(x=>x.ch>d)};d4=false;
+$("qd").textContent=d+"点";$("qs2").textContent=m?"あなた：親":"あなた：子 ／ 1位："+(fd?"親":"子");$("qm").textContent="直撃ロン と ツモ";
+$("qr").innerHTML=`<div class="card">${fhrow("直撃ロン","a")}${fhrow("ツモ","t")}</div><p class="small">満貫以上は符を空欄のまま、翻に 5満貫・6跳満・8倍満・11三倍満・13役満</p>`;
+$("r4").textContent="";$("cn").textContent=tot?okc+" / "+tot+" 正解":""}
+function chk4(){if(!$("ah").value||!$("th").value)return;let h4="";let n=0;for(const[k,nm]of[["a","直撃ロン"],["t","ツモ"]]){const r=okFH(a4[k],+$(k+"f").value||0,+$(k+"h").value);n+=r;h4+=nm+"："+(r?"正解":"不正解")+"（答え "+a4[k].l.join("／")+"）<br>"}
+if(!d4){d4=true;tot+=2;okc+=n}$("r4").innerHTML=h4;$("cn").textContent=okc+" / "+tot+" 正解"}
+$("k4").onclick=chk4;$("n4").onclick=gen4;
+function gen5(){const m=0,fd=R(0,1),v=pool[R(0,pool.length-1)];$("rh").textContent=lb5(v);$("rs").textContent="あなた：子 ／ 1位："+(fd?"親":"子");
+a5={a:hv("a",m,fd,v),t:hv("t",m,fd,v)};d5=false;
+for(const id of["ca2","ct"])$(id).innerHTML='<input class="in2" inputmode="numeric" placeholder="点差を入力（例 7700）" style="grid-column:1/3">';$("r5").textContent=""}
+function chk5(){const ia=$("ca2").querySelector("input"),it=$("ct").querySelector("input");if(!ia.value||!it.value)return;const ra=+ia.value===a5.a,rt=+it.value===a5.t;
+if(!d5){d5=true;t5+=2;ok5+=ra+rt}
+$("r5").innerHTML="直撃ロン："+(ra?"正解":"不正解")+"（答え "+a5.a+"）<br>ツモ："+(rt?"正解":"不正解")+"（答え "+a5.t+"）";$("c5").textContent=ok5+" / "+t5+" 正解"}
+$("k5").onclick=chk5;$("n5").onclick=gen5;
+const prow=(n,h)=>`<div class="row"><b style="flex:1">${n}</b>${h}</div>`;
+const inp=(id,ph)=>`<input class="in2" id="${id}" inputmode="numeric" placeholder="${ph}" style="width:84px">`;
+function gen4(){const m=0,fd=R(0,1),d=R(5,150)*100;a4={m,a:groups("a",m,fd).find(x=>x.ch>d),t:groups("t",m,fd).find(x=>x.ch>d)};d4=false;
+$("qd").textContent=d+"点";$("qs2").textContent=m?"あなた：親":"あなた：子 ／ 1位："+(fd?"親":"子");$("qm").textContent="直撃ロン と ツモ";
+$("qr").innerHTML=`<div class="card">${prow("直撃ロン",inp("af","点数"))}${prow("ツモ",m?inp("to","オール"):inp("tk","子")+inp("to","親"))}</div><p class="small">ツモは子の支払い・親の支払い（あなたが親ならオール）</p>`;
+$("r4").textContent="";$("cn").textContent=tot?okc+" / "+tot+" 正解":""}
+function chk4(){const m=a4.m;if(!$("af").value||!$("to").value||(!m&&!$("tk").value))return;
+const va=a4.a.hs[0],vt=a4.t.hs[0],p=c(va.b*(m?6:4)),o=c(vt.b*2),k=c(vt.b);
+const ra=+$("af").value===p,rt=+$("to").value===o&&(m||+$("tk").value===k);
+if(!d4){d4=true;tot+=2;okc+=ra+rt}
+$("r4").innerHTML="直撃ロン："+(ra?"正解":"不正解")+"（答え "+p+"点："+a4.a.l.join("／")+"）<br>ツモ："+(rt?"正解":"不正解")+"（答え "+(m?o+"オール":k+"・"+o)+"："+a4.t.l.join("／")+"）";$("cn").textContent=okc+" / "+tot+" 正解"}
+let sel=0;const SC=[[0,0,"子・1位子"],[0,1,"子・1位親"],[1,0,"親"]];
+function opts(m,fd){const T=[],A=[],B=[];for(const v of HR){const p=c(v.b*(m?6:4)),t=v.b<2000?p:label(v.h,v.f,v.b);A.push([2*p,t]);B.push([p,t])}
+for(const v of HT){const o=c(v.b*2),k=c(v.b),tot=m?3*o:o+2*k,fp=(m||fd)?o:k;T.push([tot+fp,v.b<2000?(m?o+"オール":k+"・"+o):label(v.h,v.f,v.b)])}return[T,A,B]}
+function col(L){const out=[];let lo=0;for(const[ch,t]of L){if(ch<=lo)continue;out.push([lo,ch-100,t]);lo=ch;if(lo>20000)break}return out}
+function cs(i){sel=i;const[m,fd]=SC[i];$("sg").innerHTML=SC.map((s,j)=>`<button class="${j==i?"on":""}">あなた：${s[2]}</button>`).join("");
+$("sg").querySelectorAll("button").forEach((e,j)=>e.onclick=()=>cs(j));
+const[T,A,B]=opts(m,fd);const sec=(n,L)=>`<div class="card"><div class="row"><b>${n}</b></div>`+col(L).map(r=>`<div class="row"><span class="n">${r[0]}〜${r[1]}点差</span><span class="s">${r[2]}</span></div>`).join("")+"</div>";
+$("tb").innerHTML=sec("ツモ",T)+sec("1位から直撃ロン",A)+sec("他家からロン",B)}
+</script></body></html>
