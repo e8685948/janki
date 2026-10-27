@@ -7,7 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@700;800&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 /* ============================================
@@ -1210,16 +1209,64 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   margin-left:6px;vertical-align:2px;
 }
 
-/* Sched */
-.sched-btn{
-  width:100%;padding:13px;border-radius:var(--r-sm);
-  background:linear-gradient(135deg, var(--gold2), var(--gold));
-  color:#1a1200;font-family:'Shippori Mincho',serif;font-size:.9rem;font-weight:700;
-  border:none;cursor:pointer;letter-spacing:.12em;
-  box-shadow:0 4px 14px -4px rgba(201,169,97,.4);
-}
-.sched-btn:hover{filter:brightness(1.05)}
-.sched-avail-wrap{overflow-x:auto}
+/* 対局日程 自動生成 */
+.sgen-note{font-size:.68rem;color:var(--tx2);line-height:1.75;margin-bottom:12px}
+.sgen-sec{border:1px solid var(--bd);border-radius:var(--r-sm);padding:12px;margin-bottom:12px;background:rgba(0,0,0,.14)}
+.sgen-sec-t{font-size:.7rem;color:var(--gold);letter-spacing:.16em;font-weight:700;font-family:'Shippori Mincho',serif;margin-bottom:10px}
+.sgen-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sgen-excl-row{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center}
+.sgen-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sgen-chip{display:inline-flex;align-items:center;gap:7px;font-size:.72rem;color:var(--tx2);
+  background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:999px;padding:4px 6px 4px 11px}
+.sgen-chip button{background:none;border:none;color:var(--red2);cursor:pointer;font-size:.78rem;line-height:1;padding:2px 5px;font-family:inherit}
+.sgen-ptog{font-size:.72rem;font-family:inherit;cursor:pointer;padding:5px 12px;border-radius:999px;
+  background:rgba(201,169,97,.12);border:1px solid rgba(201,169,97,.35);color:var(--gold);transition:all .15s ease}
+.sgen-ptog:hover{background:rgba(201,169,97,.2)}
+.sgen-ptog.off{background:rgba(255,255,255,.03);border-color:var(--bd);color:var(--tx3);text-decoration:line-through}
+.sgen-ptog.off:hover{background:rgba(255,255,255,.06);color:var(--tx2)}
+.sgen-check{display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--tx2);margin-top:10px}
+.sgen-check input{width:auto}
+.sgen-radio{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.sgen-radio label{display:flex;align-items:center;gap:8px;font-size:.75rem;color:var(--tx2);cursor:pointer}
+.sgen-radio input{width:auto}
+.sgen-err{font-size:.68rem;color:var(--red2);margin-top:6px;display:none}
+.sgen-stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.sgen-stat{background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:var(--r-sm);padding:8px 11px;font-size:.7rem;color:var(--tx2)}
+.sgen-stat b{color:var(--tx);font-size:.82rem}
+.sgen-bar-l{display:flex;justify-content:space-between;gap:10px;font-size:.68rem;color:var(--tx2);margin-bottom:5px}
+.sgen-bar{height:5px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+.sgen-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold))}
+.sgen-warn{background:rgba(199,62,46,.1);border:1px solid rgba(199,62,46,.3);color:#e08b80;
+  font-size:.72rem;padding:10px 12px;border-radius:var(--r-sm);margin:10px 0;line-height:1.75}
+.sgen-ok{background:rgba(123,168,108,.1);border:1px solid rgba(123,168,108,.3);color:#a3c795;
+  font-size:.72rem;padding:10px 12px;border-radius:var(--r-sm);margin:10px 0;line-height:1.75}
+.sgen-empty{color:var(--tx2);font-size:.75rem;line-height:1.8;padding:18px 0;text-align:center}
+.sgen-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 9px;
+  border:1px solid var(--bd);border-radius:6px;margin-top:6px;font-size:.7rem;color:var(--tx2)}
+.sgen-row b{color:var(--tx)}
+.sgen-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0}
+.sgen-sum-c{background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:var(--r-sm);padding:9px 11px}
+.sgen-sum-k{font-size:.64rem;color:var(--tx2);letter-spacing:.1em;margin-bottom:4px}
+.sgen-sum-v{font-size:1.05rem;font-weight:700;color:var(--gold);font-family:'Shippori Mincho',serif}
+.sgen-sum-m{margin-top:3px;font-size:.66rem;color:var(--tx2);line-height:1.55}
+.sgen-month{border:1px solid var(--bd);border-radius:var(--r-sm);margin-top:10px;overflow:hidden}
+.sgen-month > summary{cursor:pointer;padding:9px 12px;background:var(--bg3);font-size:.75rem;color:var(--gold);font-weight:700}
+.sgen-tbl{width:100%;border-collapse:collapse;font-size:.72rem}
+.sgen-tbl td{padding:8px 9px;border-top:1px solid rgba(255,255,255,.05);vertical-align:top;color:var(--tx)}
+.sgen-tbl td.d{white-space:nowrap;color:var(--tx2);width:1%}
+.sgen-tbl td.l{white-space:nowrap;width:1%}
+.sgen-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.64rem;font-weight:700;color:#1a1200}
+.sgen-slot{font-size:.64rem;color:var(--tx2);margin-right:6px}
+.sgen-seat{font-size:.62rem;color:var(--tx3)}
+.sgen-btns{display:flex;gap:6px;flex-wrap:wrap}
+.sgen-mini{background:rgba(201,169,97,.1);border:1px solid rgba(201,169,97,.3);color:var(--gold);
+  padding:5px 10px;border-radius:7px;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit}
+.sgen-mini:hover{background:rgba(201,169,97,.18)}
+.sgen-scroll{overflow-x:auto}
+.sgen-stbl{border-collapse:collapse;font-size:.68rem;white-space:nowrap;color:var(--tx)}
+.sgen-stbl th,.sgen-stbl td{padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.06);text-align:center}
+.sgen-stbl thead th{color:var(--tx2);font-weight:500}
+.sgen-stbl th:first-child,.sgen-stbl td:first-child{text-align:left;position:sticky;left:0;background:var(--bg2)}
 
 /* Scrollbar */
 ::-webkit-scrollbar{width:10px;height:10px}
@@ -1318,7 +1365,6 @@ textarea:focus-visible{
   <button class="tab" id="tab-players" onclick="showTab('players')">個人成績</button>
   <button class="tab" id="tab-hanzos" onclick="showTab('hanzos')">対局履歴</button>
   <button class="tab" id="tab-graph" onclick="showTab('graph')">グラフ</button>
-  <button class="tab" id="tab-condition" onclick="showTab('condition')">条件計算</button>
   <button class="tab" id="tab-settings" onclick="showTab('settings')">設定</button>
 </div>
 
@@ -1474,154 +1520,7 @@ textarea:focus-visible{
     </div>
     <div id="page-settings" class="page"></div>
 
-    <!-- 試合日程（設定タブ内に表示） -->
-    <div id="page-schedule" style="display:none">
-      <!-- 出欑データ取得 -->
-      <div class="card" style="border-top-left-radius:0;border-top-right-radius:0;margin-top:0;border-top:none">
-        <!-- モード切替 -->
-        <div style="display:flex;gap:6px;margin-bottom:12px">
-          <button id="sched-tab-url" onclick="schedSetMode('url')"
-            style="flex:1;padding:8px;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;border:1px solid var(--gold);background:rgba(212,168,67,.2);color:var(--gold)">
-            URLから自動取得
-          </button>
-          <button id="sched-tab-paste" onclick="schedSetMode('paste')"
-            style="flex:1;padding:8px;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;border:1px solid var(--bd);background:rgba(255,255,255,.05);color:var(--tx2)">
-            手動で貼り付け
-          </button>
-        </div>
-
-        <!-- URLモード -->
-        <div id="sched-mode-url">
-          <div class="fg">
-            <label class="fl">GAS WebアプリURL</label>
-            <input class="fi" id="sched-gas-url" placeholder="https://script.google.com/macros/s/..." oninput="schedSaveField('sched_gas_url',this.value)">
-          </div>
-          <div class="fg">
-            <label class="fl">GoogleスプレッドシートのURL</label>
-            <input class="fi" id="sched-url" placeholder="https://docs.google.com/spreadsheets/d/..." oninput="schedSaveField('sched_sheet_url',this.value)">
-          </div>
-          <div class="fg">
-            <label class="fl">シート名（省略可・省略時はURLのgidのシート）</label>
-            <input class="fi" id="sched-sheet-name" placeholder="例：フォームの回答 1" oninput="schedSaveField('sched_sheet_name',this.value)">
-          </div>
-          <button onclick="schedFetchFromGas()" class="sched-btn" style="margin-bottom:10px">取得する</button>
-          <div id="sched-fetch-status" style="font-size:.72rem;color:var(--tx2);margin-bottom:8px"></div>
-          <!-- GASセットアップ案内 -->
-          <div style="border:1px solid var(--bd);border-radius:8px;overflow:hidden">
-            <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
-              style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;cursor:pointer;background:var(--bg3)">
-              <span style="font-size:.72rem;color:var(--tx2)">⚙ GASスクリプトへの追加コード</span>
-              <span style="font-size:.75rem;color:var(--tx2)">▼</span>
-            </div>
-            <div style="display:none;padding:10px 12px">
-              <div style="font-size:.68rem;color:var(--tx2);margin-bottom:8px;line-height:1.7">
-                既存のGASスクリプトの <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px">doPost</code> 関数内の先頭付近に以下を追加してください。追加後は「デプロイを管理」→新バージョンで再デプロイしてください。
-              </div>
-              <pre id="sched-gas-code" style="background:rgba(0,0,0,.4);border:1px solid var(--bd);border-radius:7px;padding:10px;font-size:.65rem;color:#7ec8a0;overflow-x:auto;white-space:pre;line-height:1.6">// ===== 出欠データ取得 =====
-if (d.action === 'getFormData') {
-  try {
-    var ss = SpreadsheetApp.openById(d.sid);
-    var sheet;
-    if (d.sheetName) {
-      sheet = ss.getSheetByName(d.sheetName);
-    } else if (d.gid) {
-      var sheets = ss.getSheets();
-      for (var i = 0; i < sheets.length; i++) {
-        if (String(sheets[i].getSheetId()) === String(d.gid)) {
-          sheet = sheets[i]; break;
-        }
-      }
-    }
-    if (!sheet) sheet = ss.getSheets()[0];
-    var values = sheet.getDataRange().getValues();
-    var tsv = values.map(function(r){
-      return r.map(function(c){ return String(c); }).join('\t');
-    }).join('\n');
-    return ContentService
-      .createTextOutput(JSON.stringify({ok:true,data:tsv}))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ok:false,error:err.message}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}</pre>
-              <button onclick="schedCopyGasCode()"
-                style="margin-top:6px;padding:6px 14px;border-radius:7px;background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit">
-                コードをコピー
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 手動貼り付けモード -->
-        <div id="sched-mode-paste" style="display:none">
-          <div style="font-size:.7rem;color:var(--tx2);margin-bottom:10px;line-height:1.7">
-            スプレッドシートからA列〜全列をコピーして貼り付けてください。<br>
-            形式：<span style="color:var(--gold)">タイムスタンプ | リーグ | 選手名 | 日付1 | 日付2 …</span>（○/×）
-          </div>
-          <div class="fg">
-            <textarea class="fi" id="sched-csv" rows="6" placeholder="スプレッドシートの内容をここにペースト" style="resize:vertical;font-family:monospace;font-size:.72rem"></textarea>
-          </div>
-          <button onclick="schedParseCsv()" class="sched-btn">読み込む</button>
-        </div>
-      </div>
-
-      <!-- 出欠確認 -->
-      <div id="sched-avail-card" style="display:none" class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="ctitle" style="margin:0">出欠確認</div>
-          <div id="sched-avail-summary" style="font-size:.7rem;color:var(--tx2)"></div>
-        </div>
-        <div class="sched-avail-wrap">
-          <div id="sched-avail-content"></div>
-        </div>
-      </div>
-
-      <!-- 試合日程オプション -->
-      <div id="sched-options-card" style="display:none" class="card">
-        <div class="ctitle">試合日程詳細</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px">
-          <div>
-            <label class="fl">AM 時間帯</label>
-            <input class="fi" id="sched-slot-am" value="11時〜15時" placeholder="例：11時〜15時">
-          </div>
-          <div>
-            <label class="fl">PM 時間帯</label>
-            <input class="fi" id="sched-slot-pm" value="15時30分〜19時30分" placeholder="例：15時30分〜19時30分">
-          </div>
-        </div>
-        <div style="font-size:.63rem;color:var(--tx2);margin-bottom:11px">1日あたりリーグごとにAM1卓・PM1卓で割り当てます。出席者が4名未満の枠はスキップされます。</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px">
-          <div class="fg" style="margin-bottom:0">
-            <label class="fl">半荘数</label>
-            <input class="fi" type="number" id="sched-hanzos" value="3" min="1" style="text-align:center">
-          </div>
-          <div class="fg" style="margin-bottom:0">
-            <label class="fl">月最大出場数（卓）</label>
-            <input class="fi" type="number" id="sched-max-games" value="2" min="1" style="text-align:center">
-          </div>
-        </div>
-        <button onclick="schedGenerate()" class="sched-btn">試合日程を自動生成</button>
-      </div>
-
-      <!-- 生成結果 -->
-      <div id="sched-output-card" style="display:none" class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="ctitle" style="margin:0">生成された試合日程</div>
-          <div style="display:flex;gap:6px">
-            <button onclick="schedShuffle()" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:5px 10px;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit">シャッフル</button>
-            <button onclick="schedExportExcel()" style="background:rgba(92,175,92,.1);border:1px solid rgba(92,175,92,.35);color:#5caf5c;padding:5px 10px;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit">Excel</button>
-            <button onclick="schedExportImage()" style="background:rgba(92,155,224,.1);border:1px solid rgba(92,155,224,.35);color:#5c9be0;padding:5px 10px;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit">画像</button>
-          </div>
-        </div>
-        <div id="sched-output" style="overflow-x:auto"></div>
-        <div id="sched-warnings" style="margin-top:8px"></div>
-      </div>
-
-    </div>
-
-    <!-- YouTube設定・変更履歴（設定タブ内に表示・page-scheduleの後） -->
+    <!-- YouTube設定・変更履歴（設定タブ内に表示） -->
     <div id="page-settings-bottom" style="display:none"></div>
 
     <!-- 変更履歴（設定タブ内に表示） -->
@@ -1717,15 +1616,6 @@ if (d.action === 'getFormData') {
       </div>
       <div class="fg"><label class="fl">オカ</label><input class="fi" type="number" id="mg-oka" value="0" style="text-align:center" oninput="onMgUmaOkaChange()"></div>
       <div class="fg"><label class="fl">返し点</label><input class="fi" type="number" id="mg-kaeshi" value="30000" style="text-align:center" oninput="this.style.color=''"></div>
-    </div>
-    <div class="fg">
-      <label class="fl">リーグ（任意）</label>
-      <div id="mg-league-list" style="margin-bottom:8px"></div>
-      <div style="display:flex;gap:6px">
-        <input class="fi" id="mg-league-inp" placeholder="例：A1、B1、オープン…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();mgAddLeague();}">
-        <button onclick="mgAddLeague()" style="background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);color:var(--gold);padding:9px 14px;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap">＋ 追加</button>
-      </div>
-      <div style="font-size:.65rem;color:var(--tx2);margin-top:5px">リーグを複数追加すると選手・成績をリーグ別に管理できます</div>
     </div>
     <div class="fg">
       <label class="fl">Google スプレッドシートID（任意）</label>
@@ -1981,6 +1871,46 @@ let _attendSort = 'games';
 let _attendQuota = 20;
 let _attendQuotaLeague = null;
 let _graphAttendData = null;
+
+function normalizeAttendQuota(value, fallback = 20) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.round(n));
+}
+
+function getLeagueAttendRule(league) {
+  const g = curGroup || null;
+  const targetLeague = league || gLeague || Object.keys(g?.players || {})[0] || '_default';
+  const raw = g?.attendQuota;
+  let obj = null;
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    if (raw[targetLeague] && typeof raw[targetLeague] === 'object') {
+      obj = raw[targetLeague];
+    } else if (raw.min !== undefined || raw.max !== undefined) {
+      obj = raw;
+    }
+  }
+  if (obj) {
+    const min = normalizeAttendQuota(obj.min ?? obj.minValue ?? 20, 20);
+    const max = Math.max(min, normalizeAttendQuota(obj.max ?? obj.maxValue ?? min, min));
+    return { min, max };
+  }
+  const single = normalizeAttendQuota(raw ?? _attendQuota ?? 20, 20);
+  return { min: single, max: single };
+}
+
+function getEffectiveAttendQuota(league = gLeague) {
+  const g = curGroup || null;
+  const rule = getLeagueAttendRule(league || (g ? Object.keys(g.players || {})[0] : null));
+  if (g) {
+    const raw = (g.attendQuota && typeof g.attendQuota === 'object' && !Array.isArray(g.attendQuota)) ? g.attendQuota : {};
+    const targetLeague = league || gLeague || Object.keys(g.players || {})[0] || '_default';
+    raw[targetLeague] = { min: rule.min, max: rule.max };
+    g.attendQuota = raw;
+  }
+  _attendQuota = rule.min;
+  return rule.min;
+}
 
 // ===== 認証 =====
 const PW = '1001';
@@ -3066,7 +2996,6 @@ function _openGroupModal() {
   document.getElementById('mg-img-preview').style.display = 'none';
   document.getElementById('mg-img-input').value = '';
   document.getElementById('mg-pw').value = '';
-  document.getElementById('mg-league-inp').value = '';
   document.getElementById('mg-stream-bg').value = '';
   document.getElementById('mg-stream-logo').value = '';
   document.getElementById('mg-stream-bg-name').textContent = '';
@@ -3088,8 +3017,6 @@ function _editGroup(id) {
   const g = groups.find(x => x.id === id);
   if (!g) return;
   editGroupId = id;
-  // 既存リーグをモーダル用リストに反映
-  window._mgLeagues = Object.keys(g.players || {}).filter(k => (g.players[k]||[]).length >= 0);
   document.getElementById('mg-title').textContent = 'グループを編集';
   document.getElementById('mg-save').textContent = '保存';
   document.getElementById('mg-name').value = g.name;
@@ -3107,7 +3034,6 @@ function _editGroup(id) {
   document.getElementById('mg-stream-logo-name').textContent = g.streamLogo ? '設定済み ✓' : '';
   document.getElementById('mg-sid').value = g.spreadsheetId || '';
   document.getElementById('mg-custom').style.display = g.rule === 'custom' ? 'block' : 'none';
-  document.getElementById('mg-league-inp').value = '';
   // 画像
   window._mgImgData = g.img || null;
   document.getElementById('mg-pw').value = g.pw || '';
@@ -3228,13 +3154,13 @@ function saveGroup() {
 
 // ===== タブ =====
 function showTab(t) {
-  ['ranking','players','hanzos','graph','condition','settings'].forEach(n => {
-    document.getElementById('tab-'+n).classList.toggle('on', n===t);
-    document.getElementById('page-'+n).classList.toggle('on', n===t);
+  ['ranking','players','hanzos','graph','settings'].forEach(n => {
+    const tab = document.getElementById('tab-'+n);
+    const page = document.getElementById('page-'+n);
+    if (tab) tab.classList.toggle('on', n===t);
+    if (page) page.classList.toggle('on', n===t);
   });
-  // 試合日程・YouTube設定・変更履歴は設定タブと連動
-  const schedEl = document.getElementById('page-schedule');
-  if (schedEl && t !== 'settings') schedEl.style.display = 'none';
+  // YouTube設定・変更履歴は設定タブと連動
   const btmEl = document.getElementById('page-settings-bottom');
   if (btmEl) btmEl.style.display = (t === 'settings') ? 'block' : 'none';
   const changelogEl = document.getElementById('page-changelog');
@@ -3243,760 +3169,7 @@ function showTab(t) {
   if (t==='players') renderPlayers();
   if (t==='hanzos')  renderHanzos();
   if (t==='graph')   renderGraph();
-  if (t==='condition') {
-  cdRenderPlayers();
-  // ★ 結果リセット
-  const res = document.getElementById('cd-results');
-  if (res) res.innerHTML = '';
-}
   if (t==='settings') requireAuth(renderSettings);
-}
-
-// ===== 日程自動生成 =====
-let schedData = null;
-let schedResult = null;
-let schedFixed = new Set(); // 固定行のキー集合
-let schedLeagueTab = null; // 表示中リーグ（null=全体）
-
-function schedRowKey(r) { return r.date + '||' + r.slot + '||' + r.league; }
-function toggleFixRow(key) {
-  if (schedFixed.has(key)) schedFixed.delete(key);
-  else schedFixed.add(key);
-  schedRenderOutput();
-}
-function schedSetLeagueTab(league) {
-  schedLeagueTab = league;
-  schedRenderOutput();
-}
-
-// ===== 試合日程 UI helpers =====
-function schedFieldKey(key) {
-  return curGroup ? key + '_' + curGroup.id : key;
-}
-function schedSaveField(key, value) {
-  localStorage.setItem(schedFieldKey(key), value);
-}
-function schedRestoreFields() {
-  const gasUrl   = localStorage.getItem(schedFieldKey('sched_gas_url'));
-  const sheetUrl = localStorage.getItem(schedFieldKey('sched_sheet_url'));
-  const sheetName= localStorage.getItem(schedFieldKey('sched_sheet_name'));
-  if (gasUrl)    document.getElementById('sched-gas-url').value   = gasUrl;
-  if (sheetUrl)  document.getElementById('sched-url').value       = sheetUrl;
-  if (sheetName) document.getElementById('sched-sheet-name').value = sheetName;
-}
-
-function schedSetMode(mode) {
-  const isUrl = mode === 'url';
-  document.getElementById('sched-mode-url').style.display   = isUrl ? 'block' : 'none';
-  document.getElementById('sched-mode-paste').style.display = isUrl ? 'none'  : 'block';
-  const onStyle  = 'border:1px solid var(--gold);background:rgba(212,168,67,.2);color:var(--gold)';
-  const offStyle = 'border:1px solid var(--bd);background:rgba(255,255,255,.05);color:var(--tx2)';
-  document.getElementById('sched-tab-url').style.cssText   += isUrl ? ';'+onStyle : ';'+offStyle;
-  document.getElementById('sched-tab-paste').style.cssText += isUrl ? ';'+offStyle : ';'+onStyle;
-  if (isUrl) schedRestoreFields();
-}
-
-function schedCopyGasCode() {
-  const code = document.getElementById('sched-gas-code').textContent;
-  navigator.clipboard.writeText(code).then(() => {
-    showToast('コードをコピーしました');
-  }).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = code; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    showToast('コードをコピーしました');
-  });
-}
-
-async function schedFetchFromGas() {
-  const urlVal = (document.getElementById('sched-url').value || '').trim();
-  const sheetName = (document.getElementById('sched-sheet-name').value || '').trim();
-  const statusEl = document.getElementById('sched-fetch-status');
-
-  if (!urlVal) { statusEl.textContent = 'URLを入力してください'; statusEl.style.color = 'var(--red)'; return; }
-
-  // SpreadsheetID と GID を URL から抽出
-  const m = urlVal.match(/\/d\/([a-zA-Z0-9-_]+)/);
-  if (!m) { statusEl.textContent = '正しいスプレッドシートURLを入力してください'; statusEl.style.color = 'var(--red)'; return; }
-  const sid = m[1];
-  const gidM = urlVal.match(/[#&?]gid=(\d+)/);
-  const gid = gidM ? gidM[1] : null;
-
-  const gasUrl = (document.getElementById('sched-gas-url').value || '').trim()
-    || localStorage.getItem('sched_gas_url')
-    || localStorage.getItem('janki_gas')
-    || GAS_URL;
-  if (!gasUrl) {
-    statusEl.textContent = 'GAS WebアプリURLを入力してください';
-    statusEl.style.color = 'var(--red)'; return;
-  }
-
-  statusEl.textContent = '取得中...'; statusEl.style.color = 'var(--tx2)';
-
-  try {
-    const res = await fetch(gasUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'getFormData', sid, sheetName: sheetName || null, gid: gid || null })
-    });
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error || '取得失敗');
-
-    // 取得成功 → paste モードに切り替えてCSVをセット＆パース
-    schedSetMode('paste');
-    document.getElementById('sched-csv').value = json.data;
-    statusEl.textContent = '取得成功';
-    statusEl.style.color = 'var(--green)';
-    schedParseCsv();
-    document.getElementById('sched-avail-card').style.display = 'none';
-  } catch (e) {
-    statusEl.textContent = `エラー: ${e.message}｜GASへのコード追加と再デプロイが必要です`;
-    statusEl.style.color = 'var(--red)';
-  }
-}
-
-function schedIsCircle(v) {
-  // ⚪︎ U+26AA / ○ U+25CB / 〇 U+3007 / ◯ U+25EF / ⭕ U+2B55 / o / O など
-  if (!v) return false;
-  const code = v.charCodeAt(0);
-  return code === 0x26AA || code === 0x25CB || code === 0x3007 || code === 0x25EF || code === 0x2B55
-    || v === 'o' || v === 'O' || v === 'ｏ' || v === 'Ｏ';
-}
-
-function schedParseCsv(hideAvail = false) {
-  const raw = document.getElementById('sched-csv').value.trim();
-  if (!raw) { alert('データを貼り付けてください'); return; }
-
-  // CR/LF を統一してからタブ・カンマで分割
-  const normalized = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  const sep = normalized.includes('\t') ? '\t' : ',';
-  const lines = normalized.split('\n').map(l =>
-    l.split(sep).map(c => c.trim().replace(/^"|"$/g, ''))
-  ).filter(l => l.some(c => c !== ''));
-
-  if (lines.length < 2) { alert('データが少なすぎます'); return; }
-
-  const header = lines[0];
-
-  // ヘッダーからリーグ列・選手名列を自動検出
-  const leagueCol = header.findIndex(h => /リーグ|league/i.test(h));
-  const nameCol   = header.findIndex(h => /選手|名前|name/i.test(h));
-  // 検出できない場合はデフォルト（B=リーグ C=選手名）
-  const lCol = leagueCol >= 0 ? leagueCol : 1;
-  const nCol = nameCol   >= 0 ? nameCol   : 2;
-  const dateStart = Math.max(lCol, nCol) + 1;
-  // 日付パターンにマッチする列だけ抽出（インデックス付き）
-  const isDateHeader = h => /\d+月\d+日|\d+\/\d+/.test(h);
-  const dateCols = header.slice(dateStart)
-    .map((h, i) => ({ h, i: dateStart + i }))
-    .filter(({ h }) => isDateHeader(h));
-  const dates = dateCols.map(({ h }) => h);
-
-  console.log('[日程デバッグ] 列検出: リーグ=', lCol, ' 選手名=', nCol, ' 日付列数=', dates.length);
-
-  if (dates.length === 0) { alert('日付列が見つかりません'); return; }
-
-  const players = [];
-  for (let i = 1; i < lines.length; i++) {
-    const row = lines[i];
-    if (row.length < dateStart + 1) continue;
-    const league = (row[lCol] || '').trim();
-    const name   = (row[nCol] || '').trim();
-    if (!name || !league) continue;
-    const available = {};
-    dateCols.forEach(({ h, i: colIdx }) => {
-      const v = (row[colIdx] || '').trim();
-      available[h] = schedIsCircle(v);
-    });
-    players.push({ name, league, available });
-  }
-
-  if (players.length === 0) { alert('選手データが見つかりません'); return; }
-
-  schedData = { dates, players };
-  if (!hideAvail) {
-    schedRenderAvail();
-    document.getElementById('sched-avail-card').style.display = '';
-  } else {
-    document.getElementById('sched-avail-card').style.display = 'none';
-  }
-  schedFixed.clear();
-  document.getElementById('sched-options-card').style.display = '';
-  document.getElementById('sched-output-card').style.display  = 'none';
-}
-
-function schedRenderAvail() {
-  if (!schedData) return;
-  const { dates, players } = schedData;
-  const leagues = [...new Set(players.map(p => p.league))].sort();
-  document.getElementById('sched-avail-summary').textContent =
-    `${players.length}名 / ${dates.length}日程`;
-
-  let html = '';
-  leagues.forEach(league => {
-    const lp = players.filter(p => p.league === league);
-    html += `<div style="margin-bottom:14px">
-      <div style="font-size:.72rem;color:var(--gold);font-weight:700;margin-bottom:6px">${league}（${lp.length}名）</div>
-      <table class="sched-avail-tbl"><thead><tr><th>選手</th>`;
-    dates.forEach(d => html += `<th style="max-width:48px;overflow:hidden;text-overflow:ellipsis">${d}</th>`);
-    html += '</tr></thead><tbody>';
-    lp.forEach(p => {
-      html += `<tr><td>${p.name}</td>`;
-      dates.forEach(d => {
-        const ok = p.available[d];
-        html += `<td class="${ok ? 'sched-o' : 'sched-x'}">${ok ? '○' : '×'}</td>`;
-      });
-      html += '</tr>';
-    });
-    html += '</tbody></table></div>';
-  });
-  document.getElementById('sched-avail-content').innerHTML = html;
-}
-
-function schedGenerate() { schedFixed.clear(); schedLeagueTab = null; schedShuffle(); }
-
-function _shuffleArr(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function schedShuffle() {
-  if (!schedData) return;
-  const { dates, players } = schedData;
-  const amSlot = (document.getElementById('sched-slot-am').value || '').trim() || 'AM';
-  const pmSlot = (document.getElementById('sched-slot-pm').value || '').trim() || 'PM';
-  const hanzos = parseInt(document.getElementById('sched-hanzos').value) || 3;
-  const maxGames = parseInt(document.getElementById('sched-max-games').value) || 2;
-  const leagues = [...new Set(players.map(p => p.league))].sort();
-
-  // 各選手の出席可能日数（少ない人 = 機会が少ない → 優先度高）
-  const availTotal = {};
-  players.forEach(p => {
-    availTotal[p.name] = dates.filter(d => p.available[d]).length;
-  });
-
-  // スケジュール済みゲーム数
-  const gameCount = {};
-  // 同卓回数 "p1\0p2"(ソート済み) → 回数
-  const coPlay = {};
-  const coKey = (a, b) => [a, b].sort().join('\x00');
-  const getCoPlay = (a, b) => coPlay[coKey(a, b)] || 0;
-  // 席回数 player → [東,南,西,北]
-  const seatCount = {};
-  const getSeat = (p, i) => (seatCount[p] || [0,0,0,0])[i] || 0;
-
-  // 4! = 24通りの座席順を列挙
-  const PERMS4 = (() => {
-    const r = [];
-    [0,1,2,3].forEach(a => [0,1,2,3].filter(x=>x!==a).forEach(b =>
-      [0,1,2,3].filter(x=>x!==a&&x!==b).forEach(c => {
-        const d = [0,1,2,3].find(x=>x!==a&&x!==b&&x!==c);
-        r.push([a,b,c,d]);
-      })
-    ));
-    return r;
-  })();
-
-  // 4名が決まったら最適な座席順を選ぶ（各席の回数合計を最小化）
-  const bestSeating = (group4) => {
-    let best = group4, bestScore = Infinity;
-    PERMS4.forEach(perm => {
-      const arranged = perm.map(i => group4[i]);
-      const score = arranged.reduce((s, p, i) => s + getSeat(p, i), 0) + Math.random() * 0.5;
-      if (score < bestScore) { bestScore = score; best = arranged; }
-    });
-    return best;
-  };
-
-  const recordTable = (group4, date, slot, league) => {
-    const seats = bestSeating(group4);
-    schedule.push({ date, slot, hanzos, league, seats });
-    seats.forEach((p, i) => {
-      gameCount[p] = (gameCount[p] || 0) + 1;
-      if (!seatCount[p]) seatCount[p] = [0,0,0,0];
-      seatCount[p][i]++;
-    });
-    for (let i = 0; i < seats.length; i++)
-      for (let j = i + 1; j < seats.length; j++) {
-        const k = coKey(seats[i], seats[j]);
-        coPlay[k] = (coPlay[k] || 0) + 1;
-      }
-  };
-
-  // C(n,4)を全探索し最適な4名を選ぶ
-  const bestTable = (avail) => {
-    if (avail.length < 4) return null;
-    if (avail.length === 4) return [...avail];
-    const n = avail.length;
-    let best = null, bestScore = Infinity;
-    for (let i = 0; i < n - 3; i++)
-    for (let j = i + 1; j < n - 2; j++)
-    for (let k = j + 1; k < n - 1; k++)
-    for (let l = k + 1; l < n; l++) {
-      const g = [avail[i], avail[j], avail[k], avail[l]];
-      const fairScore = g.reduce((s, p) => {
-        return s + (gameCount[p] || 0) / Math.max(1, availTotal[p] || 1);
-      }, 0);
-      const cpScore =
-        getCoPlay(g[0],g[1]) + getCoPlay(g[0],g[2]) + getCoPlay(g[0],g[3]) +
-        getCoPlay(g[1],g[2]) + getCoPlay(g[1],g[3]) + getCoPlay(g[2],g[3]);
-      const score = fairScore * 1000 + cpScore + Math.random() * 0.5;
-      if (score < bestScore) { bestScore = score; best = g; }
-    }
-    return best;
-  };
-
-  const schedule = [];
-
-  // 固定行のカウンターを先に反映（他リーグの行はタブ選択時に自動固定）
-  const effectiveFixed = new Set(schedFixed);
-  if (schedLeagueTab && schedResult) {
-    schedResult.forEach(r => { if (r.league !== schedLeagueTab) effectiveFixed.add(schedRowKey(r)); });
-  }
-  const fixedRows = {};
-  if (schedResult) {
-    schedResult.forEach(r => {
-      const key = schedRowKey(r);
-      if (effectiveFixed.has(key)) {
-        fixedRows[key] = r;
-        r.seats.forEach((p, si) => {
-          gameCount[p] = (gameCount[p] || 0) + 1;
-          if (!seatCount[p]) seatCount[p] = [0,0,0,0];
-          seatCount[p][si]++;
-        });
-        for (let i = 0; i < r.seats.length; i++)
-          for (let j = i+1; j < r.seats.length; j++) {
-            const k = coKey(r.seats[i], r.seats[j]);
-            coPlay[k] = (coPlay[k] || 0) + 1;
-          }
-      }
-    });
-  }
-
-  dates.forEach(date => {
-    leagues.forEach(league => {
-      const amKey = `${date}||${amSlot}||${league}`;
-      const pmKey = `${date}||${pmSlot}||${league}`;
-      const amFix = fixedRows[amKey];
-      const pmFix = fixedRows[pmKey];
-
-      if (amFix && pmFix) {
-        schedule.push(amFix);
-        schedule.push(pmFix);
-        return;
-      }
-
-      const avail = players
-        .filter(p => p.league === league && p.available[date] && (gameCount[p.name] || 0) < maxGames)
-        .map(p => p.name)
-        .sort((a, b) => (availTotal[a] || 0) - (availTotal[b] || 0));
-
-      if (amFix) {
-        // AM固定・PM未固定
-        schedule.push(amFix);
-        const remaining = avail.filter(p => !amFix.seats.includes(p));
-        if (remaining.length >= 4) {
-          const pmGroup = bestTable(remaining);
-          if (pmGroup) recordTable(pmGroup, date, pmSlot, league);
-        }
-      } else if (pmFix) {
-        // AM未固定・PM固定
-        if (avail.length >= 4) {
-          const amGroup = bestTable(avail);
-          if (amGroup) recordTable(amGroup, date, amSlot, league);
-        }
-        schedule.push(pmFix);
-      } else {
-        // 両方未固定（元の処理）
-        if (avail.length < 4) return;
-        const amGroup = bestTable(avail);
-        if (!amGroup) return;
-        recordTable(amGroup, date, amSlot, league);
-        if (avail.length >= 8) {
-          const remaining = avail.filter(p => !amGroup.includes(p));
-          const pmGroup = bestTable(remaining);
-          if (pmGroup) recordTable(pmGroup, date, pmSlot, league);
-        }
-      }
-    });
-  });
-
-  schedResult = schedule;
-  schedResult._seatCount = seatCount;
-  schedRenderOutput();
-  document.getElementById('sched-output-card').style.display = '';
-}
-
-function schedRenderOutput() {
-  if (!schedResult) return;
-  const winds = ['東家', '南家', '西家', '北家'];
-  const allLeagues = schedData ? [...new Set(schedData.players.map(p => p.league))].sort() : [];
-
-  // ── リーグタブ ──
-  let tabHtml = '';
-  if (allLeagues.length > 1) {
-    const tabBtn = (label, val) => {
-      const on = schedLeagueTab === val;
-      return `<button onclick="schedSetLeagueTab(${val === null ? 'null' : `'${val}'`})"
-        style="padding:5px 13px;border-radius:7px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:inherit;
-        ${on ? 'background:rgba(212,168,67,.2);border:1px solid rgba(212,168,67,.55);color:var(--gold)' : 'background:rgba(255,255,255,.06);border:1px solid var(--bd);color:var(--tx2)'}">${label}</button>`;
-    };
-    tabHtml = `<div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap">
-      ${tabBtn('全体', null)}
-      ${allLeagues.map(lg => tabBtn(lg, lg)).join('')}
-    </div>`;
-  }
-
-  // ── フィルタリング ──
-  const visibleRows = schedLeagueTab
-    ? schedResult.filter(r => r.league === schedLeagueTab)
-    : schedResult;
-  const showLeague = !schedLeagueTab;
-  const colSpan = showLeague ? 9 : 8;
-
-  let html = tabHtml + `<table class="sched-tbl"><thead><tr>
-    <th style="text-align:left">日付</th>
-    <th style="text-align:left">時間帯</th>
-    <th>半荘</th>
-    ${showLeague ? '<th>リーグ</th>' : ''}
-    ${winds.map(w => `<th>${w}</th>`).join('')}
-    <th>FIX</th>
-  </tr></thead><tbody>`;
-
-  let lastDate = null;
-  visibleRows.forEach(row => {
-    if (row.date !== lastDate) {
-      lastDate = row.date;
-      html += `<tr style="background:rgba(212,168,67,.06)">
-        <td colspan="${colSpan}" style="font-size:.72rem;font-weight:700;color:var(--gold);padding:6px 4px">${row.date}</td>
-      </tr>`;
-    }
-    const rKey = schedRowKey(row);
-    const isFixed = schedFixed.has(rKey);
-    const rKeyEsc = rKey.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    html += `<tr${isFixed ? ' style="background:rgba(212,168,67,.07)"' : ''}>
-      <td></td>
-      <td>${row.slot}</td>
-      <td style="text-align:center">${row.hanzos}</td>
-      ${showLeague ? `<td style="text-align:center;font-size:.72rem">${row.league}</td>` : ''}
-      ${row.seats.map(n => `<td class="sched-seat">${n}</td>`).join('')}
-      ${'<td></td>'.repeat(Math.max(0, 4 - row.seats.length))}
-      <td style="text-align:center"><button onclick="toggleFixRow('${rKeyEsc}')" style="padding:3px 8px;border-radius:5px;font-size:.65rem;cursor:pointer;font-family:inherit;${isFixed ? 'background:rgba(212,168,67,.25);border:1px solid rgba(212,168,67,.6);color:var(--gold);font-weight:700' : 'background:rgba(255,255,255,.06);border:1px solid var(--bd);color:var(--tx2)'}">${isFixed ? '🔒 固定' : '固定'}</button></td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-
-  // ── 選手別出場回数・席回数サマリー ──
-  const normName = n => (n || '').replace(/[（(][^）)]*[）)]/g, '').trim();
-  const gameCount = {};
-  const seatCountDisp = {};
-  const pastCount = {};
-  if (curGroup && curGroup.hanzos) {
-    curGroup.hanzos.forEach(h => {
-      if (!h.players) return;
-      h.players.forEach((p, i) => {
-        if (!p) return;
-        const key = normName(p);
-        pastCount[key] = (pastCount[key] || 0) + 1;
-        gameCount[key] = (gameCount[key] || 0) + 1;
-        if (!seatCountDisp[key]) seatCountDisp[key] = [0,0,0,0];
-        seatCountDisp[key][i]++;
-      });
-    });
-  }
-  const thisCount = {};
-  schedResult.forEach(r => r.seats.forEach((p, i) => {
-    const key = normName(p);
-    const hz = r.hanzos || 1;
-    thisCount[key] = (thisCount[key] || 0) + hz;
-    gameCount[key] = (gameCount[key] || 0) + hz;
-    if (!seatCountDisp[key]) seatCountDisp[key] = [0,0,0,0];
-    seatCountDisp[key][i]++;
-  }));
-
-  const windLabels = ['東','南','西','北'];
-  const summaryLeagues = schedLeagueTab ? [schedLeagueTab] : allLeagues;
-  let summary = '<div style="margin-top:14px">';
-  summaryLeagues.forEach(league => {
-    const lp = schedData.players.filter(p => p.league === league)
-      .map(p => {
-        const key = normName(p.name);
-        return { name: p.name, thisGames: thisCount[key] || 0, totalGames: gameCount[key] || 0, seats: seatCountDisp[key] || [0,0,0,0] };
-      })
-      .sort((a, b) => b.totalGames - a.totalGames);
-    summary += `<div style="font-size:.7rem;color:var(--gold);font-weight:700;margin-bottom:6px">${league} 出場回数・席内訳</div>`;
-    summary += `<div style="overflow-x:auto;margin-bottom:12px"><table style="border-collapse:collapse;font-size:.7rem;width:100%">
-      <thead><tr style="border-bottom:1px solid var(--bd)">
-        <th style="text-align:left;padding:3px 6px;color:var(--tx2);font-weight:400">選手</th>
-        <th style="padding:3px 6px;color:var(--tx2);font-weight:400">今回</th>
-        <th style="padding:3px 6px;color:var(--tx2);font-weight:400">総出場</th>
-        ${windLabels.map(w => `<th style="padding:3px 6px;color:var(--tx2);font-weight:400">${w}</th>`).join('')}
-      </tr></thead><tbody>`;
-    lp.forEach(({ name, thisGames, totalGames, seats }) => {
-      summary += `<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
-        <td style="padding:4px 6px;font-weight:700">${name}</td>
-        <td style="padding:4px 6px;text-align:center;color:var(--gold)">${thisGames}</td>
-        <td style="padding:4px 6px;text-align:center">${totalGames}</td>
-        ${seats.map(c => `<td style="padding:4px 6px;text-align:center">${c}</td>`).join('')}
-      </tr>`;
-    });
-    summary += '</tbody></table></div>';
-  });
-  summary += '</div>';
-
-  document.getElementById('sched-output').innerHTML = html + summary;
-  document.getElementById('sched-warnings').innerHTML = '';
-}
-
-async function schedExportExcel() {
-  if (!schedResult || schedResult.length === 0) { alert('先に日程を生成してください'); return; }
-  if (typeof ExcelJS === 'undefined') { alert('ExcelJSライブラリの読み込み中です。少し待ってから再試ください'); return; }
-
-  // ARGB カラー定義（ExcelJSはFFプレフィックス付き）
-  const C = {
-    titleBg:  'FF1F3864', titleFg:  'FFFFFFFF',
-    headBg:   'FF2E4F6F', headFg:   'FFFFFFFF',
-    a1Bg:     'FFBDD7EE', a2Bg:     'FFFCE4D6',
-    studyBg:  'FFE2EFDA', whiteBg:  'FFFFFFFF',
-    dateFg:   'FF1F3864', black:    'FF000000',
-    border:   'FFAAAAAA',
-  };
-
-  const borderSide = { style: 'thin', color: { argb: C.border } };
-  const allBorders = { top: borderSide, bottom: borderSide, left: borderSide, right: borderSide };
-
-  const applyStyle = (cell, fillArgb, fontArgb, bold, hAlign, sz) => {
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillArgb } };
-    cell.font = { name: 'Meiryo', bold: !!bold, size: sz || 11, color: { argb: fontArgb } };
-    cell.border = allBorders;
-    cell.alignment = { horizontal: hAlign || 'center', vertical: 'middle', wrapText: false };
-  };
-
-  // 月を最初の日付から取得
-  const firstDate = schedResult[0]?.date || '';
-  const monthMatch = firstDate.match(/^(\d+)\//);
-  const monthStr = monthMatch ? monthMatch[1] + '月' : '';
-
-  // 日付ごとにグループ化（順序維持）
-  const dateOrder = [];
-  const byDate = {};
-  schedResult.forEach(r => {
-    if (!byDate[r.date]) { byDate[r.date] = []; dateOrder.push(r.date); }
-    byDate[r.date].push(r);
-  });
-
-  const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet('試合日程');
-
-  // 列幅設定
-  ws.columns = [
-    { width: 13 }, { width: 22 }, { width: 7 }, { width: 13 },
-    { width: 16 }, { width: 16 }, { width: 16 }, { width: 16 },
-  ];
-
-  // Row 1: タイトル行
-  ws.addRow(['E.M.A龍聖戦', '', '', '', monthStr + '試合日程', '', '', '']);
-  ws.mergeCells('A1:D1');
-  ws.mergeCells('E1:H1');
-  ws.getRow(1).height = 24;
-  for (let c = 1; c <= 8; c++) {
-    applyStyle(ws.getRow(1).getCell(c), C.titleBg, C.titleFg, true, c <= 4 ? 'left' : 'center', 13);
-  }
-
-  // Row 2: カラムヘッダー
-  ws.addRow(['日程', '開始/終了時刻', '半荘数', 'リーグ', '東家', '南家', '西家', '北家']);
-  ws.getRow(2).height = 20;
-  for (let c = 1; c <= 8; c++) {
-    applyStyle(ws.getRow(2).getCell(c), C.headBg, C.headFg, true, 'center', 11);
-  }
-
-  // 枠線定義
-  const thinSide  = { style: 'thin',   color: { argb: C.border } };
-  const thickSide = { style: 'medium', color: { argb: 'FF444444' } };
-
-  const makeDateBorder = (isFirst, isLast, isLeftEdge, isRightEdge) => ({
-    top:    isFirst ? thickSide : thinSide,
-    bottom: isLast  ? thickSide : thinSide,
-    left:   isLeftEdge  ? thickSide : thinSide,
-    right:  isRightEdge ? thickSide : thinSide,
-  });
-
-  // データ行
-  let rowIdx = 3;
-  dateOrder.forEach(date => {
-    const rows = byDate[date];
-    const startRow = rowIdx;
-    rows.forEach((r, i) => {
-      const isFirst = i === 0;
-      const isLast  = i === rows.length - 1;
-      const league = r.league || '';
-      ws.addRow([
-        isFirst ? date : '',
-        r.slot || '', r.hanzos || '', league,
-        r.seats[0]||'', r.seats[1]||'', r.seats[2]||'', r.seats[3]||''
-      ]);
-      ws.getRow(rowIdx).height = 20;
-
-      let bg = C.whiteBg;
-      if      (league.includes('A1') && !league.includes('勉強会')) bg = C.a1Bg;
-      else if (league.includes('A2') && !league.includes('勉強会')) bg = C.a2Bg;
-      else if (league.includes('勉強会')) bg = C.studyBg;
-
-      for (let c = 1; c <= 8; c++) {
-        const cell = ws.getRow(rowIdx).getCell(c);
-        // 日程・時刻・半荘列は塗りつぶしなし（白）、それ以外はリーグ色
-        const isDateTimeHanzo = c <= 3;
-        const cellBg = isDateTimeHanzo ? C.whiteBg : bg;
-        const isDate = c === 1, isHanzo = c === 3;
-        applyStyle(cell, cellBg, isDate ? C.dateFg : C.black, isDate, isDate || isHanzo ? 'center' : 'left', 11);
-        // 日付グループの外枠を太く
-        cell.border = makeDateBorder(isFirst, isLast, c === 1, c === 8);
-      }
-      rowIdx++;
-    });
-    // 日付セルを縦結合
-    if (rows.length > 1) {
-      ws.mergeCells(startRow, 1, rowIdx - 1, 1);
-    }
-  });
-
-  // ===== シート2: 選手集計 =====
-  const ws2 = wb.addWorksheet('選手集計');
-  ws2.columns = [
-    {width:14},{width:10},{width:10},{width:10},{width:10},{width:10},{width:10},{width:10}
-  ];
-
-  // 名前正規化：括弧内(LINE名など)を除去してマッチング用キーを返す
-  const normName = n => (n || '').replace(/[（(][^）)]*[）)]/g, '').trim();
-
-  // 出場回数・席カウントを集計（過去の試合記録 + 今回の日程）
-  // キーは正規化名
-  const gameCount = {};
-  const seatCount = {};
-
-  // 過去の試合記録（curGroup.hanzos）から集計
-  if (curGroup && curGroup.hanzos) {
-    curGroup.hanzos.forEach(h => {
-      if (!h.players) return;
-      h.players.forEach((p, si) => {
-        if (!p) return;
-        const key = normName(p);
-        gameCount[key] = (gameCount[key] || 0) + 1;
-        if (!seatCount[key]) seatCount[key] = [0,0,0,0];
-        seatCount[key][si]++;
-      });
-    });
-  }
-
-  // 今回生成した日程から追加集計（1出場 = r.hanzos試合）
-  schedResult.forEach(r => {
-    const hz = r.hanzos || 1;
-    r.seats.forEach((p, si) => {
-      if (!p) return;
-      const key = normName(p);
-      gameCount[key] = (gameCount[key] || 0) + hz;
-      if (!seatCount[key]) seatCount[key] = [0,0,0,0];
-      seatCount[key][si]++;
-    });
-  });
-
-  // 今月出場数（schedResultから：今回生成した日程のみ）
-  const thisMonthCount = {};
-  schedResult.forEach(r => {
-    const hz = r.hanzos || 1;
-    r.seats.forEach(p => {
-      if (!p) return;
-      const key = normName(p);
-      thisMonthCount[key] = (thisMonthCount[key] || 0) + hz;
-    });
-  });
-
-  // リーグ別に選手をまとめる
-  const leagueMap = {};
-  if (schedData) {
-    schedData.players.forEach(p => {
-      if (!leagueMap[p.league]) leagueMap[p.league] = [];
-      leagueMap[p.league].push(p.name);
-    });
-  } else {
-    const names = [...new Set(schedResult.flatMap(r => r.seats.filter(Boolean)))];
-    leagueMap[''] = names;
-  }
-
-  const NCOLS2 = 7;
-  // タイトル行
-  ws2.addRow(['選手集計', '', '', '', '', '', '']);
-  ws2.mergeCells('A1:G1');
-  ws2.getRow(1).height = 22;
-  for (let c = 1; c <= NCOLS2; c++) {
-    applyStyle(ws2.getRow(1).getCell(c), C.titleBg, C.titleFg, true, 'left', 13);
-  }
-
-  let r2 = 2;
-  Object.entries(leagueMap).forEach(([league, names]) => {
-    // リーグ見出し
-    ws2.addRow([league || '選手', '', '', '', '', '', '']);
-    ws2.mergeCells(r2, 1, r2, NCOLS2);
-    ws2.getRow(r2).height = 18;
-    const lbg = league.includes('A1') && !league.includes('勉強会') ? C.a1Bg
-               : league.includes('A2') && !league.includes('勉強会') ? C.a2Bg
-               : league.includes('勉強会') ? C.studyBg : C.headBg;
-    const lfg = (lbg === C.headBg) ? C.titleFg : C.black;
-    for (let c = 1; c <= NCOLS2; c++) applyStyle(ws2.getRow(r2).getCell(c), lbg, lfg, true, 'left', 11);
-    r2++;
-
-    // カラムヘッダー
-    ws2.addRow(['選手名', '今月出場数', '総出場数', '東家', '南家', '西家', '北家']);
-    ws2.getRow(r2).height = 18;
-    for (let c = 1; c <= NCOLS2; c++) applyStyle(ws2.getRow(r2).getCell(c), C.headBg, C.headFg, true, 'center', 10);
-    r2++;
-
-    // 選手データ
-    names.forEach(name => {
-      const key = normName(name);
-      const sc = seatCount[key] || [0,0,0,0];
-      ws2.addRow([
-        name,
-        thisMonthCount[key] || 0,
-        gameCount[key] || 0,
-        sc[0], sc[1], sc[2], sc[3]
-      ]);
-      ws2.getRow(r2).height = 18;
-      for (let c = 1; c <= NCOLS2; c++) {
-        const cell = ws2.getRow(r2).getCell(c);
-        applyStyle(cell, C.whiteBg, C.black, false, c === 1 ? 'left' : 'center', 11);
-      }
-      r2++;
-    });
-    r2++; // 空行
-  });
-
-  // ダウンロード
-  const buffer = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const dt = new Date().toISOString().slice(0,10).replace(/-/g,'');
-  a.download = `試合日程_${dt}.xlsx`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-async function schedExportImage() {
-  const el = document.getElementById('sched-output-card');
-  if (!el || !window.html2canvas) { alert('エクスポート機能が利用できません'); return; }
-  try {
-    const canvas = await html2canvas(el, { backgroundColor: '#141418', scale: 2 });
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL('image/png');
-    a.download = '日程.png';
-    a.click();
-  } catch(e) { alert('画像の出力に失敗しました'); }
 }
 
 // ===== 条件計算 モード管理 =====
@@ -5687,7 +4860,8 @@ function buildGraphData() {
   if (!leagues.includes(gLeague)) gLeague = leagues[0] || '_default';
 
   if (_attendQuotaLeague !== gLeague) {
-    _attendQuota = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : 20;
+    const rule = getLeagueAttendRule(gLeague);
+    _attendQuota = rule.min;
     _attendQuotaLeague = gLeague;
   }
 
@@ -5774,7 +4948,8 @@ function buildGraphData() {
 
   // 出場回数グラフデータ
   const totalHanzos = hanzos.length;
-  const leagueMax = gLeague === 'A1' ? 32 : gLeague === 'A2' ? 24 : null;
+  const leagueRule = getLeagueAttendRule(gLeague);
+  const leagueMax = leagueRule.max;
   const attendSorted = [...allPlayers].sort((a, b) => (stats[b]?.games || 0) - (stats[a]?.games || 0));
   _graphAttendData = {
     labels: attendSorted,
@@ -6085,9 +5260,69 @@ function setAttendSort(key) {
   _attendSort = key; _renderAttendGraph();
   const fs = document.getElementById('__gfs_attend'); if (fs) _renderAttendGraphTo('__gfs_attend');
 }
-function setAttendQuota(val) {
-  _attendQuota = Math.max(1, parseInt(val)||20); _renderAttendGraph();
+function setAttendQuota(val, league = gLeague) {
+  const g = curGroup;
+  if (!g) return;
+  const rule = getLeagueAttendRule(league || gLeague);
+  const quota = normalizeAttendQuota(val, rule.min || 20);
+  const raw = (g.attendQuota && typeof g.attendQuota === 'object' && !Array.isArray(g.attendQuota)) ? g.attendQuota : {};
+  const targetLeague = league || gLeague || Object.keys(g.players || {})[0] || '_default';
+  const next = { min: quota, max: Math.max(quota, raw[targetLeague]?.max ?? rule.max ?? quota) };
+  raw[targetLeague] = next;
+  g.attendQuota = raw;
+  _attendQuota = quota;
+  save();
+  sgenSyncContext();
+  const settingsMinEl = document.getElementById('settings-attend-quota-min-' + targetLeague.replace(/[^a-zA-Z0-9_-]/g, ''));
+  const settingsMaxEl = document.getElementById('settings-attend-quota-max-' + targetLeague.replace(/[^a-zA-Z0-9_-]/g, ''));
+  if (settingsMinEl) settingsMinEl.value = quota;
+  if (settingsMaxEl) settingsMaxEl.value = next.max;
+  _renderAttendGraph();
   const fs = document.getElementById('__gfs_attend'); if (fs) _renderAttendGraphTo('__gfs_attend');
+}
+
+function setAttendQuotaMax(val, league = gLeague) {
+  const g = curGroup;
+  if (!g) return;
+  const rule = getLeagueAttendRule(league || gLeague);
+  const max = normalizeAttendQuota(val, rule.max || rule.min || 20);
+  const raw = (g.attendQuota && typeof g.attendQuota === 'object' && !Array.isArray(g.attendQuota)) ? g.attendQuota : {};
+  const targetLeague = league || gLeague || Object.keys(g.players || {})[0] || '_default';
+  const next = { min: Math.min(rule.min || max, max), max };
+  raw[targetLeague] = next;
+  g.attendQuota = raw;
+  save();
+  sgenSyncContext();
+  const settingsMinEl = document.getElementById('settings-attend-quota-min-' + targetLeague.replace(/[^a-zA-Z0-9_-]/g, ''));
+  const settingsMaxEl = document.getElementById('settings-attend-quota-max-' + targetLeague.replace(/[^a-zA-Z0-9_-]/g, ''));
+  if (settingsMinEl) settingsMinEl.value = next.min;
+  if (settingsMaxEl) settingsMaxEl.value = max;
+  _renderAttendGraph();
+  const fs = document.getElementById('__gfs_attend'); if (fs) _renderAttendGraphTo('__gfs_attend');
+}
+
+function addSettingsLeague() {
+  const g = curGroup;
+  if (!g) return;
+  const input = document.getElementById('settings-league-name');
+  const name = (input?.value || '').trim();
+  if (!name) return;
+  if (!g.players) g.players = {};
+  if (g.players[name]) { input.value = ''; return; }
+  g.players[name] = [];
+  save();
+  sgenSyncContext();
+  input.value = '';
+  renderSettings();
+}
+
+function removeLeagueFromSettings(league) {
+  const g = curGroup;
+  if (!g || !league) return;
+  delete g.players[league];
+  save();
+  sgenSyncContext();
+  renderSettings();
 }
 
 function makeRankOptions(small) {
@@ -6918,6 +6153,8 @@ try { initTheme(); } catch(e) {}
 function renderSettings() {
   const el=document.getElementById('page-settings'); if(!curGroup){el.innerHTML='';return;}
   const g=curGroup;
+  const defaultRule = getLeagueAttendRule(gLeague || Object.keys(g.players || {})[0] || '_default');
+  sgenSyncContext();
   // ルールがcustomでない場合、プリセットのumaと現在のumaが異なれば自動修正
   if(g.rule && g.rule !== 'custom' && RULES[g.rule]) {
     const preset = RULES[g.rule];
@@ -6941,6 +6178,32 @@ function renderSettings() {
         <span style="font-size:.6rem;color:#7a6a4a;letter-spacing:.04em;font-weight:400">白茶・濃墨</span>
       </button>
     </div>
+  </div>
+  <div class="card">
+    <div class="ctitle">リーグ設定</div>
+    <div style="font-size:.68rem;color:var(--tx2);margin-bottom:10px;line-height:1.7">リーグごとに出場基準を設定できます。最低・最高の両方を入力し、必要に応じて数値を自由に調整してください。</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <input class="fi" id="settings-league-name" placeholder="例：A1、B1、オープン…" style="flex:1">
+      <button class="btn btn-g" style="width:72px;padding:9px;font-size:.8rem;margin:0" onclick="addSettingsLeague()">追加</button>
+    </div>
+    <div id="settings-league-list">${Object.keys(g.players||{}).length ? Object.keys(g.players).map(league => {
+      const rule = getLeagueAttendRule(league);
+      const idBase = league.replace(/[^a-zA-Z0-9_-]/g, '');
+      return `
+      <div style="padding:10px 0;border-bottom:1px solid var(--bd)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+          <span style="font-size:.82rem;font-weight:700;color:var(--gold);flex:1">${league}</span>
+          <button onclick="removeLeagueFromSettings('${league}')" style="background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);color:var(--red);padding:4px 9px;border-radius:6px;font-size:.7rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif">削除</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-start">
+          <label style="font-size:.68rem;color:var(--tx2);white-space:nowrap">出場基準</label>
+          <input id="settings-attend-quota-min-${idBase}" type="number" step="1" value="${rule.min}" onchange="setAttendQuota(this.value, '${league}')" style="width:86px;background:rgba(0,0,0,.35);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 8px;font-size:.76rem;text-align:center;outline:none">
+          <span style="font-size:.68rem;color:var(--tx2)">〜</span>
+          <input id="settings-attend-quota-max-${idBase}" type="number" step="1" value="${rule.max}" onchange="setAttendQuotaMax(this.value, '${league}')" style="width:86px;background:rgba(0,0,0,.35);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:7px 8px;font-size:.76rem;text-align:center;outline:none">
+          <span style="font-size:.68rem;color:var(--tx2)">戦</span>
+        </div>
+      </div>`;
+    }).join('') : '<div style="font-size:.75rem;color:var(--tx2);padding:4px 0">リーグなし（全選手を共通管理）</div>'}</div>
   </div>
   ${Object.keys(g.players).length > 0 ?
     `<div class="card">
@@ -6970,17 +6233,22 @@ function renderSettings() {
       </div>
     </div>`
   }
-  <div class="card" style="margin-top:4px" id="sched-top-card">
+  <div class="card" style="margin-top:4px" id="sched-tool-card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="ctitle" style="margin:0">試合日程</div>
-      <span onclick="toggleScheduleSection()" id="sched-card-arrow" style="font-size:.8rem;color:var(--tx2);cursor:pointer;padding:2px 6px">▼</span>
+      <div class="ctitle" style="margin:0">対局日程自動生成</div>
+      <span onclick="toggleScheduleToolSection()" id="sched-tool-arrow" style="font-size:.8rem;color:var(--tx2);cursor:pointer;padding:2px 6px">▲</span>
     </div>
-    <button onclick="toggleScheduleSection(true)" style="width:100%;padding:10px;border-radius:8px;background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.3);color:var(--gold);font-size:.8rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif">Googleフォームを取得</button>
+    <div id="sched-tool-body">
+      <div id="sgen-root"></div>
+    </div>
   </div>
   `;
 
   // テーマボタンのアクティブ表示を反映
   try { setTheme(localStorage.getItem('janki_theme') === 'day' ? 'day' : 'night'); } catch(e) {}
+
+  // 対局日程 自動生成を描画
+  try { sgenMount(); } catch(e) {}
 
   // YouTube設定カードをpage-settings-bottomに描画
   const btmEl = document.getElementById('page-settings-bottom');
@@ -7108,23 +6376,904 @@ function renderChangelog() {
   }).join('') : '<div style="font-size:.75rem;color:var(--tx2);text-align:center;padding:12px 0">まだ変更履歴はありません</div>';
 }
 
-function toggleScheduleSection(forceOpen) {
-  const el = document.getElementById('page-schedule');
-  const arrow = document.getElementById('sched-card-arrow');
-  const topCard = document.getElementById('sched-top-card');
-  if (!el) return;
-  const isOpen = el.style.display !== 'none' && el.style.display !== '';
-  const open = forceOpen ? true : !isOpen;
-  el.style.display = open ? 'block' : 'none';
-  if (open) schedRestoreFields();
+function toggleScheduleToolSection(forceOpen) {
+  const body = document.getElementById('sched-tool-body');
+  const arrow = document.getElementById('sched-tool-arrow');
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  const open = forceOpen !== undefined ? forceOpen : !isOpen;
+  body.style.display = open ? 'block' : 'none';
   if (arrow) arrow.textContent = open ? '▲' : '▼';
-  // 展開時は下の角を丸くしない（page-scheduleと繋げる）
-  if (topCard) {
-    topCard.style.borderBottomLeftRadius = open ? '0' : '';
-    topCard.style.borderBottomRightRadius = open ? '0' : '';
-    topCard.style.marginBottom = open ? '0' : '';
-  }
+  if (open) sgenSyncContext();
 }
+
+
+// ===== 対局日程 自動生成 =====
+// リーグ・選手・目標半荘数は雀記の設定（curGroup）から直接読み取る
+(function () {
+  const GROUP_SIZE = 4;
+  const SLOTS_PER_DAY = 2; // 1日あたり前半・後半の2卓
+  const SEATS = ['東家', '南家', '西家', '北家'];
+  const PALETTE = ['#c9a961', '#7ba86c', '#5a8fb8', '#9b7bb8', '#c73e2e', '#d0a03a', '#6fa3a0'];
+  const WEEKDAY_J = ['日', '月', '火', '水', '木', '金', '土'];
+
+  let exclSeq = 0;
+  let exclusions = [];
+  let excludedPlayers = new Set(); // 生成から外す選手（pkey形式）
+  let lastResult = null;
+  let lastHtml = '';
+  const pkey = (league, name) => league + '\u0000' + name;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // ---------- 日付ユーティリティ ----------
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function iso(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+  function parseISO(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
+  function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+
+  // ---------- 祝日 ----------
+  function nthMonday(year, month, n) {
+    const dow = new Date(year, month-1, 1).getDay();
+    const firstMonday = 1 + ((8 - dow) % 7);
+    return new Date(year, month-1, firstMonday + (n-1)*7);
+  }
+  function vernalEquinoxDay(year) { return Math.floor(20.8431 + 0.242194*(year-1980) - Math.floor((year-1980)/4)); }
+  function autumnalEquinoxDay(year) { return Math.floor(23.2488 + 0.242194*(year-1980) - Math.floor((year-1980)/4)); }
+  function baseHolidaysForYear(year) {
+    const list = [];
+    const push = (m,d) => list.push(new Date(year, m-1, d));
+    push(1,1); push(2,11); push(2,23);
+    list.push(nthMonday(year,1,2));
+    push(4,29); push(5,3); push(5,4); push(5,5);
+    list.push(nthMonday(year,7,3));
+    push(8,11);
+    list.push(nthMonday(year,9,3));
+    list.push(new Date(year, 8, autumnalEquinoxDay(year)));
+    list.push(nthMonday(year,10,2));
+    push(11,3); push(11,23);
+    list.push(new Date(year, 2, vernalEquinoxDay(year)));
+    return list;
+  }
+  function computeHolidaySet(startYear, endYear) {
+    let raw = [];
+    for (let y = startYear; y <= endYear; y++) raw = raw.concat(baseHolidaysForYear(y));
+    const set = new Set();
+    raw.forEach(d => set.add(iso(d)));
+    // 日曜と重なった祝日は翌平日を振替休日に
+    raw.filter(d => d.getDay() === 0).sort((a,b)=>a-b).forEach(d => {
+      let cur = addDays(d, 1);
+      while (set.has(iso(cur))) cur = addDays(cur, 1);
+      set.add(iso(cur));
+    });
+    // 祝日に挟まれた平日は国民の休日
+    const start = new Date(startYear, 0, 1), end = new Date(endYear, 11, 31);
+    for (let d = new Date(start); d <= end; d = addDays(d,1)) {
+      if (d.getDay() === 0) continue;
+      const key = iso(d);
+      if (set.has(key)) continue;
+      if (set.has(iso(addDays(d,-1))) && set.has(iso(addDays(d,1)))) set.add(key);
+    }
+    return set;
+  }
+
+  // ---------- 除外期間 ----------
+  function parseMMDD(s) {
+    if (!/^\d{4}$/.test(s)) return null;
+    const m = +s.slice(0,2), d = +s.slice(2,4);
+    if (m < 1 || m > 12) return null;
+    const dt = new Date(2000, m-1, d); // 閏年なので 02/29 も有効な月日として通る
+    if (dt.getMonth() !== m-1 || dt.getDate() !== d) return null;
+    return { m, d };
+  }
+  function formatMMDD(s) { return `${s.slice(0,2)}/${s.slice(2,4)}`; }
+  function exclusionsToRanges(year) {
+    return exclusions.map(x => {
+      const s = parseMMDD(x.startRaw), e = parseMMDD(x.endRaw);
+      if (!s || !e) return null;
+      const start = new Date(year, s.m-1, s.d);
+      let end = new Date(year, e.m-1, e.d);
+      if (end < start) end = new Date(year+1, e.m-1, e.d); // 12/29〜01/03 のような年跨ぎ
+      return { start, end };
+    }).filter(Boolean);
+  }
+  function inRanges(d, ranges) { return ranges.some(r => d >= r.start && d <= r.end); }
+  function getAvailableWeekendDays(startStr, endStr, ranges, useHolidays) {
+    const start = parseISO(startStr), end = parseISO(endStr);
+    const holidays = useHolidays ? computeHolidaySet(start.getFullYear(), end.getFullYear()) : new Set();
+    const days = [];
+    for (let d = new Date(start); d <= end; d = addDays(d,1)) {
+      const dow = d.getDay();
+      if (dow !== 0 && dow !== 6) continue;
+      if (inRanges(d, ranges)) continue;
+      if (holidays.has(iso(d))) continue;
+      days.push(new Date(d));
+    }
+    return days;
+  }
+
+  // ---------- 組み合わせ ----------
+  function shuffle(arr) { for (let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
+  function combos4(arr) {
+    const res = [], n = arr.length;
+    for (let a=0;a<n;a++) for (let b=a+1;b<n;b++) for (let c=b+1;c<n;c++) for (let d=c+1;d<n;d++) res.push([arr[a],arr[b],arr[c],arr[d]]);
+    return res;
+  }
+  function permute4(arr) {
+    const results = [];
+    (function bt(cur, rem) {
+      if (rem.length === 0) { results.push(cur.slice()); return; }
+      for (let i=0;i<rem.length;i++) { cur.push(rem[i]); bt(cur, rem.slice(0,i).concat(rem.slice(i+1))); cur.pop(); }
+    })([], arr);
+    return results;
+  }
+  function assignSeats(groupPlayers, seatCount) {
+    const activeSeats = SEATS.slice(0, groupPlayers.length);
+    let best = null, bestScore = Infinity;
+    permute4(groupPlayers).forEach(perm => {
+      let score = 0;
+      perm.forEach((p,i) => { const c = seatCount[p][activeSeats[i]]; score += c*c; });
+      score += Math.random()*0.001;
+      if (score < bestScore) { bestScore = score; best = perm; }
+    });
+    const assignment = (best || groupPlayers).map((p,i) => ({ name: p, seat: activeSeats[i] }));
+    assignment.forEach(a => { seatCount[a.name][a.seat]++; });
+    return assignment;
+  }
+
+  // 同じ人を1日2卓に入れないため、1日に組める卓数は人数で決まる（8名未満は1卓/日）
+  function slotsPerDayFor(playerCount) {
+    return Math.max(0, Math.min(SLOTS_PER_DAY, Math.floor((Number(playerCount) || 0) / GROUP_SIZE)));
+  }
+  // 1人ずつの不足半荘数から、各自の必要セッション数と卓数・日数を積み上げる。
+  // 出場基準を超えさせないため、1セッションに満たない端数と、4人に満たない余り席は切り捨てる。
+  function computeLeagueLoad(members, deficitHanchan, hanchanPerSession) {
+    const hanchan = Math.max(1, Number(hanchanPerSession) || 1);
+    const needSessions = {};
+    const remainder = {};   // セッションに載せられない半荘数
+    let totalSessions = 0;
+    members.forEach(n => {
+      const deficit = Math.max(0, Number(deficitHanchan[n]) || 0);
+      const sessions = Math.floor(deficit / hanchan);
+      needSessions[n] = sessions;
+      remainder[n] = deficit - sessions * hanchan;
+      totalSessions += sessions;
+    });
+    // 卓に入れるのは基準未達の選手だけなので、1日の卓数もその人数で決まる
+    const activeCount = members.filter(n => needSessions[n] > 0).length;
+    const slotsPerDay = slotsPerDayFor(activeCount);
+    const base = { needSessions, remainder, totalSessions, activeCount, slotsPerDay,
+                   groupsNeeded: 0, unseated: totalSessions, daysNeeded: 0 };
+    if (members.length < GROUP_SIZE || totalSessions === 0) return base;
+    if (activeCount < GROUP_SIZE) return Object.assign(base, { activeTooFew: true });
+    const groupsNeeded = Math.floor(totalSessions / GROUP_SIZE);
+    // 1人が1日に出られるのは1卓までなので、最も足りない人の回数ぶんの日数は最低限必要
+    const maxNeed = members.reduce((mx, n) => Math.max(mx, needSessions[n]), 0);
+    return Object.assign(base, {
+      groupsNeeded,
+      unseated: totalSessions - groupsNeeded * GROUP_SIZE, // 4人揃わず席が埋まらない分
+      daysNeeded: Math.max(Math.ceil(groupsNeeded / slotsPerDay), maxNeed)
+    });
+  }
+
+  // 基準をちょうど満たせる半荘数（1〜6）を探して案内に使う
+  function exactHanchanHints(quota) {
+    const hints = [];
+    for (let h = 1; h <= 6; h++) if (quota % h === 0) hints.push(h);
+    return hints;
+  }
+
+  function buildLeagueSchedule(players, needSessions, groupsNeeded, slotsPerDay, dates) {
+    const useDates = dates.slice();
+
+    // 出場基準を超えさせないので、need を増やす調整は一切しない
+    const need = {}; players.forEach(p => need[p] = Math.max(0, needSessions[p] || 0));
+
+    const pairCount = {};
+    const pairKey = (x,y) => x < y ? x+'|'+y : y+'|'+x;
+    const seatCount = {}; players.forEach(p => seatCount[p] = { '東家':0, '南家':0, '西家':0, '北家':0 });
+
+    let prevDate = null, prevPlayers = new Set(), groupsDone = 0;
+    const results = [];
+    let anyRelaxed = false;
+
+    useDates.forEach(date => {
+      const slotsThisDate = Math.max(0, Math.min(slotsPerDay, groupsNeeded - groupsDone));
+      if (slotsThisDate === 0) return;
+      const isConsecutive = prevDate && ((date - prevDate) === 86400000);
+      const excludePrev = isConsecutive ? prevPlayers : new Set();
+      const thisDateUsed = new Set();
+      const slotGroups = [];
+      for (let s=0; s<slotsThisDate; s++) {
+        let candidates = players.filter(p => need[p] > 0 && !thisDateUsed.has(p) && !excludePrev.has(p));
+        // 残り回数のある人が4人に満たないときだけ「2日連続で出ない」を緩める。
+        // 同日の重複と、基準に達した人の追加出場は緩めない（超過させないため）
+        if (candidates.length < GROUP_SIZE) { candidates = players.filter(p => need[p] > 0 && !thisDateUsed.has(p)); anyRelaxed = true; }
+        if (candidates.length < GROUP_SIZE) break;
+        candidates = shuffle(candidates);
+        candidates.sort((a,b) => need[b]-need[a]);
+        // 残り回数が4番目に多い人と同率のところまでを候補にし、出場回数が開かないようにする
+        const threshold = need[candidates[GROUP_SIZE-1]];
+        const top = candidates.filter(p => need[p] >= threshold).slice(0, 12);
+        let bestCombo = null, bestScore = Infinity;
+        combos4(top).forEach(combo => {
+          let score = 0;
+          for (let i=0;i<combo.length;i++) for (let j=i+1;j<combo.length;j++) score += (pairCount[pairKey(combo[i],combo[j])] || 0);
+          if (score < bestScore) { bestScore = score; bestCombo = combo; }
+        });
+        if (!bestCombo) break;
+        bestCombo.forEach(p => { need[p]--; thisDateUsed.add(p); });
+        for (let i=0;i<bestCombo.length;i++) for (let j=i+1;j<bestCombo.length;j++) { const k = pairKey(bestCombo[i],bestCombo[j]); pairCount[k] = (pairCount[k]||0)+1; }
+        slotGroups.push(assignSeats(bestCombo, seatCount));
+        groupsDone++;
+      }
+      if (slotGroups.length === 0) return;
+      prevDate = date;
+      prevPlayers = thisDateUsed;
+      results.push({ date, am: slotGroups[0], pm: slotGroups[1] || null });
+    });
+
+    const leftover = players.filter(p => need[p] > 0).map(p => ({ name: p, short: need[p] }));
+    return { results, groupsNeeded, anyRelaxed, pairCount, seatCount, leftover };
+  }
+
+  // ---------- 雀記の設定から対象リーグ・選手を取得 ----------
+  function context(m) {
+    const useHistory = (m || mode()) === 'remaining';
+    const g = (typeof curGroup !== 'undefined' && curGroup) ? curGroup : null;
+    if (!g) return [];
+    const leagueNames = Object.keys(g.players || {}).filter(k => Array.isArray(g.players[k]));
+    const useDefault = leagueNames.length === 0;
+    const sources = useDefault ? ((g._players || []).length ? ['全体'] : []) : leagueNames;
+    return sources.map((name, idx) => {
+      const roster = (useDefault ? (g._players || []) : (g.players[name] || []))
+        .filter(Boolean).map(n => String(n).trim()).filter(Boolean);
+      const dropped = roster.filter(n => excludedPlayers.has(pkey(name, n)));
+      const members = roster.filter(n => !excludedPlayers.has(pkey(name, n)));
+      const statsKey = useDefault ? '_default' : name;
+      let stats = {};
+      try { stats = getStats(statsKey) || {}; } catch (e) {}
+      // 年度全体モードは対局履歴を考慮せず、全員ゼロから組む
+      const playedOf = {};
+      members.forEach(n => { playedOf[n] = useHistory ? ((stats[n] && stats[n].games) || 0) : 0; });
+      let quota = 30;
+      try {
+        const rule = getLeagueAttendRule(statsKey);
+        quota = Math.max(1, Number(rule.min || rule.max || 30) || 30);
+      } catch (e) {}
+      const deficit = {};
+      members.forEach(n => { deficit[n] = Math.max(0, quota - playedOf[n]); });
+      return {
+        uid: 'L' + idx,
+        name,
+        color: PALETTE[idx % PALETTE.length],
+        roster,
+        members,
+        dropped,
+        quota,
+        playedOf,
+        deficit,
+        played: members.reduce((sum, n) => sum + playedOf[n], 0),
+        target: quota * members.length
+      };
+    });
+  }
+
+  // ---------- 入力値の保存・復元 ----------
+  function stateKey() {
+    return 'janki_sgen_' + ((typeof curGroup !== 'undefined' && curGroup) ? curGroup.id : 'default');
+  }
+  function persist() {
+    try {
+      localStorage.setItem(stateKey(), JSON.stringify({
+        year: $('sgen-year').value,
+        hanchan: $('sgen-hanchan').value,
+        useHolidays: $('sgen-holidays').checked,
+        mode: mode(),
+        exclusions: exclusions.map(x => ({ startRaw: x.startRaw, endRaw: x.endRaw })),
+        excludedPlayers: [...excludedPlayers]
+      }));
+    } catch (e) {}
+  }
+  function restore() {
+    let data = null;
+    try { data = JSON.parse(localStorage.getItem(stateKey()) || 'null'); } catch (e) {}
+    const year = parseInt(data && data.year, 10);
+    $('sgen-year').value = Number.isFinite(year) ? year : new Date().getFullYear();
+    if (data && data.hanchan) $('sgen-hanchan').value = data.hanchan;
+    if (data && typeof data.useHolidays === 'boolean') $('sgen-holidays').checked = data.useHolidays;
+    if (data && data.mode) {
+      const radio = document.querySelector(`input[name="sgen-mode"][value="${data.mode}"]`);
+      if (radio) radio.checked = true;
+    }
+    exclusions = (data && Array.isArray(data.exclusions) ? data.exclusions : [])
+      .filter(x => parseMMDD(x.startRaw) && parseMMDD(x.endRaw))
+      .map(x => ({ uid: 'X' + (++exclSeq), startRaw: x.startRaw, endRaw: x.endRaw }));
+    excludedPlayers = new Set(data && Array.isArray(data.excludedPlayers) ? data.excludedPlayers : []);
+  }
+
+  // ---------- 期間 ----------
+  function mode() {
+    const sel = document.querySelector('input[name="sgen-mode"]:checked');
+    return sel ? sel.value : 'full';
+  }
+  function seasonWindow(m) {
+    const year = parseInt($('sgen-year').value, 10) || new Date().getFullYear();
+    const start = `${year}-01-01`, end = `${year}-12-31`;
+    if (m === 'remaining') {
+      const now = new Date(); now.setHours(0,0,0,0);
+      const s = parseISO(start);
+      return { start: iso(new Date(Math.max(s.getTime(), now.getTime()))), end, year };
+    }
+    return { start, end, year };
+  }
+
+  // ---------- 除外期間の描画 ----------
+  function renderExclusions() {
+    const wrap = $('sgen-excl-list');
+    if (!wrap) return;
+    wrap.innerHTML = exclusions.length
+      ? exclusions.map(x => `<span class="sgen-chip">${formatMMDD(x.startRaw)} 〜 ${formatMMDD(x.endRaw)}<button type="button" data-uid="${x.uid}" aria-label="削除">✕</button></span>`).join('')
+      : '<span style="font-size:.68rem;color:var(--tx3)">登録なし</span>';
+    wrap.querySelectorAll('button[data-uid]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        exclusions = exclusions.filter(x => x.uid !== btn.dataset.uid);
+        renderExclusions(); persist(); preview();
+      });
+    });
+  }
+  function addExclusion() {
+    const sEl = $('sgen-excl-start'), eEl = $('sgen-excl-end'), errEl = $('sgen-excl-err');
+    const startRaw = sEl.value.trim();
+    const endRaw = eEl.value.trim() || startRaw;
+    if (!parseMMDD(startRaw) || !parseMMDD(endRaw)) {
+      errEl.textContent = '月日は4桁の数字（例：0429）で入力してください。';
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+    exclusions.push({ uid: 'X' + (++exclSeq), startRaw, endRaw });
+    sEl.value = ''; eEl.value = ''; sEl.focus();
+    renderExclusions(); persist(); preview();
+  }
+
+  // ---------- 生成から外す選手 ----------
+  function renderPlayerToggles() {
+    const wrap = $('sgen-drop-list');
+    if (!wrap) return;
+    const leagues = context(mode());
+    const roster = leagues.reduce((sum, l) => sum + l.roster.length, 0);
+    const dropped = leagues.reduce((sum, l) => sum + l.dropped.length, 0);
+    const sum = $('sgen-drop-sum');
+    if (sum) sum.textContent = roster ? `${roster - dropped} / ${roster}名が対象` : '選手未登録';
+
+    if (!roster) {
+      wrap.innerHTML = '<div style="font-size:.68rem;color:var(--tx3)">選手が登録されていません。</div>';
+      return;
+    }
+    wrap.innerHTML = leagues.map(l => `
+      <div style="margin-bottom:10px">
+        <div style="font-size:.68rem;color:var(--gold);font-weight:700;margin-bottom:6px">${esc(l.name)}（${l.members.length}/${l.roster.length}名）</div>
+        <div class="sgen-chips">${l.roster.map(n => {
+          const off = excludedPlayers.has(pkey(l.name, n));
+          return `<button type="button" class="sgen-ptog${off ? ' off' : ''}" data-league="${esc(l.name)}" data-name="${esc(n)}">${esc(n)}</button>`;
+        }).join('')}</div>
+      </div>`).join('');
+    wrap.querySelectorAll('.sgen-ptog').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const k = pkey(btn.dataset.league, btn.dataset.name);
+        if (excludedPlayers.has(k)) excludedPlayers.delete(k); else excludedPlayers.add(k);
+        renderPlayerToggles(); persist(); preview();
+      });
+    });
+  }
+  function setAllPlayers(include) {
+    excludedPlayers = new Set();
+    if (!include) context(mode()).forEach(l => l.roster.forEach(n => excludedPlayers.add(pkey(l.name, n))));
+    renderPlayerToggles(); persist(); preview();
+  }
+
+  // ---------- 見積もり ----------
+  function preview(m = mode()) {
+    if (!$('sgen-stats')) return null;
+    const { start, end, year } = seasonWindow(m);
+    const hanchan = parseInt($('sgen-hanchan').value, 10) || 3;
+    const availableDays = getAvailableWeekendDays(start, end, exclusionsToRanges(year), $('sgen-holidays').checked);
+
+    const leagueMeta = context(m).map(l => {
+      const load = computeLeagueLoad(l.members, l.deficit, hanchan);
+      const shortPlayers = l.members.filter(n => l.deficit[n] > 0);
+      return Object.assign({}, l, {
+        id: l.uid, label: l.name, players: l.members.slice(),
+        remainingTarget: l.members.reduce((sum, n) => sum + l.deficit[n], 0),
+        shortCount: shortPlayers.length,
+        needSessions: load.needSessions,
+        remainder: load.remainder,
+        totalSessions: load.totalSessions,
+        activeCount: load.activeCount,
+        slotsPerDay: load.slotsPerDay,
+        activeTooFew: !!load.activeTooFew,
+        groupsNeeded: load.groupsNeeded,
+        unseated: load.unseated,
+        daysNeeded: load.daysNeeded
+      });
+    });
+    const droppedTotal = leagueMeta.reduce((sum, l) => sum + l.dropped.length, 0);
+
+    const totalDaysNeeded = leagueMeta.reduce((s,l) => s + l.daysNeeded, 0);
+    const maxDays = Math.max(1, ...leagueMeta.map(l => Math.max(1, l.daysNeeded)));
+    const shortage = totalDaysNeeded > availableDays.length ? `不足 ${totalDaysNeeded - availableDays.length}日` : '十分な候補日数';
+    $('sgen-stats').innerHTML = `
+      <div class="sgen-stat" style="flex-basis:100%">生成モード <b>${m === 'remaining' ? '残試合数・今日以降の土日（履歴あり）' : '年度全体（履歴を考慮しない）'}</b></div>
+      <div class="sgen-stat">対象土日（除外後） <b>${availableDays.length}</b>日</div>
+      <div class="sgen-stat">必要日数合計 <b>${totalDaysNeeded}</b>日</div>
+      <div class="sgen-stat">状態 <b>${shortage}</b></div>
+      ${droppedTotal ? `<div class="sgen-stat">生成から除外 <b>${droppedTotal}</b>名</div>` : ''}
+      ${leagueMeta.map(l => {
+        const sessionSet = [...new Set(l.members.map(n => l.needSessions[n]))].sort((a,b)=>a-b);
+        const sessionLabel = sessionSet.length === 1 ? `全員${sessionSet[0]}セッション` : `1人${sessionSet[0]}〜${sessionSet[sessionSet.length-1]}セッション`;
+        return `
+        <div class="sgen-stat" style="flex-basis:100%">
+          <div class="sgen-bar-l"><span>${esc(l.label)}</span><span>${l.daysNeeded}日 / 基準未達 ${l.shortCount}名</span></div>
+          <div class="sgen-bar"><span style="width:${Math.min(100, (Math.min(l.daysNeeded, maxDays) / maxDays) * 100)}%"></span></div>
+          <div style="margin-top:6px;font-size:.66rem;color:var(--tx2)">${l.players.length}名${l.dropped.length ? `（除外${l.dropped.length}名）` : ''}・出場基準 ${l.quota}戦・${l.groupsNeeded}卓（${sessionLabel}）</div>
+        </div>`;
+      }).join('')}
+    `;
+    return { leagueMeta, availableDays, totalDaysNeeded, hanchan };
+  }
+
+  // ---------- 不足一覧・サマリ ----------
+  function shortageList(leagueMeta, need, assignedCount) {
+    const targets = leagueMeta.filter(l => l.players.length > 0 && l.shortCount > 0);
+    if (!targets.length) return '<div class="sgen-ok">出場基準に達していない選手はいません。</div>';
+    const left = l => Math.max(0, (need[l.id] || 0) - (assignedCount[l.id] || 0));
+    const rows = targets.slice()
+      .sort((a,b) => b.shortCount - a.shortCount || left(b) - left(a))
+      .map(l => {
+        const status = l.players.length < GROUP_SIZE
+          ? `<span style="color:var(--red2);font-weight:700">対象${l.players.length}名・卓を組めません</span>`
+          : left(l) > 0
+            ? `<span style="color:var(--red2);font-weight:700">日程が${left(l)}日不足</span>`
+            : `<span style="color:var(--green);font-weight:700">日程確保済み（${assignedCount[l.id] || 0}日）</span>`;
+        return `<div class="sgen-row"><span><b>${esc(l.label)}</b>：基準${l.quota}戦に未達 ${l.shortCount}/${l.players.length}名（延べ${l.remainingTarget}戦）</span>${status}</div>`;
+      }).join('');
+    const trouble = targets.some(l => left(l) > 0 || l.players.length < GROUP_SIZE);
+    return `<div class="${trouble ? 'sgen-warn' : 'sgen-ok'}">出場基準の未達状況${rows}</div>`;
+  }
+  function summaryCards(leagueMeta, need, assignedCount) {
+    const cards = leagueMeta.filter(l => l.players.length > 0).map(l => {
+      const remaining = Math.max(0, need[l.id] - assignedCount[l.id]);
+      const pairTotal = l.pairCount ? Object.values(l.pairCount).reduce((s,n) => s+n, 0) / 2 : 0;
+      const seatTotal = l.seatCount ? Object.values(l.seatCount).reduce((s,m) => s + Object.values(m).reduce((a,v)=>a+v,0), 0) : 0;
+      return `<div class="sgen-sum-c">
+        <div class="sgen-sum-k">${esc(l.label)}</div>
+        <div class="sgen-sum-v">${assignedCount[l.id]} / ${need[l.id]}日</div>
+        <div class="sgen-sum-m">${l.players.length < GROUP_SIZE ? `対象${l.players.length}名・対象外` : remaining === 0 ? '日程を確保' : `日程 ${remaining}日不足`}<br>同卓 ${pairTotal}組・座席 ${seatTotal}回</div>
+      </div>`;
+    });
+    return cards.length ? `<div class="sgen-sum">${cards.join('')}</div>` : '';
+  }
+
+  // 1人ずつ出場基準に届いたかを表にする
+  function achievementSection(leagueMeta, hanchan, useHistory) {
+    const active = leagueMeta.filter(l => l.players.length > 0);
+    if (!active.length) return '';
+    const totalShort = active.reduce((sum, l) => sum + l.players.filter(n => (l.finalTotal[n] || 0) < l.quota).length, 0);
+    const totalOver = active.reduce((sum, l) => sum + l.players.filter(n => (l.finalTotal[n] || 0) > l.quota).length, 0);
+    let html = `<details class="sgen-month" ${totalShort ? 'open' : ''}><summary>選手別の出場基準チェック（未達 ${totalShort}名・超過 ${totalOver}名）</summary><div style="padding:10px 12px">`;
+    active.forEach(l => {
+      html += `<div style="font-size:.74rem;color:var(--gold);font-weight:700;margin:12px 0 8px">${esc(l.label)}（基準 ${l.quota}戦）</div>`;
+      html += '<div class="sgen-scroll"><table class="sgen-stbl"><thead><tr><th>選手名</th>'
+        + (useHistory ? '<th>既存実績</th>' : '')
+        + '<th>今回の割当</th><th>合計</th><th>基準差</th><th>判定</th></tr></thead><tbody>';
+      l.players.slice().sort((a,b) => (l.finalTotal[a]||0) - (l.finalTotal[b]||0) || a.localeCompare(b,'ja')).forEach(n => {
+        const assigned = (l.assignedSessions[n] || 0) * hanchan;
+        const total = l.finalTotal[n] || 0;
+        const diff = total - l.quota;
+        const mark = diff === 0 ? '<span style="color:var(--green)">ちょうど</span>'
+          : diff < 0 ? `<span style="color:var(--red2)">${-diff}戦不足</span>`
+          : `<span style="color:var(--gold)">${diff}戦超過</span>`;
+        html += `<tr><td>${esc(n)}</td>`
+          + (useHistory ? `<td>${l.playedOf[n] || 0}</td>` : '')
+          + `<td>${assigned}（${l.assignedSessions[n] || 0}回）</td><td>${total}</td><td>${diff > 0 ? '+' : ''}${diff}</td><td>${mark}</td></tr>`;
+      });
+      html += '</tbody></table></div>';
+    });
+    return html + '</div></details>';
+  }
+
+  // ---------- 生成 ----------
+  function generate(opts) {
+    const { prioritizeShortage = false, shortfallOnly = false } = opts || {};
+    const m = mode();
+    const pv = preview(m);
+    if (!pv) return;
+    const { leagueMeta, availableDays, totalDaysNeeded, hanchan } = pv;
+    const useHistory = m === 'remaining';
+    const output = $('sgen-output');
+
+    if (!leagueMeta.length || leagueMeta.every(l => l.players.length === 0)) {
+      lastResult = null;
+      const hasRoster = leagueMeta.some(l => l.roster.length > 0);
+      lastHtml = hasRoster
+        ? '<div class="sgen-empty">対象の選手が1人もいません。「生成から外す選手」の除外を解除してください。</div>'
+        : '<div class="sgen-empty">選手が登録されていません。上の選手設定でリーグに選手を追加してください。</div>';
+      output.innerHTML = lastHtml;
+      toggleExportButtons(false);
+      return;
+    }
+
+    const need = {}, assignedCount = {};
+    leagueMeta.forEach(l => { need[l.id] = l.daysNeeded; assignedCount[l.id] = 0; });
+
+    // 候補日を各リーグへ振り分け
+    const activeLeagues = leagueMeta.filter(l => l.players.length > 0 && need[l.id] > 0);
+    const dayAssignments = [];
+    let idx = 0;
+    while (idx < availableDays.length) {
+      const remaining = activeLeagues.filter(l => assignedCount[l.id] < need[l.id]);
+      if (remaining.length === 0) break;
+      let chosen = remaining[0];
+      remaining.forEach(cand => {
+        if (prioritizeShortage || shortfallOnly) {
+          const a = need[cand.id] - assignedCount[cand.id];
+          const b = need[chosen.id] - assignedCount[chosen.id];
+          if (a > b) { chosen = cand; return; }
+          if (a === b && assignedCount[cand.id] < assignedCount[chosen.id]) { chosen = cand; return; }
+          if (shortfallOnly) return;
+        }
+        const ratio = need[cand.id] === 0 ? 0 : assignedCount[cand.id] / need[cand.id];
+        const chosenRatio = need[chosen.id] === 0 ? 0 : assignedCount[chosen.id] / need[chosen.id];
+        if (ratio < chosenRatio) chosen = cand;
+      });
+      dayAssignments.push({ date: availableDays[idx], leagueId: chosen.id });
+      assignedCount[chosen.id]++;
+      idx++;
+    }
+
+    // 卓組み
+    const byMonth = {}, flatRows = [];
+    let anyRelaxedAny = false;
+    leagueMeta.forEach(l => {
+      l.assignedSessions = {};
+      l.players.forEach(n => { l.assignedSessions[n] = 0; });
+    });
+    leagueMeta.filter(l => l.players.length > 0 && need[l.id] > 0).forEach(l => {
+      const myDates = dayAssignments.filter(a => a.leagueId === l.id).map(a => a.date).sort((a,b)=>a-b);
+      const { results, anyRelaxed, pairCount, seatCount } = buildLeagueSchedule(l.players, l.needSessions, l.groupsNeeded, l.slotsPerDay, myDates);
+      l.pairCount = pairCount;
+      l.seatCount = seatCount;
+      if (anyRelaxed) anyRelaxedAny = true;
+      results.forEach(r => {
+        const mKey = `${r.date.getFullYear()}年${r.date.getMonth()+1}月`;
+        (byMonth[mKey] = byMonth[mKey] || []).push({ date: r.date, league: l, am: r.am, pm: r.pm });
+        flatRows.push({ date: r.date, league: l, am: r.am, pm: r.pm });
+        [r.am, r.pm].forEach(grp => { if (grp) grp.forEach(x => { l.assignedSessions[x.name]++; }); });
+      });
+    });
+    // 1人ずつの最終的な出場半荘数
+    leagueMeta.forEach(l => {
+      l.finalTotal = {};
+      l.players.forEach(n => { l.finalTotal[n] = (l.playedOf[n] || 0) + (l.assignedSessions[n] || 0) * hanchan; });
+    });
+
+    const zeroPlayer = leagueMeta.filter(l => l.players.length === 0);
+    const tooFew = leagueMeta.filter(l => l.players.length > 0 && l.players.length < GROUP_SIZE);
+    const shortfall = leagueMeta.filter(l => assignedCount[l.id] < need[l.id]);
+
+    let html = '';
+    if (prioritizeShortage) html += '<div class="sgen-ok">不足を優先した再計画です。未消化のリーグを優先して日程を振り分けています。</div>';
+    if (shortfallOnly) html += '<div class="sgen-ok">不足リーグのみ再構成です。基準未達の多いリーグに日程を集中して再配分しています。</div>';
+    if (zeroPlayer.length) html += `<div class="sgen-warn">${zeroPlayer.map(l => esc(l.label) + (l.roster.length ? '（全員除外中）' : '')).join('、')}は対象の選手が0名のため対象外です。</div>`;
+    if (tooFew.length) html += `<div class="sgen-warn">${tooFew.map(l => esc(l.label) + (l.dropped.length ? `（${l.dropped.length}名を除外中）` : '')).join('、')}は対象の選手が${GROUP_SIZE}名未満のため卓を組めません。</div>`;
+    html += shortageList(leagueMeta, need, assignedCount);
+    if (shortfall.length) {
+      html += `<div class="sgen-warn">対局日が不足しています。${shortfall.map(l => `${esc(l.label)}は残り${need[l.id]-assignedCount[l.id]}日`).join('／')}が未割当です。年度や除外期間を見直すと改善できます。</div>`;
+    } else if (totalDaysNeeded === 0) {
+      html += '<div class="sgen-ok">組む必要のある対局はありません。</div>';
+    } else if (!zeroPlayer.length && !tooFew.length) {
+      html += `<div class="sgen-ok">対象期間内の土日で全リーグの日程を組めました（${totalDaysNeeded}日使用／候補${availableDays.length}日中）。</div>`;
+    }
+    html += summaryCards(leagueMeta, need, assignedCount);
+
+    // 基準ちょうどに揃えられないケースを具体的に案内する
+    const notDivisible = leagueMeta.filter(l => l.players.length >= GROUP_SIZE && l.players.some(n => l.remainder[n] > 0));
+    if (notDivisible.length) {
+      html += '<div class="sgen-warn">' + notDivisible.map(l => {
+        const hints = exactHanchanHints(l.quota).filter(h => h !== hanchan);
+        const sample = l.players.find(n => l.remainder[n] > 0);
+        return `${esc(l.label)}：1セッション${hanchan}半荘では基準${l.quota}戦ちょうどにできません（${l.needSessions[sample]}セッション＝${l.needSessions[sample]*hanchan}戦、${l.remainder[sample]}戦が端数）。`
+          + (hints.length ? `半荘数を${hints.join('・')}のいずれかにするとちょうど割り切れます。` : '');
+      }).join('<br>') + '</div>';
+    }
+    const activeTooFew = leagueMeta.filter(l => l.activeTooFew);
+    if (activeTooFew.length) {
+      html += '<div class="sgen-warn">' + activeTooFew.map(l =>
+        `${esc(l.label)}：出場基準に達していない選手が${l.activeCount}名しかおらず、${GROUP_SIZE}人卓を組めません。基準を上げるか、対象の選手を増やしてください。`
+      ).join('<br>') + '</div>';
+    }
+    const seatLeft = leagueMeta.filter(l => l.players.length >= GROUP_SIZE && !l.activeTooFew && l.unseated > 0);
+    if (seatLeft.length) {
+      html += '<div class="sgen-warn">' + seatLeft.map(l =>
+        `${esc(l.label)}：延べ出場数が${GROUP_SIZE}で割り切れないため、${l.unseated}名分の席が埋まりません。超過させない方針のため、その分は未割当のままにしています。`
+      ).join('<br>') + '</div>';
+    }
+    const overflow = leagueMeta.filter(l => l.players.some(n => (l.playedOf[n] || 0) > l.quota));
+    if (useHistory && overflow.length) {
+      html += '<div class="sgen-warn">' + overflow.map(l => {
+        const over = l.players.filter(n => (l.playedOf[n] || 0) > l.quota);
+        return `${esc(l.label)}：${over.map(esc).join('、')}はすでに基準${l.quota}戦を超えています（今回の割当は0です）。`;
+      }).join('<br>') + '</div>';
+    }
+
+    if (anyRelaxedAny) html += '<div class="sgen-warn">一部、対局日が密集しているため「2日連続で出ない」制約を緩和した箇所があります。除外期間を見直すか対局可能日を増やすと改善できます。</div>';
+    html += achievementSection(leagueMeta, hanchan, useHistory);
+
+    const monthKeys = Object.keys(byMonth).sort((a,b) => byMonth[a][0].date - byMonth[b][0].date);
+    if (!monthKeys.length) {
+      if (totalDaysNeeded > 0) html += '<div class="sgen-empty">割り当てられる対局日がありませんでした。年度や除外期間の設定を見直してください。</div>';
+    } else {
+      monthKeys.forEach((mKey, mi) => {
+        const rows = byMonth[mKey].slice().sort((a,b) => a.date - b.date || a.league.label.localeCompare(b.league.label, 'ja'));
+        html += `<details class="sgen-month" ${mi === 0 ? 'open' : ''}><summary>${mKey}（${rows.length}日）</summary><table class="sgen-tbl"><tbody>`;
+        rows.forEach(({date, league, am, pm}) => {
+          const fmt = grp => grp.map(x => `${esc(x.name)}<span class="sgen-seat">(${x.seat})</span>`).join('・');
+          html += `<tr>
+            <td class="d">${date.getMonth()+1}/${date.getDate()}(${WEEKDAY_J[date.getDay()]})</td>
+            <td class="l"><span class="sgen-badge" style="background:${league.color}">${esc(league.label)}</span></td>
+            <td><div><span class="sgen-slot">前半</span>${fmt(am)}</div>
+                <div><span class="sgen-slot">後半</span>${pm ? fmt(pm) : 'ー'}</div></td>
+          </tr>`;
+        });
+        html += '</tbody></table></details>';
+      });
+      html += statsSection(leagueMeta);
+    }
+
+    lastResult = { flatRows, leagueMeta, byMonth, monthKeys, hanchan };
+    lastHtml = html;
+    output.innerHTML = html;
+    toggleExportButtons(flatRows.length > 0);
+  }
+
+  function statsSection(leagueMeta) {
+    const target = leagueMeta.filter(l => l.players.length > 0 && l.seatCount);
+    if (!target.length) return '';
+    let html = '<details class="sgen-month"><summary>同卓回数・座席（東南西北）の統計を見る</summary><div style="padding:10px 12px">';
+    target.forEach(l => {
+      const sorted = l.players.slice().sort((a,b) => a.localeCompare(b,'ja'));
+      const pairTop = Object.entries(l.pairCount || {}).sort((a,b) => b[1]-a[1]).slice(0,5);
+      html += `<div style="font-size:.74rem;color:var(--gold);font-weight:700;margin:12px 0 8px">${esc(l.label)}</div>`;
+      if (pairTop.length) {
+        html += `<div class="sgen-sum-c" style="margin-bottom:10px"><div class="sgen-sum-k">同卓上位</div><div class="sgen-sum-m">${
+          pairTop.map(([k,v]) => { const [p1,p2] = k.split('|'); return `${esc(p1)}×${esc(p2)}：${v}回`; }).join('<br>')
+        }</div></div>`;
+      }
+      html += '<div class="sgen-scroll"><table class="sgen-stbl"><thead><tr><th>選手名</th><th>東家</th><th>南家</th><th>西家</th><th>北家</th><th>合計</th></tr></thead><tbody>';
+      sorted.forEach(p => {
+        const c = l.seatCount[p] || { '東家':0,'南家':0,'西家':0,'北家':0 };
+        html += `<tr><td>${esc(p)}</td><td>${c['東家']}</td><td>${c['南家']}</td><td>${c['西家']}</td><td>${c['北家']}</td><td>${c['東家']+c['南家']+c['西家']+c['北家']}</td></tr>`;
+      });
+      html += '</tbody></table></div>';
+    });
+    return html + '</div></details>';
+  }
+
+  function toggleExportButtons(show) {
+    ['sgen-copy','sgen-csv','sgen-excel'].forEach(id => {
+      const b = $(id); if (b) b.style.display = show ? 'inline-block' : 'none';
+    });
+  }
+
+  // ---------- 出力 ----------
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function sortedRows() { return lastResult.flatRows.slice().sort((a,b) => a.date - b.date); }
+
+  function copyText() {
+    if (!lastResult || !lastResult.flatRows.length) return;
+    let text = '対局日程\n\n';
+    lastResult.monthKeys.forEach(mKey => {
+      text += `【${mKey}】\n`;
+      lastResult.byMonth[mKey].slice().sort((a,b)=>a.date-b.date).forEach(({date, league, am, pm}) => {
+        const fmt = grp => grp.map(x => `${x.name}(${x.seat})`).join('・');
+        text += `${iso(date)} ${league.label}\n  前半: ${fmt(am)}\n  後半: ${pm ? fmt(pm) : 'ー'}\n`;
+      });
+      text += '\n';
+    });
+    const done = () => { try { showToast('日程をコピーしました'); } catch(e) {} };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(done);
+  }
+
+  function exportCsv() {
+    if (!lastResult || !lastResult.flatRows.length) return;
+    const rows = [['日付','曜日','リーグ','前半','後半']];
+    sortedRows().forEach(({date, league, am, pm}) => {
+      const fmt = grp => grp ? grp.map(x => `${x.name}(${x.seat})`).join('・') : 'ー';
+      rows.push([iso(date), WEEKDAY_J[date.getDay()], league.label, fmt(am), fmt(pm)]);
+    });
+    const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+    downloadBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }), '対局日程.csv');
+  }
+
+  function exportExcel() {
+    if (!lastResult || !lastResult.flatRows.length) return;
+    if (typeof XLSX === 'undefined') { alert('Excel出力ライブラリの読み込み中です。少し待ってから再度お試しください。'); return; }
+    const { leagueMeta } = lastResult;
+    const seatMap = grp => { const m = {}; grp.forEach(x => { m[x.seat] = x.name; }); return m; };
+
+    const scheduleRows = [['日付','曜日','リーグ','前半_東家','前半_南家','前半_西家','前半_北家','後半_東家','後半_南家','後半_西家','後半_北家']];
+    sortedRows().forEach(({date, league, am, pm}) => {
+      const a = seatMap(am), p = pm ? seatMap(pm) : {};
+      scheduleRows.push([iso(date), WEEKDAY_J[date.getDay()], league.label,
+        ...SEATS.map(s => a[s] || ''), ...SEATS.map(s => p[s] || '')]);
+    });
+    const wsSchedule = XLSX.utils.aoa_to_sheet(scheduleRows);
+    wsSchedule['!cols'] = [{wch:12},{wch:6},{wch:14}].concat(Array(8).fill({wch:12}));
+
+    const summaryRows = [['リーグ名','対象人数','出場基準(戦)','基準未達','必要卓数','必要日数']];
+    leagueMeta.forEach(l => summaryRows.push([l.label, l.players.length, l.quota, l.shortCount, l.groupsNeeded, l.daysNeeded]));
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+    wsSummary['!cols'] = [{wch:16},{wch:10},{wch:12},{wch:10},{wch:10},{wch:10}];
+
+    const checkRows = [['選手名','リーグ','出場基準(戦)','既存実績(戦)','今回の割当(戦)','合計(戦)','基準差']];
+    leagueMeta.forEach(l => {
+      if (!l.finalTotal) return;
+      l.players.slice().sort((a,b)=>a.localeCompare(b,'ja')).forEach(n => {
+        const total = l.finalTotal[n] || 0;
+        checkRows.push([n, l.label, l.quota, l.playedOf[n] || 0, (l.assignedSessions[n] || 0) * lastResult.hanchan, total, total - l.quota]);
+      });
+    });
+    const wsCheck = XLSX.utils.aoa_to_sheet(checkRows);
+    wsCheck['!cols'] = [{wch:16},{wch:12},{wch:12},{wch:12},{wch:14},{wch:10},{wch:8}];
+
+    const seatRows = [['選手名','リーグ','東家','南家','西家','北家','合計']];
+    leagueMeta.forEach(l => {
+      if (!l.seatCount) return;
+      l.players.slice().sort((a,b)=>a.localeCompare(b,'ja')).forEach(p => {
+        const c = l.seatCount[p] || { '東家':0,'南家':0,'西家':0,'北家':0 };
+        seatRows.push([p, l.label, c['東家'], c['南家'], c['西家'], c['北家'], c['東家']+c['南家']+c['西家']+c['北家']]);
+      });
+    });
+    const wsSeat = XLSX.utils.aoa_to_sheet(seatRows);
+    wsSeat['!cols'] = [{wch:16},{wch:12}].concat(Array(5).fill({wch:8}));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, wsSchedule, '対局日程');
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'リーグ');
+    XLSX.utils.book_append_sheet(wb, wsCheck, '出場基準チェック');
+    XLSX.utils.book_append_sheet(wb, wsSeat, '座席バランス');
+    leagueMeta.forEach(l => {
+      if (!l.pairCount) return;
+      const sorted = l.players.slice().sort((a,b)=>a.localeCompare(b,'ja'));
+      const rows = [[''].concat(sorted)];
+      sorted.forEach(p1 => {
+        rows.push([p1].concat(sorted.map(p2 => {
+          if (p1 === p2) return '';
+          return l.pairCount[p1 < p2 ? p1+'|'+p2 : p2+'|'+p1] || 0;
+        })));
+      });
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{wch:14}].concat(sorted.map(() => ({wch:8})));
+      XLSX.utils.book_append_sheet(wb, ws, ('同卓_' + l.label).replace(/[\\\/?*\[\]:]/g, '').slice(0, 31));
+    });
+    const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    downloadBlob(new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), '対局日程.xlsx');
+  }
+
+  // ---------- 組み立て ----------
+  const TEMPLATE = `
+    <div class="sgen-note">
+      リーグ・選手・出場基準は上の設定から自動で反映します。土日のみを対象に、1日あたり前半・後半の2卓（8名未満のリーグは1卓）を割り当てます。<br>
+      1人ずつ出場基準と照らし合わせ、達していない選手だけに卓を組みます。基準を超える割当は行いません。<br>
+      特定の選手を外したいときは「生成から外す選手」で指定できます。
+    </div>
+
+    <div class="sgen-sec">
+      <div class="sgen-sec-t">シーズン設定</div>
+      <div class="fg"><label class="fl">年度</label>
+        <input class="fi" type="number" id="sgen-year" min="2000" step="1" style="max-width:160px"></div>
+      <label class="fl">追加の除外期間（合宿・大型連休など）</label>
+      <div class="sgen-excl-row">
+        <input class="fi" type="text" id="sgen-excl-start" inputmode="numeric" maxlength="4" placeholder="開始 例:0429">
+        <input class="fi" type="text" id="sgen-excl-end" inputmode="numeric" maxlength="4" placeholder="終了 例:0505">
+        <button type="button" class="sgen-mini" id="sgen-excl-add">追加</button>
+      </div>
+      <div class="sgen-err" id="sgen-excl-err"></div>
+      <div class="sgen-chips" id="sgen-excl-list"></div>
+      <div class="sgen-check">
+        <input type="checkbox" id="sgen-holidays" checked>
+        <label for="sgen-holidays" style="margin:0;cursor:pointer">日本の祝日を自動で除外する（振替休日・国民の休日を含む）</label>
+      </div>
+    </div>
+
+    <div class="sgen-sec">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px">
+        <div class="sgen-sec-t" style="margin:0">生成から外す選手</div>
+        <span style="font-size:.66rem;color:var(--tx2)" id="sgen-drop-sum"></span>
+      </div>
+      <div style="font-size:.66rem;color:var(--tx2);margin-bottom:10px;line-height:1.7">
+        名前を押すと、その選手を日程から外します（薄く表示）。休会中の選手などに使ってください。<br>
+        除外した選手の消化分は残り必要戦数から差し引きます。
+      </div>
+      <div class="sgen-btns" style="margin-bottom:10px">
+        <button type="button" class="sgen-mini" id="sgen-drop-none">全員を対象に戻す</button>
+        <button type="button" class="sgen-mini" id="sgen-drop-all">全員を除外</button>
+      </div>
+      <div id="sgen-drop-list"></div>
+    </div>
+
+    <div class="sgen-sec">
+      <div class="sgen-sec-t">対局ルール</div>
+      <div class="fg" style="margin-bottom:0"><label class="fl">1セッションの半荘数</label>
+        <input class="fi" type="number" id="sgen-hanchan" value="3" min="1" style="max-width:140px"></div>
+    </div>
+
+    <div class="sgen-radio">
+      <label><input type="radio" name="sgen-mode" value="full" checked>1年間で全選手の日程を組む（対局履歴は考慮しない）</label>
+      <label><input type="radio" name="sgen-mode" value="remaining">対局履歴から基準未達の選手を拾い、今日以降の土日で組む</label>
+    </div>
+    <button type="button" class="btn btn-g" id="sgen-run">日程を自動生成する</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button type="button" class="btn btn-gh" id="sgen-replan" style="margin-bottom:0">不足を優先して再計画</button>
+      <button type="button" class="btn btn-gh" id="sgen-shortfall" style="margin-bottom:0">不足リーグのみ再構成</button>
+    </div>
+    <div class="sgen-stats" id="sgen-stats"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:16px 0 8px">
+      <div class="sgen-sec-t" style="margin:0">生成結果</div>
+      <div class="sgen-btns">
+        <button type="button" class="sgen-mini" id="sgen-copy" style="display:none">コピー</button>
+        <button type="button" class="sgen-mini" id="sgen-csv" style="display:none">CSV</button>
+        <button type="button" class="sgen-mini" id="sgen-excel" style="display:none">Excel</button>
+      </div>
+    </div>
+    <div id="sgen-output"><div class="sgen-empty">「日程を自動生成する」を押してください。</div></div>
+  `;
+
+  function mount() {
+    const root = $('sgen-root');
+    if (!root) return;
+    root.innerHTML = TEMPLATE;
+    restore();
+    renderExclusions();
+    renderPlayerToggles();
+
+    const digitsOnly = el => el.addEventListener('input', () => { el.value = el.value.replace(/\D/g,'').slice(0,4); });
+    digitsOnly($('sgen-excl-start'));
+    digitsOnly($('sgen-excl-end'));
+    $('sgen-excl-add').addEventListener('click', addExclusion);
+    $('sgen-drop-none').addEventListener('click', () => setAllPlayers(true));
+    $('sgen-drop-all').addEventListener('click', () => setAllPlayers(false));
+    ['sgen-year','sgen-hanchan','sgen-holidays'].forEach(id => {
+      const el = $(id);
+      ['input','change'].forEach(ev => el.addEventListener(ev, () => { persist(); preview(); }));
+    });
+    document.querySelectorAll('input[name="sgen-mode"]').forEach(r => {
+      r.addEventListener('change', () => { persist(); preview(); });
+    });
+    $('sgen-run').addEventListener('click', () => generate());
+    $('sgen-replan').addEventListener('click', () => generate({ prioritizeShortage: true }));
+    $('sgen-shortfall').addEventListener('click', () => generate({ shortfallOnly: true }));
+    $('sgen-copy').addEventListener('click', copyText);
+    $('sgen-csv').addEventListener('click', exportCsv);
+    $('sgen-excel').addEventListener('click', exportExcel);
+
+    // 設定画面を描き直しても直前の生成結果を保つ
+    if (lastHtml) { $('sgen-output').innerHTML = lastHtml; toggleExportButtons(!!(lastResult && lastResult.flatRows.length)); }
+    preview();
+  }
+
+  window.sgenMount = mount;
+  window.sgenSyncContext = function () { if ($('sgen-root')) { renderPlayerToggles(); preview(); } };
+})();
 
 function toggleYtSettingsCard() {
   const body = document.getElementById('yt-settings-card-body');
@@ -8047,7 +8196,7 @@ function refreshCurrentView() {
     const newGroup = groups.find(g => g.id === curGroup.id);
     if (newGroup) {
       curGroup = newGroup;
-      const activeTab = ['ranking','players','hanzos','graph','condition','settings'].find(t =>
+      const activeTab = ['ranking','players','hanzos','graph','settings'].find(t =>
         document.getElementById('page-'+t)?.classList.contains('on')
       ) || 'ranking';
       showTab(activeTab);
@@ -8069,17 +8218,13 @@ if (navigator.onLine) {
 
 // ===== タブ横スワイプ切替（指追従ページめくり） =====
 (function initTabSwipe() {
-  const order = ['ranking','players','hanzos','graph','condition','settings'];
+  const order = ['ranking','players','hanzos','graph','settings'];
   // 隣接ページの事前レンダリング関数
   const renderers = {
     ranking: () => typeof renderRanking === 'function' && renderRanking(),
     players: () => typeof renderPlayers === 'function' && renderPlayers(),
     hanzos:  () => typeof renderHanzos  === 'function' && renderHanzos(),
     graph:   () => typeof renderGraph   === 'function' && renderGraph(),
-    condition: () => {
-      if (typeof cdRenderPlayers === 'function') cdRenderPlayers();
-      const r = document.getElementById('cd-results'); if (r) r.innerHTML = '';
-    },
     settings: () => { /* 認証が絡むのでスワイプ中は仮レンダリングしない */ }
   };
 
